@@ -54,8 +54,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.TimeUnit
 
 class ASJavascriptInterfaceAsync(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -652,6 +657,67 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     val resultBack = AssistsCore.recentApps()
                     val response = request.createResponse(0, data = resultBack)
                     response
+                }
+
+                CallMethod.httpRequest -> {
+                    val url = request.arguments?.get("url")?.asString ?: ""
+                    val method = request.arguments?.get("method")?.asString?.uppercase() ?: "GET"
+                    val headers = request.arguments?.get("headers")?.asJsonObject
+                    val body = request.arguments?.get("body")?.asString ?: ""
+                    val timeoutSeconds = request.arguments?.get("timeout")?.asLong ?: 30L
+                    
+                    // 验证请求方法
+                    if (method != "GET" && method != "POST") {
+                        val response = request.createResponse(-1, message = "不支持的请求方法: $method", data = JsonObject())
+                        response
+                    } else {
+                        try {
+                            val client = OkHttpClient.Builder()
+                                .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                                .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                                .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                                .build()
+                            
+                            val requestBuilder = Request.Builder().url(url)
+                            
+                            // 添加请求头
+                            headers?.entrySet()?.forEach { entry ->
+                                requestBuilder.addHeader(entry.key, entry.value.asString)
+                            }
+                            
+                            // 根据请求方法构建请求
+                            when (method) {
+                                "GET" -> requestBuilder.get()
+                                "POST" -> {
+                                    val contentType = headers?.get("Content-Type")?.asString ?: "application/json; charset=utf-8"
+                                    val requestBody = body.toRequestBody(contentType.toMediaType())
+                                    requestBuilder.post(requestBody)
+                                }
+                            }
+                            
+                            val httpRequest = requestBuilder.build()
+                            val httpResponse = client.newCall(httpRequest).execute()
+                            val responseBody = httpResponse.body?.string() ?: ""
+                            
+                            val responseData = JsonObject().apply {
+                                addProperty("statusCode", httpResponse.code)
+                                addProperty("statusMessage", httpResponse.message)
+                                addProperty("body", responseBody)
+                                add("headers", JsonObject().apply {
+                                    httpResponse.headers.forEach { pair ->
+                                        addProperty(pair.first, pair.second)
+                                    }
+                                })
+                            }
+                            
+                            val response = request.createResponse(0, data = responseData)
+                            response
+                        } catch (e: Exception) {
+                            LogUtils.e(e)
+                            val response = request.createResponse(-1, message = "请求失败: ${e.message}", data = JsonObject())
+                            response
+                        }
+                    }
                 }
 
 

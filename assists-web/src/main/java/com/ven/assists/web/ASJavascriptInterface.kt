@@ -59,11 +59,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.net.NetworkInterface
 import java.nio.charset.StandardCharsets
 import java.util.Collections
-import kotlin.text.toByteArray
+import java.util.concurrent.TimeUnit
 
 class ASJavascriptInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -685,6 +689,68 @@ class ASJavascriptInterface(val webView: WebView) {
                 CallMethod.recentApps -> {
                     val resultBack = AssistsCore.recentApps()
                     result = GsonUtils.toJson(CallResponse<Boolean>(code = 0, data = resultBack))
+                }
+
+                CallMethod.httpRequest -> {
+                    CoroutineWrapper.launch {
+                        runCatching {
+                            val url = request.arguments?.get("url")?.asString ?: ""
+                            val method = request.arguments?.get("method")?.asString?.uppercase() ?: "GET"
+                            val headers = request.arguments?.get("headers")?.asJsonObject
+                            val body = request.arguments?.get("body")?.asString ?: ""
+                            val timeoutSeconds = request.arguments?.get("timeout")?.asLong ?: 30L
+                            
+                            val client = OkHttpClient.Builder()
+                                .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                                .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                                .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                                .build()
+                            
+                            val requestBuilder = Request.Builder().url(url)
+                            
+                            // 添加请求头
+                            headers?.entrySet()?.forEach { entry ->
+                                requestBuilder.addHeader(entry.key, entry.value.asString)
+                            }
+                            
+                            // 根据请求方法构建请求
+                            when (method) {
+                                "GET" -> requestBuilder.get()
+                                "POST" -> {
+                                    val contentType = headers?.get("Content-Type")?.asString ?: "application/json; charset=utf-8"
+                                    val requestBody = body.toRequestBody(contentType.toMediaType())
+                                    requestBuilder.post(requestBody)
+                                }
+                                else -> {
+                                    callback(CallResponse<JsonObject>(code = -1, message = "不支持的请求方法: $method", callbackId = request.callbackId))
+                                    return@runCatching
+                                }
+                            }
+                            
+                            val httpRequest = requestBuilder.build()
+                            val httpResponse = client.newCall(httpRequest).execute()
+                            val responseBody = httpResponse.body?.string() ?: ""
+                            
+                            val responseData = JsonObject().apply {
+                                addProperty("statusCode", httpResponse.code)
+                                addProperty("statusMessage", httpResponse.message)
+                                addProperty("body", responseBody)
+                                add("headers", JsonObject().apply {
+                                    httpResponse.headers.forEach { pair ->
+                                        addProperty(pair.first, pair.second)
+                                    }
+                                })
+                            }
+                            
+                            callback(CallResponse(code = 0, data = responseData, callbackId = request.callbackId))
+                        }.onFailure {
+                            LogUtils.e(it)
+                            callback(CallResponse<JsonObject>(code = -1, message = "请求失败: ${it.message}", data = JsonObject(), callbackId = request.callbackId))
+                        }
+                    }
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
+                        addProperty("resultType", "callback")
+                    }))
                 }
 
 
