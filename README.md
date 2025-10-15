@@ -108,7 +108,7 @@
 
 更多示例可以直接下载demo查看
 
-<img src="https://github.com/ven-coder/Assists/assets/27257149/c4ce8c21-ac8b-4d3f-bfe4-257a525fb3c5" width="150" />
+<img src="https://github.com/user-attachments/assets/39568ee6-b9f3-447f-8a81-4ef25692815b" width="150" />
 
 [📱 直接下载][demo-download]
 
