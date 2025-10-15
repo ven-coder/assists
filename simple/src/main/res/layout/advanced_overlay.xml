@@ -13,13 +13,13 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:flexWrap="wrap">
+
             <Button
                 android:id="@+id/btn_answer_wechat_call"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
-                android:text="自动接听微信电话"
-                 />
+                android:text="自动接听微信电话" />
 
             <Button
                 android:id="@+id/btn_open_social"
@@ -33,33 +33,29 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
-                android:text="自动发表一条微信私密朋友圈"
-                 />
+                android:text="自动发表一条微信私密朋友圈" />
 
             <Button
                 android:id="@+id/btn_scroll_contacts"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
-                android:text="自动滚动微信通讯录"
-                 />
+                android:text="自动滚动微信通讯录" />
 
             <Button
                 android:id="@+id/btn_click_bottom_tab"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAllCaps="false"
                 android:backgroundTint="@color/colorAccent"
                 android:text="手势点击微信主页底部Tab"
-                 />
+                android:textAllCaps="false" />
 
             <Button
                 android:id="@+id/btn_scroll_social"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
-                android:text="手势滑动朋友圈列表"
-                 />
+                android:text="手势滑动朋友圈列表" />
 
             <Button
                 android:layout_width="wrap_content"
@@ -74,8 +70,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
-                android:text="蚂蚁森林能量自动收集"
-                 />
+                android:text="蚂蚁森林能量自动收集" />
+
+            <Button
+                android:id="@+id/btn_check_wc_unread"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="检查微信未读消息" />
 
 
         </com.google.android.flexbox.FlexboxLayout>

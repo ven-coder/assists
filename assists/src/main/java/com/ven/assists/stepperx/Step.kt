@@ -34,6 +34,10 @@ class Step(
 
         private val jobs = hashMapOf<String, Job>()
 
+        fun run(impl: suspend (Step) -> Step?) {
+            launch { this.run(impl = impl) }
+        }
+
         fun launch(jobID: String = UUID.randomUUID().toString(), run: suspend StepScope.() -> Unit): Job {
             val job = coroutine.launch(block = { StepScope.run() }, context = Dispatchers.IO)
             jobs[jobID] = job
@@ -41,7 +45,6 @@ class Step(
         }
 
         fun stop(jobID: String? = null) {
-            
             jobID?.let {
                 val job = jobs[jobID]
                 job?.cancel()

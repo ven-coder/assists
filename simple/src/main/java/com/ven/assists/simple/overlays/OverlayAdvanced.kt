@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
+import androidx.core.view.isVisible
+import com.blankj.utilcode.util.AppUtils
+import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
@@ -26,6 +29,7 @@ import com.ven.assists.simple.step.PublishSocial
 import com.ven.assists.simple.step.ScrollContacts
 import com.ven.assists.simple.step.StepTag
 import com.ven.assists.simple.step.WxUnfollow
+import com.ven.assists.simple.wechat.launchWechat
 import com.ven.assists.stepper.StepManager
 import com.ven.assists.stepperx.Step
 import com.ven.assists.utils.CoroutineWrapper
@@ -81,6 +85,16 @@ object OverlayAdvanced : AssistsServiceListener {
                     btnScrollContacts.setOnClickListener {
                         OverlayLog.show()
                         StepManager.execute(ScrollContacts::class.java, StepTag.STEP_1, begin = true)
+                    }
+                    if (!AppUtils.isAppDebug()) {
+                        btnCheckWcUnread.isVisible = false
+                    }
+                    btnCheckWcUnread.setOnClickListener {
+                        runCatching {
+                            Step.run(impl = ::launchWechat)
+                        }.onFailure {
+                            LogUtils.d(it)
+                        }
                     }
                 }
             }

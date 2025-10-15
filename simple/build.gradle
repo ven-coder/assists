@@ -52,14 +52,14 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(':assists')
-    implementation project(':assists-mp')
-    implementation project(':assists-opcv')
-    implementation project(':assists-web')
-//    implementation "com.github.ven-coder.Assists:assists-base:v3.2.16"
-//    implementation "com.github.ven-coder.Assists:assists-opcv:v3.2.16"
-//    implementation "com.github.ven-coder.Assists:assists-mp:v3.2.16"
-//    implementation "com.github.ven-coder.Assists:assists-web:v3.2.16"
+     implementation project(':assists')
+     implementation project(':assists-mp')
+     implementation project(':assists-opcv')
+     implementation project(':assists-web')
+//   implementation "com.github.ven-coder.assists:assists-base:v3.2.211"
+//   implementation "com.github.ven-coder.assists:assists-opcv:v3.2.211"
+//   implementation "com.github.ven-coder.assists:assists-mp:v3.2.211"
+//   implementation "com.github.ven-coder.assists:assists-web:v3.2.211"
     implementation "androidx.room:room-runtime:${rootProject.ext.roomVersion}"
     implementation "androidx.room:room-ktx:${rootProject.ext.roomVersion}"
     implementation "com.github.mrmike:ok2curl:${rootProject.ext.ok2curlVersion}"
