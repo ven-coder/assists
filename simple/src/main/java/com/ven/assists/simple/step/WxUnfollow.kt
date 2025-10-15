@@ -1,6 +1,6 @@
 package com.ven.assists.simple.step
 
-import com.ven.assists.stepperx.Step
+import com.ven.assists.stepper2.Step
 
 object WxUnfollow {
 

@@ -1,15 +1,11 @@
-package com.ven.assists.stepperx
+package com.ven.assists.stepper2
 
-import android.util.Log
 import com.blankj.utilcode.util.LogUtils
-import com.ven.assists.stepperx.Step.Companion.repeatCountInfinite
-import com.ven.assists.stepperx.Step.Companion.showLog
+import com.ven.assists.stepper2.Step.Companion.repeatCountInfinite
+import com.ven.assists.stepper2.Step.Companion.showLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.*
 

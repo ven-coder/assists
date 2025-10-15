@@ -1,7 +1,7 @@
 package com.ven.assists.simple.wechat
 
 import com.ven.assists.AssistsCore
-import com.ven.assists.stepperx.Step
+import com.ven.assists.stepper2.Step
 
 suspend fun launchWechat(step: Step): Step? {
     AssistsCore.launchApp("com.tencent.mm")

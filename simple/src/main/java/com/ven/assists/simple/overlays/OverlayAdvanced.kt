@@ -8,7 +8,6 @@ import androidx.core.view.isVisible
 import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
-import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
 import com.ven.assists.AssistsCore.containsText
 import com.ven.assists.AssistsCore.getBoundsInScreen
@@ -28,10 +27,9 @@ import com.ven.assists.simple.step.OpenWechatSocial
 import com.ven.assists.simple.step.PublishSocial
 import com.ven.assists.simple.step.ScrollContacts
 import com.ven.assists.simple.step.StepTag
-import com.ven.assists.simple.step.WxUnfollow
 import com.ven.assists.simple.wechat.launchWechat
 import com.ven.assists.stepper.StepManager
-import com.ven.assists.stepperx.Step
+import com.ven.assists.stepper2.Step
 import com.ven.assists.utils.CoroutineWrapper
 
 @SuppressLint("StaticFieldLeak")
