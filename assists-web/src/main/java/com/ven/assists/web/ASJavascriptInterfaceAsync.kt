@@ -14,6 +14,7 @@ import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.DeviceUtils
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -111,6 +112,64 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
         runCatching {
             val response = when (request.method) {
+                CallMethod.getNetworkType -> {
+                    val networkType = NetworkUtils.getNetworkType()
+                    var networkTypeValue = ""
+                    networkTypeValue = when (networkType) {
+                        NetworkUtils.NetworkType.NETWORK_ETHERNET -> "NETWORK_ETHERNET"
+                        NetworkUtils.NetworkType.NETWORK_WIFI -> "NETWORK_WIFI"
+                        NetworkUtils.NetworkType.NETWORK_5G -> "NETWORK_5G"
+                        NetworkUtils.NetworkType.NETWORK_4G -> "NETWORK_4G"
+                        NetworkUtils.NetworkType.NETWORK_3G -> "NETWORK_3G"
+                        NetworkUtils.NetworkType.NETWORK_2G -> "NETWORK_2G"
+                        NetworkUtils.NetworkType.NETWORK_UNKNOWN -> "NETWORK_UNKNOWN"
+                        NetworkUtils.NetworkType.NETWORK_NO -> "NETWORK_NO"
+                    }
+
+                    val data = JsonObject().apply {
+                        addProperty("networkType", networkTypeValue)
+                    }
+                    val response = request.createResponse(0, data = data)
+                    response
+                }
+
+                CallMethod.getDeviceInfo -> {
+                    val uniqueDeviceId = DeviceUtils.getUniqueDeviceId()
+                    val androidID = DeviceUtils.getAndroidID()
+                    val macAddress = DeviceUtils.getMacAddress()
+                    val isDeviceRooted = DeviceUtils.isDeviceRooted()
+                    val manufacturer = DeviceUtils.getManufacturer()
+                    val model = DeviceUtils.getModel()
+                    val sdkVersionCode = DeviceUtils.getSDKVersionCode()
+                    val sdkVersionName = DeviceUtils.getSDKVersionName()
+                    val abiList = DeviceUtils.getABIs()
+                    val isAdbEnabled = DeviceUtils.isAdbEnabled()
+                    val isDevelopmentSettingsEnabled = DeviceUtils.isDevelopmentSettingsEnabled()
+                    val isEmulator = DeviceUtils.isEmulator()
+                    val isTablet = DeviceUtils.isTablet()
+
+                    val data = JsonObject().apply {
+                        addProperty("uniqueDeviceId", uniqueDeviceId)
+                        addProperty("androidID", androidID)
+                        addProperty("macAddress", macAddress)
+                        addProperty("isDeviceRooted", isDeviceRooted)
+                        addProperty("manufacturer", manufacturer)
+                        addProperty("model", model)
+                        addProperty("sdkVersionCode", sdkVersionCode)
+                        addProperty("sdkVersionName", sdkVersionName)
+                        add("abiList", JsonArray().apply {
+                            abiList.forEach { add(it) }
+                        })
+                        addProperty("isAdbEnabled", isAdbEnabled)
+                        addProperty("isDevelopmentSettingsEnabled", isDevelopmentSettingsEnabled)
+                        addProperty("isEmulator", isEmulator)
+                        addProperty("isTablet", isTablet)
+                    }
+
+                    val response = request.createResponse(0, data = data)
+                    response
+                }
+
                 CallMethod.getUniqueDeviceId -> {
                     val uniqueDeviceId = DeviceUtils.getUniqueDeviceId()
                     val response = request.createResponse(0, data = JsonObject().apply {
@@ -665,7 +724,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     val headers = request.arguments?.get("headers")?.asJsonObject
                     val body = request.arguments?.get("body")?.asString ?: ""
                     val timeoutSeconds = request.arguments?.get("timeout")?.asLong ?: 30L
-                    
+
                     // 验证请求方法
                     if (method != "GET" && method != "POST") {
                         val response = request.createResponse(-1, message = "不支持的请求方法: $method", data = JsonObject())
@@ -677,14 +736,14 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                                 .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
                                 .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
                                 .build()
-                            
+
                             val requestBuilder = Request.Builder().url(url)
-                            
+
                             // 添加请求头
                             headers?.entrySet()?.forEach { entry ->
                                 requestBuilder.addHeader(entry.key, entry.value.asString)
                             }
-                            
+
                             // 根据请求方法构建请求
                             when (method) {
                                 "GET" -> requestBuilder.get()
@@ -694,11 +753,11 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                                     requestBuilder.post(requestBody)
                                 }
                             }
-                            
+
                             val httpRequest = requestBuilder.build()
                             val httpResponse = client.newCall(httpRequest).execute()
                             val responseBody = httpResponse.body?.string() ?: ""
-                            
+
                             val responseData = JsonObject().apply {
                                 addProperty("statusCode", httpResponse.code)
                                 addProperty("statusMessage", httpResponse.message)
@@ -709,7 +768,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                                     }
                                 })
                             }
-                            
+
                             val response = request.createResponse(0, data = responseData)
                             response
                         } catch (e: Exception) {

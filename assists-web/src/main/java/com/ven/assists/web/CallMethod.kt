@@ -55,5 +55,7 @@ object CallMethod {
     const val addAccessibilityEventFilter = "addAccessibilityEventFilter"
 
     const val httpRequest = "httpRequest"
+    const val getDeviceInfo = "getDeviceInfo"
+    const val getNetworkType = "getNetworkInfo"
 
 }

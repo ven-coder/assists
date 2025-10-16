@@ -17,6 +17,7 @@ import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.DeviceUtils
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -104,6 +105,71 @@ class ASJavascriptInterface(val webView: WebView) {
         runCatching {
             val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
             when (request.method) {
+                CallMethod.getNetworkType -> {
+                    CoroutineWrapper.launch {
+                        val networkType = NetworkUtils.getNetworkType()
+                        var networkTypeValue = ""
+                        networkTypeValue = when (networkType) {
+                            NetworkUtils.NetworkType.NETWORK_ETHERNET -> "NETWORK_ETHERNET"
+                            NetworkUtils.NetworkType.NETWORK_WIFI -> "NETWORK_WIFI"
+                            NetworkUtils.NetworkType.NETWORK_5G -> "NETWORK_5G"
+                            NetworkUtils.NetworkType.NETWORK_4G -> "NETWORK_4G"
+                            NetworkUtils.NetworkType.NETWORK_3G -> "NETWORK_3G"
+                            NetworkUtils.NetworkType.NETWORK_2G -> "NETWORK_2G"
+                            NetworkUtils.NetworkType.NETWORK_UNKNOWN -> "NETWORK_UNKNOWN"
+                            NetworkUtils.NetworkType.NETWORK_NO -> "NETWORK_NO"
+                        }
+
+                        val data = JsonObject().apply {
+                            addProperty("networkType", networkTypeValue)
+                        }
+                        callback(CallResponse(code = 0, data = data, callbackId = request.callbackId))
+                    }
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject()))
+                }
+
+                CallMethod.getDeviceInfo -> {
+
+                    CoroutineWrapper.launch {
+                        val uniqueDeviceId = DeviceUtils.getUniqueDeviceId()
+                        val androidID = DeviceUtils.getAndroidID()
+                        val macAddress = DeviceUtils.getMacAddress()
+                        val isDeviceRooted = DeviceUtils.isDeviceRooted()
+                        val manufacturer = DeviceUtils.getManufacturer()
+                        val model = DeviceUtils.getModel()
+                        val sdkVersionCode = DeviceUtils.getSDKVersionCode()
+                        val sdkVersionName = DeviceUtils.getSDKVersionName()
+                        val abiList = DeviceUtils.getABIs()
+                        val isAdbEnabled = DeviceUtils.isAdbEnabled()
+                        val isDevelopmentSettingsEnabled = DeviceUtils.isDevelopmentSettingsEnabled()
+                        val isEmulator = DeviceUtils.isEmulator()
+                        val isTablet = DeviceUtils.isTablet()
+
+                        val data = JsonObject().apply {
+                            addProperty("uniqueDeviceId", uniqueDeviceId)
+                            addProperty("androidID", androidID)
+                            addProperty("macAddress", macAddress)
+                            addProperty("isDeviceRooted", isDeviceRooted)
+                            addProperty("manufacturer", manufacturer)
+                            addProperty("model", model)
+                            addProperty("sdkVersionCode", sdkVersionCode)
+                            addProperty("sdkVersionName", sdkVersionName)
+                            add("abiList", JsonArray().apply {
+                                abiList.forEach { add(it) }
+                            })
+                            addProperty("isAdbEnabled", isAdbEnabled)
+                            addProperty("isDevelopmentSettingsEnabled", isDevelopmentSettingsEnabled)
+                            addProperty("isEmulator", isEmulator)
+                            addProperty("isTablet", isTablet)
+                        }
+                        callback(CallResponse(code = 0, data = data, callbackId = request.callbackId))
+                    }
+
+
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject()))
+
+                }
+
                 CallMethod.getUniqueDeviceId -> {
                     val uniqueDeviceId = DeviceUtils.getUniqueDeviceId()
                     result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
@@ -699,20 +765,20 @@ class ASJavascriptInterface(val webView: WebView) {
                             val headers = request.arguments?.get("headers")?.asJsonObject
                             val body = request.arguments?.get("body")?.asString ?: ""
                             val timeoutSeconds = request.arguments?.get("timeout")?.asLong ?: 30L
-                            
+
                             val client = OkHttpClient.Builder()
                                 .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
                                 .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
                                 .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
                                 .build()
-                            
+
                             val requestBuilder = Request.Builder().url(url)
-                            
+
                             // 添加请求头
                             headers?.entrySet()?.forEach { entry ->
                                 requestBuilder.addHeader(entry.key, entry.value.asString)
                             }
-                            
+
                             // 根据请求方法构建请求
                             when (method) {
                                 "GET" -> requestBuilder.get()
@@ -721,16 +787,23 @@ class ASJavascriptInterface(val webView: WebView) {
                                     val requestBody = body.toRequestBody(contentType.toMediaType())
                                     requestBuilder.post(requestBody)
                                 }
+
                                 else -> {
-                                    callback(CallResponse<JsonObject>(code = -1, message = "不支持的请求方法: $method", callbackId = request.callbackId))
+                                    callback(
+                                        CallResponse<JsonObject>(
+                                            code = -1,
+                                            message = "不支持的请求方法: $method",
+                                            callbackId = request.callbackId
+                                        )
+                                    )
                                     return@runCatching
                                 }
                             }
-                            
+
                             val httpRequest = requestBuilder.build()
                             val httpResponse = client.newCall(httpRequest).execute()
                             val responseBody = httpResponse.body?.string() ?: ""
-                            
+
                             val responseData = JsonObject().apply {
                                 addProperty("statusCode", httpResponse.code)
                                 addProperty("statusMessage", httpResponse.message)
@@ -741,11 +814,18 @@ class ASJavascriptInterface(val webView: WebView) {
                                     }
                                 })
                             }
-                            
+
                             callback(CallResponse(code = 0, data = responseData, callbackId = request.callbackId))
                         }.onFailure {
                             LogUtils.e(it)
-                            callback(CallResponse<JsonObject>(code = -1, message = "请求失败: ${it.message}", data = JsonObject(), callbackId = request.callbackId))
+                            callback(
+                                CallResponse<JsonObject>(
+                                    code = -1,
+                                    message = "请求失败: ${it.message}",
+                                    data = JsonObject(),
+                                    callbackId = request.callbackId
+                                )
+                            )
                         }
                     }
                     result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
