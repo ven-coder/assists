@@ -56,6 +56,7 @@ object CallMethod {
 
     const val httpRequest = "httpRequest"
     const val getDeviceInfo = "getDeviceInfo"
-    const val getNetworkType = "getNetworkInfo"
+    const val getNetworkType = "getNetworkType"
+    const val isAppInstalled = "isAppInstalled"
 
 }

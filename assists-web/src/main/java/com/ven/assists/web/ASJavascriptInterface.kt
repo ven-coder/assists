@@ -105,25 +105,37 @@ class ASJavascriptInterface(val webView: WebView) {
         runCatching {
             val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
             when (request.method) {
+                CallMethod.isAppInstalled -> {
+                    val packageName = request.arguments?.get("packageName")?.asString ?: ""
+                    val appInstalled = AppUtils.isAppInstalled(packageName)
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
+                        addProperty("appInstalled", appInstalled)
+                    }))
+                }
+
                 CallMethod.getNetworkType -> {
                     CoroutineWrapper.launch {
-                        val networkType = NetworkUtils.getNetworkType()
-                        var networkTypeValue = ""
-                        networkTypeValue = when (networkType) {
-                            NetworkUtils.NetworkType.NETWORK_ETHERNET -> "NETWORK_ETHERNET"
-                            NetworkUtils.NetworkType.NETWORK_WIFI -> "NETWORK_WIFI"
-                            NetworkUtils.NetworkType.NETWORK_5G -> "NETWORK_5G"
-                            NetworkUtils.NetworkType.NETWORK_4G -> "NETWORK_4G"
-                            NetworkUtils.NetworkType.NETWORK_3G -> "NETWORK_3G"
-                            NetworkUtils.NetworkType.NETWORK_2G -> "NETWORK_2G"
-                            NetworkUtils.NetworkType.NETWORK_UNKNOWN -> "NETWORK_UNKNOWN"
-                            NetworkUtils.NetworkType.NETWORK_NO -> "NETWORK_NO"
+                        runCatching {
+                            val networkType = NetworkUtils.getNetworkType()
+                            var networkTypeValue = ""
+                            networkTypeValue = when (networkType) {
+                                NetworkUtils.NetworkType.NETWORK_ETHERNET -> "NETWORK_ETHERNET"
+                                NetworkUtils.NetworkType.NETWORK_WIFI -> "NETWORK_WIFI"
+                                NetworkUtils.NetworkType.NETWORK_5G -> "NETWORK_5G"
+                                NetworkUtils.NetworkType.NETWORK_4G -> "NETWORK_4G"
+                                NetworkUtils.NetworkType.NETWORK_3G -> "NETWORK_3G"
+                                NetworkUtils.NetworkType.NETWORK_2G -> "NETWORK_2G"
+                                NetworkUtils.NetworkType.NETWORK_UNKNOWN -> "NETWORK_UNKNOWN"
+                                NetworkUtils.NetworkType.NETWORK_NO -> "NETWORK_NO"
+                            }
+                            val data = JsonObject().apply {
+                                addProperty("networkType", networkTypeValue)
+                            }
+                            callback(CallResponse(code = 0, data = data, callbackId = request.callbackId))
+                        }.onFailure {
+                            LogUtils.e(it)
+                            callback(CallResponse(code = 0, data = JsonObject(), callbackId = request.callbackId))
                         }
-
-                        val data = JsonObject().apply {
-                            addProperty("networkType", networkTypeValue)
-                        }
-                        callback(CallResponse(code = 0, data = data, callbackId = request.callbackId))
                     }
                     result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject()))
                 }
@@ -131,38 +143,43 @@ class ASJavascriptInterface(val webView: WebView) {
                 CallMethod.getDeviceInfo -> {
 
                     CoroutineWrapper.launch {
-                        val uniqueDeviceId = DeviceUtils.getUniqueDeviceId()
-                        val androidID = DeviceUtils.getAndroidID()
-                        val macAddress = DeviceUtils.getMacAddress()
-                        val isDeviceRooted = DeviceUtils.isDeviceRooted()
-                        val manufacturer = DeviceUtils.getManufacturer()
-                        val model = DeviceUtils.getModel()
-                        val sdkVersionCode = DeviceUtils.getSDKVersionCode()
-                        val sdkVersionName = DeviceUtils.getSDKVersionName()
-                        val abiList = DeviceUtils.getABIs()
-                        val isAdbEnabled = DeviceUtils.isAdbEnabled()
-                        val isDevelopmentSettingsEnabled = DeviceUtils.isDevelopmentSettingsEnabled()
-                        val isEmulator = DeviceUtils.isEmulator()
-                        val isTablet = DeviceUtils.isTablet()
+                        runCatching {
+                            val uniqueDeviceId = DeviceUtils.getUniqueDeviceId()
+                            val androidID = DeviceUtils.getAndroidID()
+                            val macAddress = DeviceUtils.getMacAddress()
+                            val isDeviceRooted = DeviceUtils.isDeviceRooted()
+                            val manufacturer = DeviceUtils.getManufacturer()
+                            val model = DeviceUtils.getModel()
+                            val sdkVersionCode = DeviceUtils.getSDKVersionCode()
+                            val sdkVersionName = DeviceUtils.getSDKVersionName()
+                            val abiList = DeviceUtils.getABIs()
+                            val isAdbEnabled = DeviceUtils.isAdbEnabled()
+                            val isDevelopmentSettingsEnabled = DeviceUtils.isDevelopmentSettingsEnabled()
+                            val isEmulator = DeviceUtils.isEmulator()
+                            val isTablet = DeviceUtils.isTablet()
 
-                        val data = JsonObject().apply {
-                            addProperty("uniqueDeviceId", uniqueDeviceId)
-                            addProperty("androidID", androidID)
-                            addProperty("macAddress", macAddress)
-                            addProperty("isDeviceRooted", isDeviceRooted)
-                            addProperty("manufacturer", manufacturer)
-                            addProperty("model", model)
-                            addProperty("sdkVersionCode", sdkVersionCode)
-                            addProperty("sdkVersionName", sdkVersionName)
-                            add("abiList", JsonArray().apply {
-                                abiList.forEach { add(it) }
-                            })
-                            addProperty("isAdbEnabled", isAdbEnabled)
-                            addProperty("isDevelopmentSettingsEnabled", isDevelopmentSettingsEnabled)
-                            addProperty("isEmulator", isEmulator)
-                            addProperty("isTablet", isTablet)
+                            val data = JsonObject().apply {
+                                addProperty("uniqueDeviceId", uniqueDeviceId)
+                                addProperty("androidID", androidID)
+                                addProperty("macAddress", macAddress)
+                                addProperty("isDeviceRooted", isDeviceRooted)
+                                addProperty("manufacturer", manufacturer)
+                                addProperty("model", model)
+                                addProperty("sdkVersionCode", sdkVersionCode)
+                                addProperty("sdkVersionName", sdkVersionName)
+                                add("abiList", JsonArray().apply {
+                                    abiList.forEach { add(it) }
+                                })
+                                addProperty("isAdbEnabled", isAdbEnabled)
+                                addProperty("isDevelopmentSettingsEnabled", isDevelopmentSettingsEnabled)
+                                addProperty("isEmulator", isEmulator)
+                                addProperty("isTablet", isTablet)
+                            }
+                            callback(CallResponse(code = 0, data = data, callbackId = request.callbackId))
+                        }.onFailure {
+                            LogUtils.e(it)
+                            callback(CallResponse(code = 0, data = JsonObject(), callbackId = request.callbackId))
                         }
-                        callback(CallResponse(code = 0, data = data, callbackId = request.callbackId))
                     }
 
 
