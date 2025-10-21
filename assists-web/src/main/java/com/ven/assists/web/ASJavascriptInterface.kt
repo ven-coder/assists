@@ -1,7 +1,9 @@
 package com.ven.assists.web
 
 import android.annotation.SuppressLint
+import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.Rect
@@ -105,6 +107,25 @@ class ASJavascriptInterface(val webView: WebView) {
         runCatching {
             val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
             when (request.method) {
+                CallMethod.getClipboardLatestText -> {
+                    val value = (AssistsService.instance?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).let { clipboardManager ->
+                        if (!clipboardManager.hasPrimaryClip()) {
+                            return@let ""
+                        }
+                        return@let clipboardManager.primaryClip?.let {
+                            if (it.itemCount <= 0) return@let ""
+                            val item = it.getItemAt(0)
+                            // 可能是 text、uri 或 intent
+                            return@let item.text?.toString()
+                                ?: item.uri?.toString()
+                                ?: item.intent?.toUri(Intent.URI_INTENT_SCHEME)
+                        } ?: ""
+                    }
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
+                        addProperty("text", value)
+                    }))
+                }
+
                 CallMethod.isAppInstalled -> {
                     val packageName = request.arguments?.get("packageName")?.asString ?: ""
                     val appInstalled = AppUtils.isAppInstalled(packageName)

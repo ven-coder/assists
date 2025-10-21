@@ -59,4 +59,6 @@ object CallMethod {
     const val getNetworkType = "getNetworkType"
     const val isAppInstalled = "isAppInstalled"
 
+    const val getClipboardLatestText = "getClipboardLatestText"
+
 }
