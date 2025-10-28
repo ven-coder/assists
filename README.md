@@ -459,7 +459,7 @@ StepManager.isStop = true
 
 | 资料截图 | 微信扫码加入 |
 |:------:|:------:|
-| <img src="https://github.com/user-attachments/assets/7607a4e6-4845-474e-a9c6-e685cc306523" width="600" /> | <img src="https://github.com/ven-coder/Assists/assets/27257149/7ae8e825-f489-46e3-96f0-ed03d12db9e8" width="200" /> |
+| <img src="https://github.com/user-attachments/assets/d6cc7bcf-0b0c-4b8e-b56d-3daa1f333139" width="600" /> | <img src="https://github.com/ven-coder/Assists/assets/27257149/7ae8e825-f489-46e3-96f0-ed03d12db9e8" width="200" /> |
 
 **定制开发可联系个人微信: x39598**
 
