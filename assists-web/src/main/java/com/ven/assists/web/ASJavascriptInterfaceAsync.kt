@@ -1,8 +1,10 @@
 package com.ven.assists.web
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.Rect
+import android.net.Uri
 import android.os.Build
 import android.util.Base64
 import android.view.LayoutInflater
@@ -62,6 +64,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
+import androidx.core.net.toUri
 
 class ASJavascriptInterfaceAsync(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -776,6 +779,22 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                             val response = request.createResponse(-1, message = "请求失败: ${e.message}", data = JsonObject())
                             response
                         }
+                    }
+                }
+
+                CallMethod.openUrlInBrowser -> {
+                    val url = request.arguments?.get("url")?.asString ?: ""
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        AssistsService.instance?.startActivity(intent)
+                        val response = request.createResponse(0, data = true)
+                        response
+                    } catch (e: Exception) {
+                        LogUtils.e(e)
+                        val response = request.createResponse(-1, message = "打开浏览器失败: ${e.message}", data = false)
+                        response
                     }
                 }
 

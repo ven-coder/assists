@@ -31,6 +31,7 @@ import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.utils.KeepScreenOnManager
 import com.ven.assists.utils.NodeClassValue
 import com.ven.assists.utils.runMain
 import com.ven.assists.window.AssistsWindowManager
@@ -145,7 +146,10 @@ object AssistsCore {
      * @return true表示服务已开启，false表示服务未开启
      */
     fun isAccessibilityServiceEnabled(): Boolean {
-        return AssistsService.instance != null
+        val result = runCatching {
+            AssistsService.instance?.rootInActiveWindow ?: return false
+        }
+        return result.getOrNull() != null
     }
 
     /**
@@ -840,7 +844,7 @@ object AssistsCore {
         return false
     }
 
-    fun AccessibilityNodeInfo.focus(): Boolean{
+    fun AccessibilityNodeInfo.focus(): Boolean {
         return performAction(AccessibilityNodeInfo.ACTION_FOCUS)
     }
 

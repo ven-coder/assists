@@ -8,6 +8,7 @@ import android.graphics.Path
 import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
+import android.view.WindowManager
 import com.blankj.utilcode.util.ActivityUtils
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
@@ -269,6 +270,7 @@ object OverlayBasic : AssistsServiceListener {
                         wmLayoutParams = AssistsWindowManager.createLayoutParams().apply {
                             width = (ScreenUtils.getScreenWidth() * 0.8).toInt()
                             height = (ScreenUtils.getScreenHeight() * 0.5).toInt()
+                            it.root.keepScreenOn=true
                         },
                         onClose = this.onClose
                     ).apply {

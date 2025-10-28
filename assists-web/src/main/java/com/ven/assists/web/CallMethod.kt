@@ -61,4 +61,6 @@ object CallMethod {
 
     const val getClipboardLatestText = "getClipboardLatestText"
 
+    const val openUrlInBrowser = "openUrlInBrowser"
+
 }

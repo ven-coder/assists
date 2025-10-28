@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.Rect
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Base64
@@ -71,6 +72,7 @@ import java.net.NetworkInterface
 import java.nio.charset.StandardCharsets
 import java.util.Collections
 import java.util.concurrent.TimeUnit
+import androidx.core.net.toUri
 
 class ASJavascriptInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -869,6 +871,20 @@ class ASJavascriptInterface(val webView: WebView) {
                     result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
                         addProperty("resultType", "callback")
                     }))
+                }
+
+                CallMethod.openUrlInBrowser -> {
+                    val url = request.arguments?.get("url")?.asString ?: ""
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        AssistsService.instance?.startActivity(intent)
+                        result = GsonUtils.toJson(CallResponse<Boolean>(code = 0, data = true))
+                    } catch (e: Exception) {
+                        LogUtils.e(e)
+                        result = GsonUtils.toJson(CallResponse<Boolean>(code = -1, message = "打开浏览器失败: ${e.message}", data = false))
+                    }
                 }
 
 
