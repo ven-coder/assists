@@ -45,24 +45,25 @@ object OverlayBasic : AssistsServiceListener {
                 field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                     //点击
                     btnClick.setOnClickListener {
-                        CoroutineWrapper.launch {
-                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            })
-                            delay(1000)
-                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
-                        }
-
+//                        CoroutineWrapper.launch {
+//                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
+//                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//                            })
+//                            delay(1000)
+//                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
+//                        }
+                        AssistsCore.keepScreenOn("屏幕常亮")
                     }
                     //手势点击
                     btnGestureClick.setOnClickListener {
-                        CoroutineWrapper.launch {
-                            ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            })
-                            delay(1000)
-                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.nodeGestureClick()
-                        }
+//                        CoroutineWrapper.launch {
+//                            ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
+//                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//                            })
+//                            delay(1000)
+//                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.nodeGestureClick()
+//                        }
+                        AssistsCore.clearKeepScreenOn()
                     }
                     //长按
                     btnLongClick.setOnClickListener {
@@ -270,7 +271,6 @@ object OverlayBasic : AssistsServiceListener {
                         wmLayoutParams = AssistsWindowManager.createLayoutParams().apply {
                             width = (ScreenUtils.getScreenWidth() * 0.8).toInt()
                             height = (ScreenUtils.getScreenHeight() * 0.5).toInt()
-                            it.root.keepScreenOn=true
                         },
                         onClose = this.onClose
                     ).apply {

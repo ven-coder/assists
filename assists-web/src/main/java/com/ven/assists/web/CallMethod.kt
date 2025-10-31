@@ -62,5 +62,7 @@ object CallMethod {
     const val getClipboardLatestText = "getClipboardLatestText"
 
     const val openUrlInBrowser = "openUrlInBrowser"
+    const val keepScreenOn = "keepScreenOn"
+    const val clearKeepScreenOn = "clearKeepScreenOn"
 
 }

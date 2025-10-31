@@ -73,6 +73,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Collections
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
+import com.blankj.utilcode.util.ActivityUtils
 
 class ASJavascriptInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -109,6 +110,15 @@ class ASJavascriptInterface(val webView: WebView) {
         runCatching {
             val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
             when (request.method) {
+                CallMethod.keepScreenOn -> {
+                    val tip = request.arguments?.get("tip")?.asString ?: ""
+                    AssistsCore.keepScreenOn(tip)
+                }
+
+                CallMethod.clearKeepScreenOn -> {
+                    AssistsCore.clearKeepScreenOn()
+                }
+
                 CallMethod.getClipboardLatestText -> {
                     val value = (AssistsService.instance?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).let { clipboardManager ->
                         if (!clipboardManager.hasPrimaryClip()) {
@@ -308,6 +318,7 @@ class ASJavascriptInterface(val webView: WebView) {
                             val minWidth = request.arguments?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt()
                             val minHeight = request.arguments?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
                             val initialCenter = request.arguments?.get("initialCenter")?.asBoolean ?: true
+                            val keepScreenOn = request.arguments?.get("keepScreenOn")?.asBoolean ?: true
                             val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                                 webView.loadUrl(url)
                                 webView.setBackgroundColor(0)
@@ -330,6 +341,7 @@ class ASJavascriptInterface(val webView: WebView) {
                                         val viewGroup = it as ViewGroup
                                         viewGroup.removeAllViews()
                                         AssistsWindowManager.removeWindow(it)
+                                        AssistsCore.clearKeepScreenOn()
                                     }
                                 ).apply {
                                     viewBinding.ivWebBack.isVisible = true
@@ -343,7 +355,9 @@ class ASJavascriptInterface(val webView: WebView) {
                                     this.minWidth = minWidth
                                     this.minHeight = minHeight
                                     this.initialCenter = initialCenter
-
+                                    if (keepScreenOn) {
+                                        AssistsCore.keepScreenOn()
+                                    }
                                 }
                             )
                         }.onSuccess {
@@ -875,16 +889,22 @@ class ASJavascriptInterface(val webView: WebView) {
 
                 CallMethod.openUrlInBrowser -> {
                     val url = request.arguments?.get("url")?.asString ?: ""
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    CoroutineWrapper.launch(isMain = true) {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            if (AppUtils.isAppForeground()) {
+                                ActivityUtils.getTopActivity()?.startActivity(intent)
+                            } else {
+                                AssistsService.instance?.startActivity(intent)
+                            }
+                        } catch (e: Exception) {
+                            LogUtils.e(e)
+                            "打开外部浏览器失败：${e.message}".overlayToast()
                         }
-                        AssistsService.instance?.startActivity(intent)
-                        result = GsonUtils.toJson(CallResponse<Boolean>(code = 0, data = true))
-                    } catch (e: Exception) {
-                        LogUtils.e(e)
-                        result = GsonUtils.toJson(CallResponse<Boolean>(code = -1, message = "打开浏览器失败: ${e.message}", data = false))
                     }
+                    result = GsonUtils.toJson(CallResponse<Boolean>(code = 0, message = "", data = false))
                 }
 
 

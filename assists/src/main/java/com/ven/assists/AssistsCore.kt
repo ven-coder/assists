@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
+import android.graphics.Color
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
@@ -18,9 +19,12 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.view.Display
+import android.view.Gravity
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
 import com.blankj.utilcode.util.ActivityUtils
@@ -31,7 +35,6 @@ import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.utils.CoroutineWrapper
-import com.ven.assists.utils.KeepScreenOnManager
 import com.ven.assists.utils.NodeClassValue
 import com.ven.assists.utils.runMain
 import com.ven.assists.window.AssistsWindowManager
@@ -40,6 +43,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.concurrent.Executors
+import androidx.core.graphics.toColorInt
+import com.blankj.utilcode.util.SizeUtils
+import com.ven.assists.window.AssistsWindowManager.nonTouchableByWrapper
 
 /**
  * 无障碍服务核心类
@@ -158,6 +164,36 @@ object AssistsCore {
      */
     fun getPackageName(): String {
         return AssistsService.instance?.rootInActiveWindow?.packageName?.toString() ?: ""
+    }
+
+    /**
+     * 屏幕保持常亮
+     */
+    fun keepScreenOn(tip: String = "") {
+        if (AssistsWindowManager.contains("keepScreenOn")) return
+        AssistsService.instance?.let {
+            AssistsWindowManager.add(FrameLayout(it).apply {
+//                setBackgroundColor("#80000000".toColorInt())
+                addView(TextView(it).apply {
+                    text = tip
+                    setTextColor("#80FF0000".toColorInt())
+                    textSize = 20f
+                    layoutParams = FrameLayout.LayoutParams(-2, -2).apply {
+                        gravity = Gravity.CENTER
+                    }
+                })
+                keepScreenOn = true
+            }, viewTag = "keepScreenOn").apply {
+                CoroutineWrapper.launch { this@apply?.nonTouchableByWrapper() }
+            }
+        }
+    }
+
+    /**
+     * 关闭屏幕保持常亮
+     */
+    fun clearKeepScreenOn() {
+        AssistsWindowManager.removeWindow("keepScreenOn")
     }
 
     /**

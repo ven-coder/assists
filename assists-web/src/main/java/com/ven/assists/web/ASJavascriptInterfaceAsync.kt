@@ -65,6 +65,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
+import com.blankj.utilcode.util.ActivityUtils
 
 class ASJavascriptInterfaceAsync(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -788,11 +789,16 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                         val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
-                        AssistsService.instance?.startActivity(intent)
+                        if (AppUtils.isAppForeground()) {
+                            ActivityUtils.getTopActivity()?.startActivity(intent)
+                        } else {
+                            AssistsService.instance?.startActivity(intent)
+                        }
                         val response = request.createResponse(0, data = true)
                         response
                     } catch (e: Exception) {
                         LogUtils.e(e)
+                        "打开外部浏览器失败：${e.message}".overlayToast()
                         val response = request.createResponse(-1, message = "打开浏览器失败: ${e.message}", data = false)
                         response
                     }

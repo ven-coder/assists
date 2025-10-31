@@ -177,9 +177,9 @@ object AssistsWindowManager {
      * @param isStack 是否堆叠显示，默认为true
      * @param isTouchable 是否可触摸，默认为true
      */
-    fun add(windowWrapper: AssistsWindowWrapper?, isStack: Boolean = true, isTouchable: Boolean = true) {
-        windowWrapper ?: return
-        add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable)
+    fun add(windowWrapper: AssistsWindowWrapper?, isStack: Boolean = true, isTouchable: Boolean = true): ViewWrapper? {
+        windowWrapper ?: return null
+        return add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable)
     }
 
     /**
@@ -189,11 +189,18 @@ object AssistsWindowManager {
      * @param isStack 是否堆叠显示，默认为true
      * @param isTouchable 是否可触摸，默认为true
      */
-    fun add(view: View?, layoutParams: WindowManager.LayoutParams = createLayoutParams(), isStack: Boolean = true, isTouchable: Boolean = true) {
-        view ?: return
+    fun add(
+        view: View?,
+        layoutParams: WindowManager.LayoutParams = createLayoutParams(),
+        isStack: Boolean = true,
+        isTouchable: Boolean = true,
+        viewTag: Any? = null
+    ): ViewWrapper? {
+        view ?: return null
         if (!isStack) {
             viewList.values.lastOrNull()?.let { it.view.isInvisible = true }
         }
+        view.tag = viewTag
         windowManager.addView(view, layoutParams)
         if (isTouchable) {
             layoutParams.touchableByLayoutParams()
@@ -202,6 +209,7 @@ object AssistsWindowManager {
         }
         val wrapper = ViewWrapper(view, layoutParams)
         viewList[wrapper.uniqueId] = wrapper
+        return wrapper
     }
 
     /**
@@ -285,8 +293,8 @@ object AssistsWindowManager {
      * @param view 要添加的视图
      * @param params 布局参数
      */
-    fun push(view: View?, params: WindowManager.LayoutParams = createLayoutParams()) {
-        add(view, params, isStack = false)
+    fun push(view: View?, params: WindowManager.LayoutParams = createLayoutParams()): ViewWrapper? {
+        return add(view, params, isStack = false)
     }
 
     /**
@@ -345,6 +353,25 @@ object AssistsWindowManager {
         }
     }
 
+    fun removeWindow(viewTag: Any?) {
+        try {
+            viewList.values.find {
+                return@find it.view.tag == viewTag
+            }?.let {
+                windowManager.removeView(it.view)
+                viewList.remove(it.uniqueId)
+            }
+
+            if (viewList.size == 1 && viewList.values.first().view == WindowMinimizeManager.viewBinding?.root) {
+                WindowMinimizeManager.hide()
+            }
+
+        } catch (e: Throwable) {
+            LogUtils.e(e)
+        }
+    }
+
+
     fun removeAllWindow() {
         try {
             viewList.forEach {
@@ -365,6 +392,12 @@ object AssistsWindowManager {
         view ?: return false
         return viewList.values.find {
             return@find view == it.view
+        } != null
+    }
+
+    fun contains(viewTag: Any?): Boolean {
+        return viewList.values.find {
+            return@find it.view.tag == viewTag
         } != null
     }
 
@@ -481,7 +514,7 @@ object AssistsWindowManager {
                 }
                 add(assistsWindowWrapper, isTouchable = false)
                 runIO { delay(delay) }
-                removeView(assistsWindowWrapper.getView())
+                removeWindow(assistsWindowWrapper.getView())
             }
         }
     }
