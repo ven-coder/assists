@@ -169,11 +169,11 @@ object AssistsCore {
     /**
      * 屏幕保持常亮
      */
-    fun keepScreenOn(tip: String = "") {
+    fun keepScreenOn(tip: String = "屏幕保持常亮") {
         if (AssistsWindowManager.contains("keepScreenOn")) return
         AssistsService.instance?.let {
             AssistsWindowManager.add(FrameLayout(it).apply {
-//                setBackgroundColor("#80000000".toColorInt())
+                setBackgroundColor("#80000000".toColorInt())
                 addView(TextView(it).apply {
                     text = tip
                     setTextColor("#80FF0000".toColorInt())

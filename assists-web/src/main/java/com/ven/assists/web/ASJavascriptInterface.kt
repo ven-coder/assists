@@ -318,7 +318,7 @@ class ASJavascriptInterface(val webView: WebView) {
                             val minWidth = request.arguments?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt()
                             val minHeight = request.arguments?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
                             val initialCenter = request.arguments?.get("initialCenter")?.asBoolean ?: true
-                            val keepScreenOn = request.arguments?.get("keepScreenOn")?.asBoolean ?: true
+                            val keepScreenOn = request.arguments?.get("keepScreenOn")?.asBoolean ?: false
                             val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                                 webView.loadUrl(url)
                                 webView.setBackgroundColor(0)

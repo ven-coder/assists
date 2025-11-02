@@ -3,6 +3,7 @@ package com.ven.assists.web
 import android.app.Activity
 import android.app.Application
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
@@ -39,9 +40,12 @@ class CustomFileProvider : FileProvider() {
                             }
                         }
 
-                        clearIds.forEach { NodeCacheManager.cache.remove(it) }
-
-//                        LogUtils.dTag("NodeCacheManager", "cache size",NodeCacheManager.cache.size)
+                        clearIds.forEach {
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14 以下
+                                runCatching { NodeCacheManager.cache[it]?.get()?.recycle() }
+                            }
+                            NodeCacheManager.cache.remove(it)
+                        }
                     }
 
                     delay(1000)
@@ -108,6 +112,7 @@ class CustomFileProvider : FileProvider() {
             return result.getOrNull()
 
         }
+
         suspend fun requestLaunchersScan(scanOptions: ScanOptions): ScanIntentResult? {
             val result = runCatching {
                 currentCompletableDeferredScan?.completeExceptionally(RuntimeException("reset"))
