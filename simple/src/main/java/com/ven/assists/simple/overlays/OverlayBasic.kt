@@ -9,6 +9,7 @@ import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.ActivityUtils
 import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
@@ -31,6 +32,7 @@ import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.simple.MultiTouchDrawingActivity
 import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.simple.TestActivity
+import com.ven.assists.simple.common.LogWrapper
 import com.ven.assists.simple.databinding.BasicOverlayBinding
 import com.ven.assists.utils.CoroutineWrapper
 import kotlinx.coroutines.delay
@@ -45,25 +47,23 @@ object OverlayBasic : AssistsServiceListener {
                 field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                     //点击
                     btnClick.setOnClickListener {
-//                        CoroutineWrapper.launch {
-//                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
-//                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//                            })
-//                            delay(1000)
-//                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
-//                        }
-                        AssistsCore.keepScreenOn("屏幕常亮")
+                        CoroutineWrapper.launch {
+                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            })
+                            delay(1000)
+                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
+                        }
                     }
                     //手势点击
                     btnGestureClick.setOnClickListener {
-//                        CoroutineWrapper.launch {
-//                            ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
-//                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//                            })
-//                            delay(1000)
-//                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.nodeGestureClick()
-//                        }
-                        AssistsCore.clearKeepScreenOn()
+                        CoroutineWrapper.launch {
+                            ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            })
+                            delay(1000)
+                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.nodeGestureClick()
+                        }
                     }
                     //长按
                     btnLongClick.setOnClickListener {

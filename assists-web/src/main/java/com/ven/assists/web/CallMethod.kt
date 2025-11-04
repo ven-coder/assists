@@ -64,5 +64,6 @@ object CallMethod {
     const val openUrlInBrowser = "openUrlInBrowser"
     const val keepScreenOn = "keepScreenOn"
     const val clearKeepScreenOn = "clearKeepScreenOn"
+    const val download = "download"
 
 }
