@@ -246,14 +246,14 @@ object MPManager {
      */
     fun takeScreenshot2Bitmap(): Bitmap? {
         imageReader?.let {
-            val image: Image = it.acquireLatestImage()
+            val image: Image? = it.acquireLatestImage()
             try {
-                val bitmap = imageToBitmap(image)
+                val bitmap = image?.let { i -> imageToBitmap(i) }
                 return bitmap
             } catch (e: Throwable) {
                 return null
             } finally {
-                image.close()
+                image?.close()
             }
         } ?: let { throw RuntimeException("Please request permission for screen recording first") }
     }
