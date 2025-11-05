@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+/*
+**
+** Copyright 2008, The Android Open Source Project
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+ -->
+
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="vibrate_on_keypress">"Getar jika tombol ditekan"</string>
+    <string name="sound_on_keypress">"Berbunyi jika tombol ditekan"</string>
+    <string name="popup_on_keypress">"Muncul saat tombol ditekan"</string>
+    <string name="settings_screen_preferences">"Preferensi"</string>
+    <string name="settings_screen_appearance">Tampilan</string>
+    <string name="settings_screen_key_press">Tombol ditekan</string>
+    <string name="settings_screen_theme">"Tema"</string>
+    <string name="abbreviation_unit_milliseconds">"<xliff:g id="MILLISECONDS">%s</xliff:g> md"</string>
+    <string name="settings_system_default">"Default sistem"</string>
+    <string name="auto_cap">"Kapitalisasi otomatis"</string>
+    <string name="auto_cap_summary">"Kapitalisasi kata pertama di setiap kalimat"</string>
+    <string name="select_language">"Bahasa"</string>
+    <string name="locale_name_en_GB">"Inggris (Inggris)"</string>
+    <string name="locale_name_en_US">"Inggris (AS)"</string>
+    <string name="locale_name_es_US">"Spanyol (AS)"</string>
+    <string name="locale_name_hi_ZZ">"Hinglish"</string>
+    <string name="locale_name_sr_ZZ">"Serbia (Latin)"</string>
+    <string name="subtype_traditional">"Tradisional"</string>
+    <string name="subtype_compact">"Rapat"</string>
+    <string name="add">"Tambahkan"</string>
+    <string name="remove">"Hapus"</string>
+    <string name="prefs_keypress_sound_volume_settings">"Volume suara saat tekan tombol"</string>
+    <string name="prefs_key_longpress_timeout_settings">"Penundaan tekan lama tombol"</string>
+    <string name="button_default">"Default"</string>
+    <string name="prefs_keyboard_height_settings">Atur Ketinggian Keyboard</string>
+    <string name="keyboard_color">Ganti warna keyboard</string>
+    <string name="hide_special_chars">Sembunyikan karakter spesial</string>
+    <string name="hide_language_switch_key">Sembunyikan tombol ganti bahasa</string>
+    <string name="pref_enable_ime_switch">Beralih ke keyboard lain</string>
+    <string name="show_number_row">Tampilkan tombol angka terpisah</string>
+    <string name="space_swipe">Geser untuk menggerakan kursor</string>
+    <string name="delete_swipe">Hapus dengan menggeser</string>
+    <string name="setup_message">Simple Keyboard belum diaktifkan. Klik OKE untuk membuka setelan Bahasa &amp; Masukan. Anda perlu memilih Simple Keyboard di dalam setelan keyboard untuk menggunakannya.</string>
+    <string name="user_languages">Bahasa keyboard yang dihidupkan</string>
+    <string name="add_language">Tambah bahasa</string>
+    <string name="remove_language">Hapus bahasa</string>
+    <string name="generic_language_layouts"><xliff:g id="LANGUAGE_NAME">%s</xliff:g> tata letak keyboard</string>
+    <string name="change_keyboard">Ganti keyboard</string>
+</resources>

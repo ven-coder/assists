@@ -15,6 +15,8 @@ import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.TimeUtils
+import com.blankj.utilcode.util.ToastUtils
+import com.lzy.okgo.OkGo
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
 import com.ven.assists.AssistsCore.longClick
@@ -35,7 +37,10 @@ import com.ven.assists.simple.TestActivity
 import com.ven.assists.simple.common.LogWrapper
 import com.ven.assists.simple.databinding.BasicOverlayBinding
 import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.utils.FileDownloadUtil
 import kotlinx.coroutines.delay
+import rkr.simplekeyboard.inputmethod.latin.inputlogic.InputLogic
+import java.io.File
 
 object OverlayBasic : AssistsServiceListener {
 
@@ -47,13 +52,14 @@ object OverlayBasic : AssistsServiceListener {
                 field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                     //点击
                     btnClick.setOnClickListener {
-                        CoroutineWrapper.launch {
-                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            })
-                            delay(1000)
-                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
-                        }
+//                        CoroutineWrapper.launch {
+//                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
+//                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//                            })
+//                            delay(1000)
+//                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
+//                        }
+                        download()
                     }
                     //手势点击
                     btnGestureClick.setOnClickListener {
@@ -385,5 +391,27 @@ object OverlayBasic : AssistsServiceListener {
 
         // 分发手势
         AssistsCore.dispatchGesture(gestureBuilder.build())
+    }
+
+
+    fun download() {
+        AssistsService.instance?.let {
+            CoroutineWrapper.launch {
+                val result = FileDownloadUtil.downloadFile(it, "https://assistsx.oss-cn-guangzhou.aliyuncs.com/voice.mp3")
+                when (result) {
+                    is FileDownloadUtil.DownloadResult.Error -> {
+                        ToastUtils.showShort("下载失败：${result.exception.message}")
+                    }
+
+                    is FileDownloadUtil.DownloadResult.Progress -> {
+
+                    }
+
+                    is FileDownloadUtil.DownloadResult.Success -> {
+                        ToastUtils.showShort("下载成功：${result.file.path}")
+                    }
+                }
+            }
+        }
     }
 }

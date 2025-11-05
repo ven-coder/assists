@@ -38,6 +38,9 @@ dependencies {
     implementation "androidx.appcompat:appcompat:${rootProject.ext.appcompatVersion}"
     implementation platform("org.jetbrains.kotlin:kotlin-bom:${rootProject.ext.kotlinBomVersion}")
     api "com.blankj:utilcodex:${rootProject.ext.utilcodexVersion}"
+    
+    // OkHttp 网络库
+    api "com.squareup.okhttp3:okhttp:4.10.0"
 }
 
 dokkaHtml {

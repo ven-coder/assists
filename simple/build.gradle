@@ -56,6 +56,7 @@ dependencies {
      implementation project(':assists-mp')
      implementation project(':assists-opcv')
      implementation project(':assists-web')
+     implementation project(':assistsime')
 //   implementation "com.github.ven-coder.assists:assists-base:v3.2.211"
 //   implementation "com.github.ven-coder.assists:assists-opcv:v3.2.211"
 //   implementation "com.github.ven-coder.assists:assists-mp:v3.2.211"

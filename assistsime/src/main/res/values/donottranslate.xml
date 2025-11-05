@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/*
+**
+** Copyright 2009, The Android Open Source Project
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+<resources>
+    <!-- Locale display name exceptions.
+         For each exception, there should be related string resources for display name that may have
+         explicit keyboard layout. The string resource name must be "locale_name_<locale>". Please
+         refer to strings.xml for these resources. -->
+    <string-array name="locale_exception_keys">
+        <item>en_US</item>
+        <item>en_GB</item>
+        <item>es_US</item>
+        <item>hi_ZZ</item>
+        <item>sr_ZZ</item>
+    </string-array>
+
+    <!-- Locale whose name should be displayed in Locale.ROOT. -->
+    <string-array name="locale_displayed_in_root_locale">
+        <item>hi_ZZ</item>
+        <item>sr_ZZ</item>
+    </string-array>
+
+    <string name="locale_name_in_root_locale_hi_ZZ">Hinglish</string>
+    <string name="locale_name_in_root_locale_sr_ZZ">Srpski</string>
+
+    <!-- Predefined keyboard layouts for additional subtype -->
+    <string-array name="predefined_layouts">
+        <item>bepo</item>
+        <item>qwerty</item>
+        <item>qwertz</item>
+        <item>azerty</item>
+        <item>dvorak</item>
+        <item>colemak</item>
+        <item>workman</item>
+        <item>pcqwerty</item>
+        <item>abc</item>
+    </string-array>
+    <!-- Predefined keyboard layout display names -->
+    <string-array name="predefined_layout_display_names">
+        <item>BEPO</item>
+        <item>QWERTY</item>
+        <item>QWERTZ</item>
+        <item>AZERTY</item>
+        <item>Dvorak</item>
+        <item>Colemak</item>
+        <item>Workman</item>
+        <item>PC</item>
+        <item>ABC</item>
+    </string-array>
+</resources>

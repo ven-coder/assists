@@ -66,6 +66,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.ActivityUtils
+import com.ven.assists.utils.FileDownloadUtil
 
 class ASJavascriptInterfaceAsync(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -116,6 +117,32 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
         runCatching {
             val response = when (request.method) {
+                CallMethod.download -> {
+                    val url = request.arguments?.get("url")?.asString ?: ""
+                    AssistsService.instance?.let {
+                        val result = FileDownloadUtil.downloadFile(it, url)
+                        when (result) {
+                            is FileDownloadUtil.DownloadResult.Error -> {
+                                val response = request.createResponse(-1, data = result.exception.message)
+                                response
+                            }
+
+                            is FileDownloadUtil.DownloadResult.Success -> {
+                                val response = request.createResponse(0, data = result.file.path)
+                                response
+                            }
+
+                            else -> {
+                                val response = request.createResponse(-1, data = null)
+                                response
+                            }
+                        }
+                    } ?: let {
+                        val response = request.createResponse(-1, data = null)
+                        response
+                    }
+                }
+
                 CallMethod.getNetworkType -> {
                     val networkType = NetworkUtils.getNetworkType()
                     var networkTypeValue = ""

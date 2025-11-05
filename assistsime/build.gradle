@@ -1,0 +1,19 @@
+apply plugin: 'com.android.library'
+
+android {
+    defaultConfig {
+        compileSdk 36
+        minSdkVersion 23
+        targetSdkVersion 36
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    namespace 'rkr.simplekeyboard.inputmethod'
+}
+
+dependencies {
+}
