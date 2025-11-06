@@ -66,7 +66,9 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.ActivityUtils
+import com.ven.assists.utils.AudioPlayerUtil
 import com.ven.assists.utils.FileDownloadUtil
+import kotlinx.coroutines.CompletableDeferred
 
 class ASJavascriptInterfaceAsync(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -117,6 +119,42 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
         runCatching {
             val response = when (request.method) {
+                CallMethod.audioStop -> {
+                    AudioPlayerUtil.stop()
+                    val response = request.createResponse(0, data = null)
+                    response
+                }
+
+                CallMethod.audioPlayFromFile -> {
+                    val filePath = request.arguments?.get("filePath")?.asString ?: ""
+                    val volume = request.arguments?.get("volume")?.asFloat
+                    val useAbsoluteVolume = request.arguments?.get("useAbsoluteVolume")?.asBoolean ?: false
+                    AssistsService.instance?.let {
+                        val completableDeferred = CompletableDeferred<Exception?>()
+                        AudioPlayerUtil.playFromFile(
+                            it, filePath, volume = volume,
+                            useAbsoluteVolume = useAbsoluteVolume,
+                            listener = object : AudioPlayerUtil.PlayListener {
+                                override fun onError(error: String) {
+                                    completableDeferred.complete(RuntimeException(error))
+                                }
+
+                                override fun onCompletion() {
+                                    completableDeferred.complete(null)
+                                }
+                            })
+                        val result = completableDeferred.await()
+                        val response = request.createResponse(
+                            if (result == null) 0 else -1,
+                            data = if (result == null) "播放完成" else "播放失败: ${result.message}"
+                        )
+                        response
+                    } ?: let {
+                        val response = request.createResponse(-1, data = "无障碍服务无效")
+                        response
+                    }
+                }
+
                 CallMethod.download -> {
                     val url = request.arguments?.get("url")?.asString ?: ""
                     AssistsService.instance?.let {

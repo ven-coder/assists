@@ -36,6 +36,7 @@ import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.simple.TestActivity
 import com.ven.assists.simple.common.LogWrapper
 import com.ven.assists.simple.databinding.BasicOverlayBinding
+import com.ven.assists.utils.AudioPlayerUtil
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.FileDownloadUtil
 import kotlinx.coroutines.delay
@@ -52,14 +53,13 @@ object OverlayBasic : AssistsServiceListener {
                 field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                     //点击
                     btnClick.setOnClickListener {
-//                        CoroutineWrapper.launch {
-//                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
-//                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//                            })
-//                            delay(1000)
-//                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
-//                        }
-                        download()
+                        CoroutineWrapper.launch {
+                            AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            })
+                            delay(1000)
+                            AssistsCore.findById("com.ven.assists.demo:id/btn_test").firstOrNull()?.click()
+                        }
                     }
                     //手势点击
                     btnGestureClick.setOnClickListener {
@@ -391,27 +391,5 @@ object OverlayBasic : AssistsServiceListener {
 
         // 分发手势
         AssistsCore.dispatchGesture(gestureBuilder.build())
-    }
-
-
-    fun download() {
-        AssistsService.instance?.let {
-            CoroutineWrapper.launch {
-                val result = FileDownloadUtil.downloadFile(it, "https://assistsx.oss-cn-guangzhou.aliyuncs.com/voice.mp3")
-                when (result) {
-                    is FileDownloadUtil.DownloadResult.Error -> {
-                        ToastUtils.showShort("下载失败：${result.exception.message}")
-                    }
-
-                    is FileDownloadUtil.DownloadResult.Progress -> {
-
-                    }
-
-                    is FileDownloadUtil.DownloadResult.Success -> {
-                        ToastUtils.showShort("下载成功：${result.file.path}")
-                    }
-                }
-            }
-        }
     }
 }

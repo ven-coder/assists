@@ -65,5 +65,7 @@ object CallMethod {
     const val keepScreenOn = "keepScreenOn"
     const val clearKeepScreenOn = "clearKeepScreenOn"
     const val download = "download"
+    const val audioPlayFromFile = "audioPlayFromFile"
+    const val audioStop = "audioStop"
 
 }
