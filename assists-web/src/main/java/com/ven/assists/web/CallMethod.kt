@@ -67,5 +67,6 @@ object CallMethod {
     const val download = "download"
     const val audioPlayFromFile = "audioPlayFromFile"
     const val audioStop = "audioStop"
+    const val recognizeTextInScreenshot = "recognizeTextInScreenshot"
 
 }

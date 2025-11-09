@@ -53,6 +53,7 @@ import com.ven.assists.web.databinding.WebFloatingWindowBinding
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
+import com.ven.assists.web.utils.TextRecognitionChineseLocator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -200,6 +201,101 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     }
                     val response = request.createResponse(0, data = data)
                     response
+                }
+
+                CallMethod.recognizeTextInScreenshot -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                        val response = request.createResponse(-1, message = "Screenshot recognition requires Android R or above", data = false)
+                        response
+                    } else {
+                        val targetText = request.arguments?.get("targetText")?.asString ?: ""
+                        val rotationDegrees = request.arguments?.get("rotationDegrees")?.asInt ?: 0
+                        val overlayHiddenDelay = request.arguments?.get("overlayHiddenScreenshotDelayMillis")?.asLong ?: 250L
+                        val restoreOverlay = request.arguments?.get("restoreOverlay")?.asBoolean ?: true
+
+                        val regionJson = request.arguments?.get("region")?.asJsonObject
+                        val regionRect = regionJson?.let {
+                            val left = it.get("left")?.asInt
+                            val top = it.get("top")?.asInt
+                            val right = it.get("right")?.asInt
+                            val bottom = it.get("bottom")?.asInt
+                            val width = it.get("width")?.asInt
+                            val height = it.get("height")?.asInt
+
+                            val resolvedLeft = left ?: 0
+                            val resolvedTop = top ?: 0
+                            val resolvedRight = when {
+                                right != null -> right
+                                width != null -> resolvedLeft + width
+                                else -> null
+                            }
+                            val resolvedBottom = when {
+                                bottom != null -> bottom
+                                height != null -> resolvedTop + height
+                                else -> null
+                            }
+
+                            if (resolvedRight == null || resolvedBottom == null) {
+                                null
+                            } else if (resolvedRight <= resolvedLeft || resolvedBottom <= resolvedTop) {
+                                null
+                            } else {
+                                Rect(resolvedLeft, resolvedTop, resolvedRight, resolvedBottom)
+                            }
+                        }
+
+                        if (restoreOverlay) {
+                            AssistsWindowManager.hideAll()
+                        }
+                        delay(overlayHiddenDelay)
+                        val recognitionResult = runCatching {
+                            TextRecognitionChineseLocator.findWordPositionsInScreenshotRegion(
+                                region = regionRect,
+                                targetText = targetText,
+                                rotationDegrees = rotationDegrees
+                            )
+                        }.onFailure {
+                            LogUtils.e(it)
+                        }
+                        if (restoreOverlay) {
+                            AssistsWindowManager.showTop()
+                        }
+
+                        recognitionResult.fold(
+                            onSuccess = { result ->
+                                val positionsArray = JsonArray().apply {
+                                    result.targetPositions.forEach { position ->
+                                        add(JsonObject().apply {
+                                            addProperty("text", position.text)
+                                            addProperty("left", position.left)
+                                            addProperty("top", position.top)
+                                            addProperty("right", position.right)
+                                            addProperty("bottom", position.bottom)
+                                            addProperty("width", position.width)
+                                            addProperty("height", position.height)
+                                        })
+                                    }
+                                }
+
+                                val data = JsonObject().apply {
+                                    addProperty("fullText", result.fullText)
+                                    addProperty("processingTimeMillis", result.processingTimeMillis)
+                                    add("positions", positionsArray)
+                                }
+
+                                val response = request.createResponse(0, data = data)
+                                response
+                            },
+                            onFailure = {
+                                val response = request.createResponse(
+                                    -1,
+                                    message = it.message ?: "Recognition failed",
+                                    data = ""
+                                )
+                                response
+                            }
+                        )
+                    }
                 }
 
                 CallMethod.getDeviceInfo -> {
