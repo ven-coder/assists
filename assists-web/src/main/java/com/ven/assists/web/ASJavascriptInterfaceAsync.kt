@@ -68,6 +68,7 @@ import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.ActivityUtils
 import com.ven.assists.utils.AudioPlayerUtil
+import com.ven.assists.utils.ContactsUtil
 import com.ven.assists.utils.FileDownloadUtil
 import kotlinx.coroutines.CompletableDeferred
 
@@ -965,6 +966,56 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     }
                 }
 
+                CallMethod.addContact -> {
+                    val name = request.arguments?.get("name")?.asString ?: ""
+                    val phoneNumber = request.arguments?.get("phoneNumber")?.asString ?: ""
+                    
+                    if (name.isEmpty() || phoneNumber.isEmpty()) {
+                        val response = request.createResponse(-1, message = "Name and phone number are required", data = false)
+                        response
+                    } else {
+                        try {
+                            val success = ContactsUtil.addContact(name, phoneNumber)
+                            val response = request.createResponse(
+                                code = if (success) 0 else -1,
+                                message = if (success) "Contact added successfully" else "Failed to add contact",
+                                data = success
+                            )
+                            response
+                        } catch (e: Exception) {
+                            LogUtils.e(e)
+                            val response = request.createResponse(-1, message = "Error: ${e.message}", data = false)
+                            response
+                        }
+                    }
+                }
+
+                CallMethod.getAllContacts -> {
+                    try {
+                        val contacts = ContactsUtil.getAllContacts()
+                        val contactsArray = JsonArray().apply {
+                            contacts.forEach { contact ->
+                                add(JsonObject().apply {
+                                    addProperty("id", contact.id)
+                                    addProperty("name", contact.name)
+                                    add("phoneNumbers", JsonArray().apply {
+                                        contact.phoneNumbers.forEach { add(it) }
+                                    })
+                                    add("emails", JsonArray().apply {
+                                        contact.emails.forEach { add(it) }
+                                    })
+                                    addProperty("address", contact.address)
+                                })
+                            }
+                        }
+                        val response = request.createResponse(0, data = contactsArray)
+                        response
+                    } catch (e: Exception) {
+                        LogUtils.e(e)
+                        val response = request.createResponse(-1, message = "Error: ${e.message}", data = JsonArray())
+                        response
+                    }
+                }
 
                 else -> {
                     request.createResponse(-1, message = "方法未支持")

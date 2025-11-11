@@ -68,5 +68,9 @@ object CallMethod {
     const val audioPlayFromFile = "audioPlayFromFile"
     const val audioStop = "audioStop"
     const val recognizeTextInScreenshot = "recognizeTextInScreenshot"
+    
+    // 通讯录相关方法
+    const val addContact = "addContact"
+    const val getAllContacts = "getAllContacts"
 
 }
