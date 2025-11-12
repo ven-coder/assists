@@ -31,29 +31,7 @@
   - [基础功能](#基础功能)
   - [高级示例](#高级示例)
   - [更多示例](#更多示例)
-- [🎉 新增JS支持库](#-新增js支持库)
-- [🚀 快速开始](#-快速开始)
-  - [1. 导入依赖](#1-导入依赖)
-    - [1.1 项目根目录build.gradle添加](#11-项目根目录buildgradle添加)
-    - [1.2 主模块build.gradle添加](#12-主模块buildgradle添加)
-  - [2. 注册\&开启服务](#2-注册开启服务)
-    - [2.1 主模块AndroidManifest.xml中注册服务](#21-主模块androidmanifestxml中注册服务)
-    - [2.2 开启服务](#22-开启服务)
-- [步骤器-快速实现复杂自动化脚本](#步骤器-快速实现复杂自动化脚本)
-  - [1. 继承 `StepImpl`](#1-继承-stepimpl)
-  - [2. 开始执行](#2-开始执行)
-  - [3. 停止执行](#3-停止执行)
-- [API列表](#api列表)
-  - [初始化和服务管理](#初始化和服务管理)
-  - [元素查找](#元素查找)
-  - [元素信息获取](#元素信息获取)
-  - [元素层级操作](#元素层级操作)
-  - [元素操作](#元素操作)
-  - [更多API](#更多api)
-- [示例教程](#示例教程)
-- [其他教程博客](#其他教程博客)
-  - [获取节点信息](#获取节点信息)
-  - [版本历史](#版本历史)
+- [开发文档](#开发文档)
 - [交流反馈](#交流反馈)
 - [💝 支持开源](#-支持开源)
   - [⭐ Star支持](#-star支持)
@@ -75,11 +53,7 @@
 5. 各种平台的拓客、引流、营销系统
 6. 远程控制
 
-<div align="right">
 
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## Assists作用
 
@@ -90,11 +64,7 @@
 3. 提高脚本易维护性
 4. 支持html+js/vue开发自动化脚本
 
-<div align="right">
 
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## 主要能力
 
@@ -103,13 +73,9 @@
 3. 步骤器：为快速实现、可复用、易维护的自动化步骤提供框架及管理
 4. 配套屏幕管理：快速生成输出屏幕截图、元素截图
 5. 屏幕管理结合opencv：便于屏幕内容识别为自动化提供服务
-6. 封装webview接口支持html+js/vue开发自动化脚本
+6. 封装webview接口支持html+js/vue开发自动化脚本（对应js库：**[assistsx-js][assistsx-js-link]**）
 
-<div align="right">
 
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## 功能示例
 
@@ -137,281 +103,11 @@
 
 [📱 直接下载][demo-download]
 
-<div align="right">
 
-[![][back-to-top]](#readme-top)
 
-</div>
+## 开发文档
+请移步至[在线文档](https://ahcirffybg.feishu.cn/wiki/space/7561797853589553156?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home)
 
-## 🎉 新增JS支持库
-
-新增支持通过Web端实现Android平台自动化脚本的JS库：**[assistsx-js][assistsx-js-link]**
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-## 🚀 快速开始
-
-### 1. 导入依赖
-
-#### 1.1 项目根目录build.gradle添加
-
-```gradle
-allprojects {
-    repositories {
-        //添加jitpack仓库
-        maven { url 'https://jitpack.io' }
-    }
-}
-```
-
-#### 1.2 主模块build.gradle添加
-
-最新版本：[![][jitpack-shield]][jitpack-link]
-
-```gradle
-dependencies {
-    //按需添加
-    //基础库（必须）
-    implementation "com.github.ven-coder.Assists:assists-base:最新版本"
-    //屏幕录制相关（可选）
-    implementation "com.github.ven-coder.Assists:assists-mp:最新版本"
-    //opencv相关（可选）
-    implementation "com.github.ven-coder.Assists:assists-opcv:最新版本"
-    //web端支持（可选）
-    implementation "com.github.ven-coder.Assists:assists-web:最新版本"
-}
-```
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-### 2. 注册&开启服务
-
-#### 2.1 主模块AndroidManifest.xml中注册服务
-
-一定要在主模块中注册服务，不然进程被杀服务也会自动被关闭需要再次开启（小米可保持杀进程保持开启，其他vivo、oppo、鸿蒙机型似乎不行）
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.ven.assists.simple">
-
-    <application
-        android:name="com.ven.assists.simple.App"
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:requestLegacyExternalStorage="true"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:usesCleartextTraffic="true">
-        <!-- 添加代码 ↓-->
-        <service
-            android:name="com.ven.assists.service.AssistsService"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <!--android:priority="10000" 可提高服务在设置中的权重，排在前面-->
-            <intent-filter android:priority="10000">
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/assists_service" />
-        </service>
-      
-        <!-- 或者使用下面的服务可以解决一些应用混淆节点的问题，比如微信8.0.51以上版本获取的节点元素错乱问题 -->
-        <!-- ⚠️ 选其一 -->
-        <service
-            android:name="com.google.android.accessibility.selecttospeak.SelectToSpeakService"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <!--android:priority="10000" 可提高服务在设置中的权重，排在前面     -->
-            <intent-filter android:priority="10000">
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/assists_service" />
-        </service>
-        <!-- 添加代码 ↑-->
-    </application>
-
-</manifest>
-```
-
-#### 2.2 开启服务
-
-调用 `AssistsCore.openAccessibilitySetting()` 跳转到无障碍服务设置页面，找到对应的应用开启服务。
-
-服务开启后执行以下API测试是否成功集成：
-
-```kotlin
-AssistsCore.getAllNodes().forEach { it.logNode() }
-```
-
-这段代码是获取当前页面所有节点元素的基本信息在Logcat（tag：assists_log）打印出来，如下图：
-
-<img src="https://github.com/user-attachments/assets/81725dc3-d924-44f4-89fe-75938ae659e9" width="350" />
-
-至此，已成功集成Assists。如果没有任何输出请检查集成步骤是否正确。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-## 步骤器-快速实现复杂自动化脚本
-
-步骤器可以帮助快速实现复杂的业务场景，比如自动发朋友圈、获取微信所有好友昵称、自动删除好友...等等都是一些逻辑较多的业务场景，步骤器可帮助快速实现。
-
-### 1. 继承 `StepImpl`
-
-直接在接口 `onImpl(collector: StepCollector)` 写步骤逻辑，每个步骤自定义步骤的序号，用于区分执行的步骤。如果重复则会以最后一个步骤为准
-
-```kotlin
-class MyStepImpl:StepImpl() {
-    override fun onImpl(collector: StepCollector) {
-        //定义步骤序号为1的逻辑
-        collector.next(1) {// 1为步骤的序号
-            //步骤1逻辑
-            ...
-            //返回下一步需要执行的序号，通过Step.get([序号])，如果需要重复该步骤可返回Step.repeat，如果返回Step.none则不执行任何步骤，相当于停止
-            return@next Step.get(2, delay = 1000) //将会执行步骤2逻辑
-        }.next(2) {
-            //步骤2逻辑
-            ...
-            //返回下一步需要执行的序号，通过Step.get([序号])
-            return@next Step.get(3)
-        }.next(3) {
-            //步骤3逻辑
-            ...
-            //返回下一步需要执行的序号，通过Step.get([序号])
-            return@next Step.get(4)
-        }
-        //其他步骤
-        ...
-    }
-}
-```
-
-### 2. 开始执行
-
-执行前请确保无障碍服务已开启
-
-```kotlin
-//从MyStepImpl步骤1开始执行，isBegin是否作为起始步骤，默认false
-StepManager.execute(MyStepImpl::class.java, 1, isBegin = true)
-```
-
-### 3. 停止执行
-
-```kotlin
-// 设置停止标志，将取消所有正在执行的步骤
-StepManager.isStop = true
-```
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-## API列表
-
-### 初始化和服务管理
-
-| 方法名 | 说明 | 返回值 |
-|--------|------|--------|
-| `init(application: Application)` | 初始化AssistsCore | 无 |
-| `openAccessibilitySetting()` | 打开系统无障碍服务设置页面 | 无 |
-| `isAccessibilityServiceEnabled()` | 检查无障碍服务是否已开启 | Boolean |
-| `getPackageName()` | 获取当前窗口所属的应用包名 | String |
-
-### 元素查找
-
-| 方法名 | 说明 | 返回值 |
-|--------|------|--------|
-| `findById(id, filterText?, filterDes?, filterClass?)` | 通过id查找所有符合条件的元素 | List<AccessibilityNodeInfo> |
-| `AccessibilityNodeInfo.findById(id, filterText?, filterDes?, filterClass?)` | 在指定元素范围内通过id查找元素 | List<AccessibilityNodeInfo> |
-| `findByText(text, filterViewId?, filterDes?, filterClass?)` | 通过文本内容查找所有符合条件的元素 | List<AccessibilityNodeInfo> |
-| `findByTextAllMatch(text, filterViewId?, filterDes?, filterClass?)` | 查找所有文本完全匹配的元素 | List<AccessibilityNodeInfo> |
-| `AccessibilityNodeInfo.findByText(text, filterViewId?, filterDes?, filterClass?)` | 在指定元素范围内通过文本查找元素 | List<AccessibilityNodeInfo> |
-| `findByTags(className, viewId?, text?, des?)` | 根据多个条件查找元素 | List<AccessibilityNodeInfo> |
-| `AccessibilityNodeInfo.findByTags(className, viewId?, text?, des?)` | 在指定元素范围内根据多个条件查找元素 | List<AccessibilityNodeInfo> |
-| `getAllNodes(filterViewId?, filterDes?, filterClass?, filterText?)` | 获取当前窗口中的所有元素 | List<AccessibilityNodeInfo> |
-
-### 元素信息获取
-
-| 方法名 | 说明 | 返回值 |
-|--------|------|--------|
-| `AccessibilityNodeInfo.txt()` | 获取元素的文本内容 | String |
-| `AccessibilityNodeInfo.des()` | 获取元素的描述内容 | String |
-| `AccessibilityNodeInfo.getAllText()` | 获取元素的所有文本内容（包括text和contentDescription） | ArrayList<String> |
-| `AccessibilityNodeInfo.containsText(text)` | 判断元素是否包含指定文本 | Boolean |
-| `AccessibilityNodeInfo.getBoundsInScreen()` | 获取元素在屏幕中的位置信息 | Rect |
-| `AccessibilityNodeInfo.getBoundsInParent()` | 获取元素在父容器中的位置信息 | Rect |
-| `AccessibilityNodeInfo.isVisible(compareNode?, isFullyByCompareNode?)` | 判断元素是否可见 | Boolean |
-
-### 元素层级操作
-
-| 方法名 | 说明 | 返回值 |
-|--------|------|--------|
-| `AccessibilityNodeInfo.getNodes()` | 获取指定元素下的所有子元素 | ArrayList<AccessibilityNodeInfo> |
-| `AccessibilityNodeInfo.getChildren()` | 获取元素的直接子元素 | ArrayList<AccessibilityNodeInfo> |
-| `AccessibilityNodeInfo.findFirstParentByTags(className)` | 查找第一个符合指定类型的父元素 | AccessibilityNodeInfo? |
-| `AccessibilityNodeInfo.findFirstParentClickable()` | 查找元素的第一个可点击的父元素 | AccessibilityNodeInfo? |
-
-### 元素操作
-
-| 方法名 | 说明 | 返回值 |
-|--------|------|--------|
-| `AccessibilityNodeInfo.click()` | 点击元素 | Boolean |
-| `AccessibilityNodeInfo.longClick()` | 长按元素 | Boolean |
-| `AccessibilityNodeInfo.paste(text)` | 向元素粘贴文本 | Boolean |
-| `AccessibilityNodeInfo.setNodeText(text)` | 设置元素的文本内容 | Boolean |
-| `AccessibilityNodeInfo.selectionText(selectionStart, selectionEnd)` | 选择元素中的文本 | Boolean |
-| `AccessibilityNodeInfo.scrollForward()` | 向前滚动可滚动元素 | Boolean |
-| `AccessibilityNodeInfo.scrollBackward()` | 向后滚动可滚动元素 | Boolean |
-
-### [更多API][api-reference]
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-## 示例教程
-
-- [Appium结合AccessibilityService实现自动化微信登录][tutorial-appium]
-
-## 其他教程博客
-
-### 获取节点信息
-
-- [使用weditor获取节点信息][tutorial-weditor]
-- [使用Appium获取节点信息][tutorial-appium]
-- [使用uiautomatorviewer获取节点信息][tutorial-uiautomator]
-
-### [版本历史][changelog]
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## 交流反馈
 
@@ -423,11 +119,7 @@ StepManager.isStop = true
 
 1群已满200人，要进1群可加我备注进1群
 
-<div align="right">
 
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## 💝 支持开源
 
@@ -464,11 +156,7 @@ StepManager.isStop = true
 
 **感谢所有的支持者，得到你们的支持我将会更加完善开源库的能力！** 🚀
 
-<div align="right">
 
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## Star History
 
