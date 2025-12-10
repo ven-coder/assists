@@ -201,6 +201,14 @@ object AssistsWindowManager {
             viewList.values.lastOrNull()?.let { it.view.isInvisible = true }
         }
         view.tag = viewTag
+
+        viewList.values.find {
+            return@find view == it.view
+        }?.let {
+            it.view.isVisible = true
+            return it
+        }
+
         windowManager.addView(view, layoutParams)
         if (isTouchable) {
             layoutParams.touchableByLayoutParams()
