@@ -53,7 +53,7 @@ object OverlayBasic : AssistsServiceListener {
                 field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
                     //点击
                     btnClick.setOnClickListener {
-                        CoroutineWrapper.launch {
+                        CoroutineWrapper.launch(isMain = true) {
                             AssistsService.instance?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             })
@@ -63,7 +63,7 @@ object OverlayBasic : AssistsServiceListener {
                     }
                     //手势点击
                     btnGestureClick.setOnClickListener {
-                        CoroutineWrapper.launch {
+                        CoroutineWrapper.launch(isMain = true) {
                             ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             })
@@ -73,7 +73,7 @@ object OverlayBasic : AssistsServiceListener {
                     }
                     //长按
                     btnLongClick.setOnClickListener {
-                        CoroutineWrapper.launch {
+                        CoroutineWrapper.launch(isMain = true) {
                             ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             })
@@ -83,7 +83,7 @@ object OverlayBasic : AssistsServiceListener {
                     }
                     //手势长按
                     btnGestureLongClick.setOnClickListener {
-                        CoroutineWrapper.launch {
+                        CoroutineWrapper.launch(isMain = true) {
                             ActivityUtils.getTopActivity()?.startActivity(Intent(AssistsService.instance, TestActivity::class.java).apply {
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             })
