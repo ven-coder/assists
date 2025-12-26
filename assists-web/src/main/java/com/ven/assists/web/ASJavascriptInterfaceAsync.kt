@@ -70,6 +70,7 @@ import com.blankj.utilcode.util.ActivityUtils
 import com.ven.assists.utils.AudioPlayerUtil
 import com.ven.assists.utils.ContactsUtil
 import com.ven.assists.utils.FileDownloadUtil
+import com.ven.assists.web.utils.AudioPlayManager
 import kotlinx.coroutines.CompletableDeferred
 
 class ASJavascriptInterfaceAsync(val webView: WebView) {
@@ -124,6 +125,23 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                 CallMethod.audioStop -> {
                     AudioPlayerUtil.stop()
                     val response = request.createResponse(0, data = null)
+                    response
+                }
+
+                CallMethod.audioPlayRingtone -> {
+                    AssistsService.instance?.let {
+                        AudioPlayManager.startAudioPlay(it)
+                        val response = request.createResponse(0, data = "开始播放系统电话铃声")
+                        response
+                    } ?: let {
+                        val response = request.createResponse(-1, data = "无障碍服务无效")
+                        response
+                    }
+                }
+
+                CallMethod.audioStopRingtone -> {
+                    AudioPlayManager.stopAudioPlay()
+                    val response = request.createResponse(0, data = "已停止播放")
                     response
                 }
 

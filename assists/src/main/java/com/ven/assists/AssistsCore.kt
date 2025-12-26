@@ -10,7 +10,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
@@ -46,6 +48,9 @@ import java.util.concurrent.Executors
 import androidx.core.graphics.toColorInt
 import com.blankj.utilcode.util.SizeUtils
 import com.ven.assists.window.AssistsWindowManager.nonTouchableByWrapper
+import androidx.core.graphics.createBitmap
+import com.blankj.utilcode.util.FileUtils
+import com.ven.assists.utils.BitmapUtils
 
 /**
  * 无障碍服务核心类
@@ -1218,7 +1223,11 @@ object AssistsCore {
                     screenshot.hardwareBuffer,
                     screenshot.colorSpace
                 )?.let {
-                    completableDeferred.complete(it)
+
+                    // 转成软件 bitmap，调试器能查看
+                    val bitmap = it.copy(Bitmap.Config.ARGB_8888, false)
+
+                    completableDeferred.complete(bitmap)
                 } ?: let {
                     completableDeferred.complete(null)
                 }
@@ -1229,6 +1238,60 @@ object AssistsCore {
             }
         })
         return completableDeferred.await()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    suspend fun AccessibilityNodeInfo.getMD5(
+        scale: Float = 1f,          // 0 < scale <= 1
+        cornerRatio: Float = 0f,     // 0.0 ~ 1.0
+        file: File = File(PathUtils.getInternalAppFilesPath() + "/node-md5-temporary.png"),
+        format: CompressFormat = Bitmap.CompressFormat.PNG
+    ): String {
+        runCatching {
+            // 先保存节点的位置信息，确保使用一致的位置（避免多次调用getBoundsInScreen导致的位置变化）
+            val nodeBounds = getBoundsInScreen()
+            
+            // 截取整个屏幕
+            val fullScreenshot = AssistsCore.takeScreenshot()
+            fullScreenshot ?: throw RuntimeException("bitmap is null")
+            
+            // 从完整截图中裁剪出节点对应的区域（使用已保存的位置信息）
+            val nodeBitmap = Bitmap.createBitmap(
+                fullScreenshot, 
+                nodeBounds.left, 
+                nodeBounds.top, 
+                nodeBounds.width(), 
+                nodeBounds.height()
+            )
+            
+            // 清理完整截图（不再需要）
+            fullScreenshot.recycle()
+            
+            // 对裁剪后的bitmap进行处理（缩放和圆角）
+            val cropBitmap = BitmapUtils.cropCenterWithCornerRatio(
+                nodeBitmap, 
+                scale = scale, 
+                cornerRatio = cornerRatio
+            )
+            
+            // 清理节点bitmap（如果和cropBitmap不同）
+            if (nodeBitmap != cropBitmap) {
+                nodeBitmap.recycle()
+            }
+            
+            val result = ImageUtils.save(cropBitmap, file, format)
+            cropBitmap.recycle()
+            
+            if (result) {
+                val md5 = FileUtils.getFileMD5ToString(file)
+                return md5
+            } else {
+                throw RuntimeException("save bitmap failed")
+            }
+        }.onFailure {
+            LogUtils.e(it)
+        }
+        return ""
     }
 
     /**

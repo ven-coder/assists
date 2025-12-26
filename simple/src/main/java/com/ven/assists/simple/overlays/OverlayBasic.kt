@@ -4,21 +4,32 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
+import android.graphics.RectF
 import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
 import com.blankj.utilcode.util.ActivityUtils
+import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.BarUtils
+import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.PathUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.TimeUtils
 import com.blankj.utilcode.util.ToastUtils
 import com.lzy.okgo.OkGo
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
+import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.longClick
 import com.ven.assists.AssistsCore.longPressGestureAutoPaste
 import com.ven.assists.AssistsCore.nodeGestureClick
@@ -26,6 +37,8 @@ import com.ven.assists.AssistsCore.scrollBackward
 import com.ven.assists.AssistsCore.scrollForward
 import com.ven.assists.AssistsCore.selectionText
 import com.ven.assists.AssistsCore.setNodeText
+import com.ven.assists.AssistsCore.takeScreenshot
+import com.ven.assists.AssistsCore.takeScreenshotSave
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager
@@ -42,6 +55,8 @@ import com.ven.assists.utils.FileDownloadUtil
 import kotlinx.coroutines.delay
 import rkr.simplekeyboard.inputmethod.latin.inputlogic.InputLogic
 import java.io.File
+import androidx.core.graphics.createBitmap
+import com.ven.assists.AssistsCore.getMD5
 
 object OverlayBasic : AssistsServiceListener {
 
@@ -306,6 +321,29 @@ object OverlayBasic : AssistsServiceListener {
         viewBinding = null
         assistWindowWrapper = null
     }
+
+    fun cropCircleBitmap(src: Bitmap): Bitmap {
+        val size = minOf(src.width, src.height)
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+
+        val canvas = Canvas(output)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        val rect = Rect(0, 0, size, size)
+        val rectF = RectF(rect)
+
+        // 画圆
+        canvas.drawOval(rectF, paint)
+
+        // SRC_IN 把圆外的区域裁掉
+        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+        canvas.drawBitmap(src, null, rect, paint)
+
+        paint.xfermode = null
+
+        return output
+    }
+
 
     suspend fun performCircularGestureSingle() {
         val screenWidth = ScreenUtils.getScreenWidth()

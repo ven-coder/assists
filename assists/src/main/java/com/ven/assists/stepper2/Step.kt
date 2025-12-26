@@ -156,6 +156,8 @@ object StepScope {
         config: StepConfig = StepConfig(),
         impl: suspend (Step) -> Step?,
     ): Step {
+        // 步骤开始
+        stepId = generateUUID()
         var implName = impl.javaClass.simpleName
         var currentStep = Step(
             stepId = stepId,
@@ -166,9 +168,6 @@ object StepScope {
             repeatCountMax = config.repeatCountMax
         )
         try {
-            // 步骤开始
-            stepId = generateUUID()
-
             while (true) {
                 if (currentStep.delayMs > 0) {
                     if (showLog) {

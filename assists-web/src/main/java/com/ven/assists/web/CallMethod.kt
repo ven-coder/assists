@@ -67,6 +67,8 @@ object CallMethod {
     const val download = "download"
     const val audioPlayFromFile = "audioPlayFromFile"
     const val audioStop = "audioStop"
+    const val audioPlayRingtone = "audioPlayRingtone"
+    const val audioStopRingtone = "audioStopRingtone"
     const val recognizeTextInScreenshot = "recognizeTextInScreenshot"
     
     // 通讯录相关方法

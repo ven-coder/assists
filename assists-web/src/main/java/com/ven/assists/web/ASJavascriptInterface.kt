@@ -74,6 +74,7 @@ import java.util.Collections
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.ActivityUtils
+import com.ven.assists.web.utils.AudioPlayManager
 
 class ASJavascriptInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -907,6 +908,39 @@ class ASJavascriptInterface(val webView: WebView) {
                     result = GsonUtils.toJson(CallResponse<Boolean>(code = 0, message = "", data = false))
                 }
 
+                CallMethod.audioPlayRingtone -> {
+                    CoroutineWrapper.launch(isMain = true) {
+                        runCatching {
+                            AssistsService.instance?.let {
+                                AudioPlayManager.startAudioPlay(it)
+                                callback(CallResponse(code = 0, data = "开始播放系统电话铃声", callbackId = request.callbackId))
+                            } ?: let {
+                                callback(CallResponse(code = -1, data = "无障碍服务无效", callbackId = request.callbackId))
+                            }
+                        }.onFailure {
+                            LogUtils.e(it)
+                            callback(CallResponse(code = -1, message = "播放失败: ${it.message}", data = false, callbackId = request.callbackId))
+                        }
+                    }
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
+                        addProperty("resultType", "callback")
+                    }))
+                }
+
+                CallMethod.audioStopRingtone -> {
+                    CoroutineWrapper.launch(isMain = true) {
+                        runCatching {
+                            AudioPlayManager.stopAudioPlay()
+                            callback(CallResponse(code = 0, data = "已停止播放", callbackId = request.callbackId))
+                        }.onFailure {
+                            LogUtils.e(it)
+                            callback(CallResponse(code = -1, message = "停止失败: ${it.message}", data = false, callbackId = request.callbackId))
+                        }
+                    }
+                    result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
+                        addProperty("resultType", "callback")
+                    }))
+                }
 
                 else -> {
 

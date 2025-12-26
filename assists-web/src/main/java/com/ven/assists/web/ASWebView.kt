@@ -32,6 +32,10 @@ open class ASWebView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : WebView(context, attrs, defStyleAttr) {
 
+    companion object {
+        val globalJavascriptCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
+    }
+
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     var onReceivedTitle: ((title: String) -> Unit)? = null
@@ -42,6 +46,15 @@ open class ASWebView @JvmOverloads constructor(
 
     val javascriptCallIntercept: (json: String) -> CallInterceptResult = intercept@{ json: String ->
         var requestJson = json
+
+        globalJavascriptCallIntercepts.forEach {
+            val interceptResult = it.invoke(json)
+            if (interceptResult.intercept) {
+                return@intercept interceptResult
+            } else {
+                requestJson = interceptResult.result
+            }
+        }
 
         callIntercept?.invoke(requestJson)?.let {
             if (it.intercept) {
