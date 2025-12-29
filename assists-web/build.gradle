@@ -55,7 +55,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.ven-coder'
                 artifactId = 'assists-web'
-                version = '0.0.23-SNAPSHOT'
+                version = '0.0.24-SNAPSHOT'
                 artifact sourcesJar
             }
         }

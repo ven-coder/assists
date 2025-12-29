@@ -70,6 +70,7 @@ object AssistsCore {
 
     /** 判断元素是否是FrameLayout */
     fun AccessibilityNodeInfo.isFrameLayout(): Boolean {
+
         return className == NodeClassValue.FrameLayout
     }
 
