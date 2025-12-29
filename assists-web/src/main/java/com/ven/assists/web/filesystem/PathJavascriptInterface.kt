@@ -10,6 +10,7 @@ import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallResponse
+import com.ven.assists.web.createResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,17 +57,17 @@ class PathJavascriptInterface(val webView: WebView) {
         runCatching {
             val response = when (request.method) {
                 // 路径相关方法
-                PathCallMethod.pathJoin -> {
-                    val paths = request.arguments?.get("paths")?.asJsonArray
-                    if (paths == null || paths.size() == 0) {
-                        request.createResponse(-1, message = "paths参数不能为空", data = "")
-                    } else {
-                        val pathArray = mutableListOf<String>()
-                        paths.forEach { pathArray.add(it.asString) }
-                        val result = PathUtils.join(*pathArray.toTypedArray())
-                        request.createResponse(0, data = result)
-                    }
-                }
+//                PathCallMethod.pathJoin -> {
+//                    val paths = request.arguments?.get("paths")?.asJsonArray
+//                    if (paths == null || paths.size() == 0) {
+//                        request.createResponse(-1, message = "paths参数不能为空", data = "")
+//                    } else {
+//                        val pathArray = mutableListOf<String>()
+//                        paths.forEach { pathArray.add(it.asString) }
+//                        val result = PathUtils.join(*pathArray.toTypedArray())
+//                        request.createResponse(0, data = result)
+//                    }
+//                }
 
                 PathCallMethod.getRootPath -> {
                     val result = PathUtils.getRootPath()
