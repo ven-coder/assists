@@ -49,6 +49,7 @@ import com.ven.assists.mp.MPManager
 import com.ven.assists.mp.MPManager.getBitmap
 import com.ven.assists.service.AssistsService
 import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.web.databinding.WebFloatingWindowBinding
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
@@ -129,12 +130,12 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                 }
 
                 CallMethod.audioPlayRingtone -> {
-                    AssistsService.instance?.let {
+                    JavascriptInterfaceContext.getContext()?.let {
                         AudioPlayManager.startAudioPlay(it)
                         val response = request.createResponse(0, data = "开始播放系统电话铃声")
                         response
                     } ?: let {
-                        val response = request.createResponse(-1, data = "无障碍服务无效")
+                        val response = request.createResponse(-1, data = "上下文无效")
                         response
                     }
                 }
@@ -149,7 +150,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     val filePath = request.arguments?.get("filePath")?.asString ?: ""
                     val volume = request.arguments?.get("volume")?.asFloat
                     val useAbsoluteVolume = request.arguments?.get("useAbsoluteVolume")?.asBoolean ?: false
-                    AssistsService.instance?.let {
+                    JavascriptInterfaceContext.getContext()?.let {
                         val completableDeferred = CompletableDeferred<Exception?>()
                         AudioPlayerUtil.playFromFile(
                             it, filePath, volume = volume,
@@ -177,7 +178,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
 
                 CallMethod.download -> {
                     val url = request.arguments?.get("url")?.asString ?: ""
-                    AssistsService.instance?.let {
+                    JavascriptInterfaceContext.getContext()?.let {
                         val result = FileDownloadUtil.downloadFile(it, url)
                         when (result) {
                             is FileDownloadUtil.DownloadResult.Error -> {
@@ -431,7 +432,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     val minWidth = request.arguments?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt()
                     val minHeight = request.arguments?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
                     val initialCenter = request.arguments?.get("initialCenter")?.asBoolean ?: true
-                    val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                    val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(JavascriptInterfaceContext.requireContext())).apply {
                         webView.loadUrl(url)
                         webView.setBackgroundColor(0)
                     }
@@ -969,11 +970,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                         val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
-                        if (AppUtils.isAppForeground()) {
-                            ActivityUtils.getTopActivity()?.startActivity(intent)
-                        } else {
-                            AssistsService.instance?.startActivity(intent)
-                        }
+                        JavascriptInterfaceContext.getContext()?.startActivity(intent)
                         val response = request.createResponse(0, data = true)
                         response
                     } catch (e: Exception) {

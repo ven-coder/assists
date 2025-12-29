@@ -53,6 +53,7 @@ import com.ven.assists.mp.MPManager
 import com.ven.assists.mp.MPManager.getBitmap
 import com.ven.assists.service.AssistsService
 import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.utils.runIO
 import com.ven.assists.utils.runMain
 import com.ven.assists.web.databinding.WebFloatingWindowBinding
@@ -121,7 +122,7 @@ class ASJavascriptInterface(val webView: WebView) {
                 }
 
                 CallMethod.getClipboardLatestText -> {
-                    val value = (AssistsService.instance?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).let { clipboardManager ->
+                    val value = (JavascriptInterfaceContext.getContext()?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?)?.let { clipboardManager ->
                         if (!clipboardManager.hasPrimaryClip()) {
                             return@let ""
                         }
@@ -320,7 +321,7 @@ class ASJavascriptInterface(val webView: WebView) {
                             val minHeight = request.arguments?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
                             val initialCenter = request.arguments?.get("initialCenter")?.asBoolean ?: true
                             val keepScreenOn = request.arguments?.get("keepScreenOn")?.asBoolean ?: false
-                            val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                            val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(JavascriptInterfaceContext.requireContext())).apply {
                                 webView.loadUrl(url)
                                 webView.setBackgroundColor(0)
                             }
@@ -895,11 +896,7 @@ class ASJavascriptInterface(val webView: WebView) {
                             val intent = Intent(Intent.ACTION_VIEW, url.toUri()).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             }
-                            if (AppUtils.isAppForeground()) {
-                                ActivityUtils.getTopActivity()?.startActivity(intent)
-                            } else {
-                                AssistsService.instance?.startActivity(intent)
-                            }
+                            JavascriptInterfaceContext.getContext()?.startActivity(intent)
                         } catch (e: Exception) {
                             LogUtils.e(e)
                             "打开外部浏览器失败：${e.message}".overlayToast()
@@ -911,11 +908,11 @@ class ASJavascriptInterface(val webView: WebView) {
                 CallMethod.audioPlayRingtone -> {
                     CoroutineWrapper.launch(isMain = true) {
                         runCatching {
-                            AssistsService.instance?.let {
+                            JavascriptInterfaceContext.getContext()?.let {
                                 AudioPlayManager.startAudioPlay(it)
                                 callback(CallResponse(code = 0, data = "开始播放系统电话铃声", callbackId = request.callbackId))
                             } ?: let {
-                                callback(CallResponse(code = -1, data = "无障碍服务无效", callbackId = request.callbackId))
+                                callback(CallResponse(code = -1, data = "上下文无效", callbackId = request.callbackId))
                             }
                         }.onFailure {
                             LogUtils.e(it)

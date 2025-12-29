@@ -10,9 +10,9 @@ import com.blankj.utilcode.util.LogUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
-import com.ven.assists.service.AssistsService
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallResponse
+import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.web.createResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -434,7 +434,7 @@ class FileUtilsJavascriptInterface(val webView: WebView) {
                         request.createResponse(-1, message = "filePath参数不能为空", data = false)
                     } else {
                         try {
-                            val context = AssistsService.instance
+                            val context = JavascriptInterfaceContext.getContext()
                             if (context == null) {
                                 request.createResponse(-1, message = "上下文无效", data = false)
                             } else {

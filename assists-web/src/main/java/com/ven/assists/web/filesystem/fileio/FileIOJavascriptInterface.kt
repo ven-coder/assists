@@ -3,9 +3,11 @@ package com.ven.assists.web.filesystem.fileio
 import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import com.blankj.utilcode.util.ActivityUtils
 import com.blankj.utilcode.util.FileIOUtils
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.Utils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
@@ -191,6 +193,7 @@ class FileIOJavascriptInterface(val webView: WebView) {
                             }
                         } catch (e: Exception) {
                             LogUtils.e(e)
+
                             request.createResponse(-1, message = "读取文件失败: ${e.message}", data = JsonArray())
                         }
                     }
