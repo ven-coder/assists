@@ -22,6 +22,7 @@ import com.ven.assists.utils.runMain
 import com.ven.assists.web.filesystem.PathJavascriptInterface
 import com.ven.assists.web.filesystem.fileio.FileIOJavascriptInterface
 import com.ven.assists.web.filesystem.fileutils.FileUtilsJavascriptInterface
+import com.ven.assists.web.network.HttpJavascriptInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -115,6 +116,7 @@ open class ASWebView @JvmOverloads constructor(
     val pathJavascriptInterface = PathJavascriptInterface(webView = this)
     val fileIOJavascriptInterface = FileIOJavascriptInterface(webView = this)
     val fileUtilsJavascriptInterface = FileUtilsJavascriptInterface(webView = this)
+    val httpJavascriptInterface = HttpJavascriptInterface(webView = this)
 
 
     val assistsServiceListener = object : AssistsServiceListener {
@@ -211,6 +213,7 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(pathJavascriptInterface, "assistsxPath")
         addJavascriptInterface(fileIOJavascriptInterface, "assistsxFileIO")
         addJavascriptInterface(fileUtilsJavascriptInterface, "assistsxFileUtils")
+        addJavascriptInterface(httpJavascriptInterface, "assistsxHttp")
         AssistsService.listeners.add(assistsServiceListener)
     }
 
