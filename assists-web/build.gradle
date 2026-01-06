@@ -40,6 +40,7 @@ dependencies {
     implementation "com.google.code.gson:gson:2.11.0"
     implementation project(':assists')
     implementation project(':assists-mp')
+    implementation project(':assists-ime')
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     api 'com.google.mlkit:text-recognition-chinese:16.0.1'

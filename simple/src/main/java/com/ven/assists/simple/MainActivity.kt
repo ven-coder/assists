@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         super.onAccessibilityEvent(event)
 //        if (event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
-//
+//            LogUtils.d(event.text)
 //        }
     }
 

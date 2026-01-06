@@ -46,6 +46,8 @@ import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodInfo;
+import android.view.inputmethod.InputMethodManager;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -84,6 +86,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     private static final int PERIOD_FOR_AUDIO_AND_HAPTIC_FEEDBACK_IN_KEY_REPEAT = 2;
     private static final int PENDING_IMS_CALLBACK_DURATION_MILLIS = 800;
     static final long DELAY_DEALLOCATE_MEMORY_MILLIS = TimeUnit.SECONDS.toMillis(10);
+
+    // 静态实例，用于外部访问
+    private static LatinIME sInstance = null;
 
     final Settings mSettings;
     private Locale mLocale;
@@ -260,6 +265,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         AudioAndHapticFeedbackManager.init(this);
         super.onCreate();
 
+        // 保存静态实例
+        sInstance = this;
+
         // TODO: Resolve mutual dependencies of {@link #loadSettings()} and
         // {@link #resetDictionaryFacilitatorIfNecessary()}.
         loadSettings();
@@ -281,6 +289,8 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
 
     @Override
     public void onDestroy() {
+        // 清除静态实例
+        sInstance = null;
         mSettings.onDestroy();
         unregisterReceiver(mRingerModeChangeReceiver);
         super.onDestroy();
@@ -948,5 +958,120 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
                 window.getInsetsController().setSystemBarsAppearance(0, flag);
             }
         }
+    }
+
+    /**
+     * 执行当前输入框的编辑器动作（如搜索）
+     * 这是一个公开的静态方法，可以从外部调用
+     * @param actionId 编辑器动作ID，默认为 EditorInfo.IME_ACTION_SEARCH
+     * @return 执行操作是否成功
+     */
+    public static boolean performEditorAction(final int actionId) {
+        final LatinIME instance = sInstance;
+        if (instance == null) {
+            return false;
+        }
+        // 直接使用 InputLogic 中的 RichInputConnection 来执行编辑器动作
+        instance.mInputLogic.mConnection.performEditorAction(actionId);
+        return true;
+    }
+
+    /**
+     * 跳转到输入法管理页面
+     * 这是一个公开的静态方法，可以从外部调用
+     * @param context 上下文，用于启动设置页面
+     * @return 是否成功启动设置页面
+     */
+    public static boolean openInputMethodSettings(final Context context) {
+        if (context == null) {
+            return false;
+        }
+        try {
+            final Intent intent = new Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to open input method settings", e);
+            return false;
+        }
+    }
+
+    /**
+     * 检查当前输入法是否在系统中启用
+     * 这是一个公开的静态方法，可以从外部调用
+     * @param context 上下文，用于获取 InputMethodManager
+     * @return 如果输入法已启用返回 true，否则返回 false
+     */
+    public static boolean isInputMethodEnabled(final Context context) {
+        if (context == null) {
+            return false;
+        }
+        try {
+            final InputMethodManager imm =
+                    (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm == null) {
+                return false;
+            }
+            final String imePackageName = context.getPackageName();
+            for (final InputMethodInfo imi : imm.getEnabledInputMethodList()) {
+                if (imi.getPackageName().equals(imePackageName)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in check if input method is enabled", e);
+            return false;
+        }
+    }
+
+    /**
+     * 检查当前选中的输入法是否是当前输入法
+     * 这是一个公开的静态方法，可以从外部调用
+     * @param context 上下文，用于获取 InputMethodManager 和当前输入法信息
+     * @return 如果当前选中的输入法是当前输入法返回 true，否则返回 false
+     */
+    public static boolean isCurrentInputMethod(final Context context) {
+        if (context == null) {
+            return false;
+        }
+        try {
+            final InputMethodManager imm =
+                    (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm == null) {
+                return false;
+            }
+
+            // 获取当前默认输入法的 ID
+            final String currentInputMethodId =  android.provider.Settings.Secure.getString(
+                    context.getContentResolver(),
+                    android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+            );
+
+            if (currentInputMethodId == null || currentInputMethodId.isEmpty()) {
+                return false;
+            }
+
+            // 获取自己的输入法 ID
+            final String imePackageName = context.getPackageName();
+            final String imeClassName = LatinIME.class.getName();
+            final String expectedInputMethodId = imePackageName + "/" + imeClassName;
+
+            // 比较输入法 ID
+            return currentInputMethodId.equals(expectedInputMethodId);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in check if current input method", e);
+            return false;
+        }
+    }
+
+    /**
+     * 检查当前选中的输入法是否是当前输入法（实例方法版本）
+     * 这是一个公开的实例方法，可以从 LatinIME 实例调用
+     * @return 如果当前选中的输入法是当前输入法返回 true，否则返回 false
+     */
+    public boolean isCurrentInputMethod() {
+        return isCurrentInputMethod(this);
     }
 }
