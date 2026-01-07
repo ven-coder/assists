@@ -33,6 +33,7 @@ object CallMethod {
     const val getScreenSize = "getScreenSize"
     const val getAppScreenSize = "getAppScreenSize"
     const val takeScreenshot = "takeScreenshot"
+    const val takeScreenshotSave = "takeScreenshotSave"
     const val setOverlayFlags = "setOverlayFlags"
     const val scanQR = "scanQR"
     const val loadWebViewOverlay = "loadWebViewOverlay"

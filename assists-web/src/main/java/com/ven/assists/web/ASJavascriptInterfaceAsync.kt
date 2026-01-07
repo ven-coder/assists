@@ -2,6 +2,7 @@ package com.ven.assists.web
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat
 import android.graphics.Path
 import android.graphics.Rect
 import android.net.Uri
@@ -17,6 +18,7 @@ import com.blankj.utilcode.util.DeviceUtils
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.NetworkUtils
+import com.blankj.utilcode.util.PathUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -45,6 +47,7 @@ import com.ven.assists.AssistsCore.scrollForward
 import com.ven.assists.AssistsCore.selectionText
 import com.ven.assists.AssistsCore.setNodeText
 import com.ven.assists.AssistsCore.takeScreenshot
+import com.ven.assists.AssistsCore.takeScreenshotSave
 import com.ven.assists.mp.MPManager
 import com.ven.assists.mp.MPManager.getBitmap
 import com.ven.assists.service.AssistsService
@@ -64,6 +67,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
@@ -538,6 +542,52 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                         })
                     })
                     response
+                }
+
+                CallMethod.takeScreenshotSave -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                        val response = request.createResponse(-1, message = "takeScreenshotSave requires Android R or above", data = null)
+                        response
+                    } else {
+                        val overlayHiddenScreenshotDelayMillis = request.arguments?.get("overlayHiddenScreenshotDelayMillis")?.asLong ?: 250
+                        val filePath = request.arguments?.get("filePath")?.asString
+                        val formatStr = request.arguments?.get("format")?.asString ?: "PNG"
+                        
+                        // 解析格式参数
+                        val format = when (formatStr.uppercase()) {
+                            "PNG" -> CompressFormat.PNG
+                            "JPEG", "JPG" -> CompressFormat.JPEG
+                            "WEBP" -> CompressFormat.WEBP
+                            else -> CompressFormat.PNG
+                        }
+                        
+                        // 获取文件扩展名
+                        val fileExtension = when (format) {
+                            CompressFormat.PNG -> "png"
+                            CompressFormat.JPEG -> "jpg"
+                            CompressFormat.WEBP -> "webp"
+                            else -> {}
+                        }
+                        
+                        AssistsWindowManager.hideAll()
+                        delay(overlayHiddenScreenshotDelayMillis)
+                        
+                        // 构建文件对象
+                        val file = filePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/${System.currentTimeMillis()}.$fileExtension")
+                        
+                        // 全屏截图保存
+                        val savedFile = AssistsCore.takeScreenshotSave(file = file, format = format)
+                        
+                        AssistsWindowManager.showTop()
+                        
+                        val response = request.createResponse(
+                            if (savedFile == null) -1 else 0,
+                            data = JsonObject().apply {
+                                addProperty("file", savedFile?.path ?: "")
+                            }
+                        )
+                        response
+                    }
                 }
 
                 CallMethod.performLinearGesture -> {

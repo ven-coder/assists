@@ -225,16 +225,17 @@ class HttpJavascriptInterface(val webView: WebView) {
             val multipartBuilder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
 
+            // 先添加其他表单字段
+            formData?.entrySet()?.forEach { entry ->
+                multipartBuilder.addFormDataPart(entry.key, entry.value.asString)
+            }
+
             // 添加文件
             val mediaType = "application/octet-stream".toMediaType()
             val fileBody = file.asRequestBody(mediaType)
             val finalFileName = fileName ?: file.name
             multipartBuilder.addFormDataPart(fieldName, finalFileName, fileBody)
 
-            // 添加其他表单字段
-            formData?.entrySet()?.forEach { entry ->
-                multipartBuilder.addFormDataPart(entry.key, entry.value.asString)
-            }
 
             val requestBody = multipartBuilder.build()
 

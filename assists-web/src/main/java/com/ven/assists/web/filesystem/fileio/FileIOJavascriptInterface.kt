@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 文件IO相关的 JavascriptInterface
@@ -26,6 +27,8 @@ import java.nio.charset.StandardCharsets
  */
 class FileIOJavascriptInterface(val webView: WebView) {
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    // 用于线程安全写入的锁映射表，每个文件路径对应一个锁对象
+    private val fileLocks = ConcurrentHashMap<String, Any>()
 
     fun <T> callbackResponse(result: CallResponse<T>) {
         coroutineScope.launch {
@@ -155,6 +158,7 @@ class FileIOJavascriptInterface(val webView: WebView) {
                     val filePath = request.arguments?.get("filePath")?.asString ?: ""
                     val content = request.arguments?.get("content")?.asString
                     val append = request.arguments?.get("append")?.asBoolean ?: false
+                    val threadSafe = request.arguments?.get("threadSafe")?.asBoolean ?: false
 
                     if (filePath.isEmpty()) {
                         request.createResponse(-1, message = "filePath参数不能为空", data = false)
@@ -163,7 +167,16 @@ class FileIOJavascriptInterface(val webView: WebView) {
                     } else {
                         try {
                             val file = File(filePath)
-                            val result = FileIOUtils.writeFileFromString(file, content, append)
+                            val result = if (threadSafe) {
+                                // 线程安全写入：为每个文件路径获取或创建锁对象
+                                val lock = fileLocks.computeIfAbsent(filePath) { Any() }
+                                synchronized(lock) {
+                                    FileIOUtils.writeFileFromString(file, content, append)
+                                }
+                            } else {
+                                // 非线程安全写入：直接调用
+                                FileIOUtils.writeFileFromString(file, content, append)
+                            }
                             request.createResponse(if (result) 0 else -1, data = result)
                         } catch (e: Exception) {
                             LogUtils.e(e)
