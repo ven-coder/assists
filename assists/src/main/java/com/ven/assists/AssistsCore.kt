@@ -50,6 +50,8 @@ import com.blankj.utilcode.util.SizeUtils
 import com.ven.assists.window.AssistsWindowManager.nonTouchableByWrapper
 import androidx.core.graphics.createBitmap
 import com.blankj.utilcode.util.FileUtils
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.ven.assists.utils.BitmapUtils
 
 /**
@@ -1315,5 +1317,164 @@ object AssistsCore {
             append("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
             Log.d(tag, toString())
         }
+    }
+
+    /**
+     * 节点边界信息数据类
+     * 包含节点在屏幕中的位置和尺寸信息
+     */
+    data class NodeBounds(
+        val left: Int,
+        val top: Int,
+        val right: Int,
+        val bottom: Int,
+        val width: Int,
+        val height: Int,
+        val centerX: Int,
+        val centerY: Int,
+        val exactCenterX: Float,
+        val exactCenterY: Float,
+        val isEmpty: Boolean,
+    )
+
+    /**
+     * 节点树数据类
+     * 包含节点的所有属性和子节点列表，用于生成树形结构的JSON
+     */
+    data class NodeTree(
+        val packageName: String,
+        val text: String,
+        val des: String,
+        val viewId: String,
+        val className: String,
+        val isScrollable: Boolean,
+        val isClickable: Boolean,
+        val isEnabled: Boolean,
+        val boundsInScreen: NodeBounds,
+        val hintText: String,
+        val isCheckable: Boolean,
+        val isChecked: Boolean,
+        val isFocusable: Boolean,
+        val isFocused: Boolean,
+        val isLongClickable: Boolean,
+        val isPassword: Boolean,
+        val isSelected: Boolean,
+        val isVisibleToUser: Boolean,
+        val drawingOrder: Int,
+        val children: List<NodeTree>
+    )
+
+    /**
+     * 将AccessibilityNodeInfo转换为NodeBounds
+     * @return 节点边界信息
+     */
+    private fun AccessibilityNodeInfo.toNodeBounds(): NodeBounds {
+        val rect = getBoundsInScreen()
+        return NodeBounds(
+            left = rect.left,
+            top = rect.top,
+            right = rect.right,
+            bottom = rect.bottom,
+            width = rect.width(),
+            height = rect.height(),
+            centerX = rect.centerX(),
+            centerY = rect.centerY(),
+            exactCenterX = rect.exactCenterX(),
+            exactCenterY = rect.exactCenterY(),
+            isEmpty = rect.isEmpty
+        )
+    }
+
+    /**
+     * 将AccessibilityNodeInfo转换为NodeTree（递归包含子节点）
+     * @return 节点树对象
+     */
+    fun AccessibilityNodeInfo.toNodeTree(): NodeTree {
+        val children = mutableListOf<NodeTree>()
+        for (i in 0 until childCount) {
+            getChild(i)?.let { child ->
+                children.add(child.toNodeTree())
+            }
+        }
+
+        return NodeTree(
+            packageName = packageName?.toString() ?: "",
+            text = text?.toString() ?: "",
+            des = contentDescription?.toString() ?: "",
+            viewId = viewIdResourceName ?: "",
+            className = className?.toString() ?: "",
+            isScrollable = isScrollable,
+            isClickable = isClickable,
+            isEnabled = isEnabled,
+            boundsInScreen = toNodeBounds(),
+            hintText = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) hintText?.toString() ?: "" else "",
+            isCheckable = isCheckable,
+            isChecked = isChecked,
+            isFocusable = isFocusable,
+            isFocused = isFocused,
+            isLongClickable = isLongClickable,
+            isPassword = isPassword,
+            isSelected = isSelected,
+            isVisibleToUser = isVisibleToUser,
+            drawingOrder = drawingOrder,
+            children = children
+        )
+    }
+
+    /**
+     * 获取当前窗口所有节点的树形结构
+     * @return 根节点的NodeTree对象，如果获取失败则返回null
+     */
+    fun getRootNodeTree(): NodeTree? {
+        return AssistsService.instance?.rootInActiveWindow?.toNodeTree()
+    }
+
+    /**
+     * 获取当前窗口所有节点的JSON字符串（树形结构）
+     * @param prettyPrint 是否格式化输出JSON，默认为false
+     * @return JSON字符串，如果获取失败则返回空字符串
+     */
+    fun getRootNodeTreeJson(prettyPrint: Boolean = false): String {
+        val nodeTree = getRootNodeTree() ?: return ""
+        val gson = if (prettyPrint) {
+            GsonBuilder().setPrettyPrinting().create()
+        } else {
+            Gson()
+        }
+        return gson.toJson(nodeTree)
+    }
+
+    /**
+     * 将指定节点及其所有子节点转换为JSON字符串（树形结构）
+     * @param prettyPrint 是否格式化输出JSON，默认为false
+     * @return JSON字符串
+     */
+    fun AccessibilityNodeInfo.toNodeTreeJson(prettyPrint: Boolean = false): String {
+        val nodeTree = toNodeTree()
+        val gson = if (prettyPrint) {
+            GsonBuilder().setPrettyPrinting().create()
+        } else {
+            Gson()
+        }
+        return gson.toJson(nodeTree)
+    }
+
+    /**
+     * 获取当前窗口所有节点的JSON字符串并保存到文件
+     * @param file 保存JSON的文件，默认为应用内部文件路径下的时间戳命名文件
+     * @param prettyPrint 是否格式化输出JSON，默认为true
+     * @return 保存成功时返回文件对象，失败时返回null
+     */
+    fun saveRootNodeTreeJson(
+        file: File = File(PathUtils.getInternalAppFilesPath() + "/node_tree_${System.currentTimeMillis()}.json"),
+        prettyPrint: Boolean = true
+    ): File? {
+        val json = getRootNodeTreeJson(prettyPrint)
+        if (json.isEmpty()) return null
+        return runCatching {
+            file.parentFile?.mkdirs()
+            file.writeText(json)
+            file
+        }.getOrNull()
     }
 }
