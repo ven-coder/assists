@@ -115,7 +115,7 @@
 
 | 交流群 | 个人微信 |
 |:------:|:--------:|
-| <img src="https://github.com/user-attachments/assets/d621d3a5-4afc-4a3c-bbb7-18caa1a4794a" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
+| <img src="https://github.com/user-attachments/assets/ea81b07d-b433-498a-b888-a779e1807d30" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
 
 1群已满200人，要进1群可加我备注进1群
 
@@ -150,7 +150,7 @@
 
 | 资料截图 | 微信扫码加入 |
 |:------:|:------:|
-| <img src="https://github.com/user-attachments/assets/ea81b07d-b433-498a-b888-a779e1807d30" width="600" /> | <img src="https://github.com/ven-coder/Assists/assets/27257149/7ae8e825-f489-46e3-96f0-ed03d12db9e8" width="200" /> |
+| <img src="https://github.com/user-attachments/assets/7607a4e6-4845-474e-a9c6-e685cc306523" width="600" /> | <img src="https://github.com/ven-coder/Assists/assets/27257149/7ae8e825-f489-46e3-96f0-ed03d12db9e8" width="200" /> |
 **定制开发可联系个人微信: x39598**
 
 **感谢所有的支持者，得到你们的支持我将会更加完善开源库的能力！** 🚀
