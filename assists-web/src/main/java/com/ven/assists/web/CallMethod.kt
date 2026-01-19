@@ -34,6 +34,7 @@ object CallMethod {
     const val getAppScreenSize = "getAppScreenSize"
     const val takeScreenshot = "takeScreenshot"
     const val takeScreenshotSave = "takeScreenshotSave"
+    const val takeScreenshotToFile = "takeScreenshotToFile"
     const val setOverlayFlags = "setOverlayFlags"
     const val scanQR = "scanQR"
     const val loadWebViewOverlay = "loadWebViewOverlay"
@@ -75,5 +76,8 @@ object CallMethod {
     // 通讯录相关方法
     const val addContact = "addContact"
     const val getAllContacts = "getAllContacts"
+
+    // 节点树相关方法
+    const val saveRootNodeTreeJson = "saveRootNodeTreeJson"
 
 }

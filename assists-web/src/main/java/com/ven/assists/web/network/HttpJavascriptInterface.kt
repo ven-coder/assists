@@ -5,6 +5,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.ven.assists.web.CallRequest
@@ -196,26 +197,55 @@ class HttpJavascriptInterface(val webView: WebView) {
 
     /**
      * 处理 POST 文件上传请求
+     * 支持单个文件和多文件上传，同时支持多个表单字段
+     * 
+     * 参数说明：
+     * - url: 请求地址（必需）
+     * - headers: 请求头（可选）
+     * - formData: 表单字段（可选，JsonObject，键值对形式）
+     * - files: 文件数组（必需，JsonArray，每个元素为 JsonObject）
+     *   每个文件对象包含：
+     *   - filePath: 文件路径（必需）
+     *   - fieldName: 字段名（可选，默认 "file"）
+     *   - fileName: 文件名（可选，默认使用文件原名）
+     *   - contentType: 文件类型（可选，默认 "application/octet-stream"）
+     * 
+     * 注意：单文件上传时，files 数组只需包含一个文件对象
      */
     private fun handlePostFileRequest(request: CallRequest<JsonObject>): CallResponse<JsonObject> {
         val url = request.arguments?.get("url")?.asString ?: ""
         val headers = request.arguments?.get("headers")?.asJsonObject
-        val filePath = request.arguments?.get("filePath")?.asString ?: ""
-        val fieldName = request.arguments?.get("fieldName")?.asString ?: "file"
-        val fileName = request.arguments?.get("fileName")?.asString
         val formData = request.arguments?.get("formData")?.asJsonObject
+        val filesArray = request.arguments?.get("files")?.asJsonArray
 
         if (url.isEmpty()) {
             return request.createResponse(-1, message = "url参数不能为空", data = JsonObject())
         }
 
-        if (filePath.isEmpty()) {
-            return request.createResponse(-1, message = "filePath参数不能为空", data = JsonObject())
+        if (filesArray == null || filesArray.size() == 0) {
+            return request.createResponse(-1, message = "files参数不能为空，至少需要上传一个文件", data = JsonObject())
         }
 
-        val file = File(filePath)
-        if (!file.exists() || !file.isFile) {
-            return request.createResponse(-1, message = "文件不存在或不是有效文件", data = JsonObject())
+        // 收集要上传的文件列表
+        val fileList = mutableListOf<FileInfo>()
+
+        filesArray.forEach { element ->
+            val fileObj = element.asJsonObject
+            val filePath = fileObj.get("filePath")?.asString ?: ""
+            val fieldName = fileObj.get("fieldName")?.asString ?: "file"
+            val fileName = fileObj.get("fileName")?.asString
+            val contentType = fileObj.get("contentType")?.asString ?: "application/octet-stream"
+
+            if (filePath.isEmpty()) {
+                return request.createResponse(-1, message = "files数组中的filePath参数不能为空", data = JsonObject())
+            }
+
+            val file = File(filePath)
+            if (!file.exists() || !file.isFile) {
+                return request.createResponse(-1, message = "文件不存在或不是有效文件: $filePath", data = JsonObject())
+            }
+
+            fileList.add(FileInfo(file, fieldName, fileName ?: file.name, contentType))
         }
 
         return try {
@@ -225,17 +255,33 @@ class HttpJavascriptInterface(val webView: WebView) {
             val multipartBuilder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
 
-            // 先添加其他表单字段
+            // 先添加表单字段
             formData?.entrySet()?.forEach { entry ->
-                multipartBuilder.addFormDataPart(entry.key, entry.value.asString)
+                val value = entry.value
+                when {
+                    value.isJsonPrimitive -> {
+                        // 字符串值
+                        multipartBuilder.addFormDataPart(entry.key, value.asString)
+                    }
+                    value.isJsonArray -> {
+                        // 数组值，支持同名字段多个值
+                        value.asJsonArray.forEach { arrayElement ->
+                            multipartBuilder.addFormDataPart(entry.key, arrayElement.asString)
+                        }
+                    }
+                    else -> {
+                        // 其他类型转为字符串
+                        multipartBuilder.addFormDataPart(entry.key, value.toString())
+                    }
+                }
             }
 
-            // 添加文件
-            val mediaType = "application/octet-stream".toMediaType()
-            val fileBody = file.asRequestBody(mediaType)
-            val finalFileName = fileName ?: file.name
-            multipartBuilder.addFormDataPart(fieldName, finalFileName, fileBody)
-
+            // 添加所有文件
+            fileList.forEach { fileInfo ->
+                val mediaType = fileInfo.contentType.toMediaType()
+                val fileBody = fileInfo.file.asRequestBody(mediaType)
+                multipartBuilder.addFormDataPart(fileInfo.fieldName, fileInfo.fileName, fileBody)
+            }
 
             val requestBody = multipartBuilder.build()
 
@@ -271,6 +317,16 @@ class HttpJavascriptInterface(val webView: WebView) {
             request.createResponse(-1, message = "文件上传失败: ${e.message}", data = JsonObject())
         }
     }
+
+    /**
+     * 文件信息数据类
+     */
+    private data class FileInfo(
+        val file: File,
+        val fieldName: String,
+        val fileName: String,
+        val contentType: String
+    )
 
     /**
      * 处理文件下载请求

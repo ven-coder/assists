@@ -190,7 +190,7 @@ Copyright © 2025 [ven-coder][profile-link]
 [issues-link]: https://github.com/ven-coder/Assists/issues
 [profile-link]: https://github.com/ven-coder
 [demo-download]: https://www.pgyer.com/1zaijG
-[docs-link]: https://github.com/ven-coder/Assists/tree/master/documents
+[docs-link]: https://ahcirffybg.feishu.cn/wiki/space/7561797853589553156?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home
 [assistsx-js-link]: https://github.com/ven-coder/assistsx-js
 [api-reference]: https://github.com/ven-coder/Assists/blob/master/API_REFERENCE.md
 [changelog]: https://github.com/ven-coder/Assists/releases

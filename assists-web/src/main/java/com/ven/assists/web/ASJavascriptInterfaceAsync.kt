@@ -72,6 +72,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.ActivityUtils
+import com.blankj.utilcode.util.ImageUtils
 import com.ven.assists.utils.AudioPlayerUtil
 import com.ven.assists.utils.ContactsUtil
 import com.ven.assists.utils.FileDownloadUtil
@@ -566,7 +567,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                             CompressFormat.PNG -> "png"
                             CompressFormat.JPEG -> "jpg"
                             CompressFormat.WEBP -> "webp"
-                            else -> {}
+                            else -> "png"
                         }
                         
                         AssistsWindowManager.hideAll()
@@ -575,19 +576,157 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                         // 构建文件对象
                         val file = filePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/${System.currentTimeMillis()}.$fileExtension")
                         
-                        // 全屏截图保存
-                        val savedFile = AssistsCore.takeScreenshotSave(file = file, format = format)
+                        // 如果提供了节点，则保存节点截图；否则保存全屏截图
+                        val savedFile = if (request.node?.nodeId.isNullOrEmpty()) {
+                            // 全屏截图保存
+                            AssistsCore.takeScreenshotSave(file = file, format = format)
+                        } else {
+                            // 节点截图保存
+                            NodeCacheManager.get(request.node?.nodeId ?: "")?.takeScreenshotSave(file = file, format = format)
+                        }
                         
                         AssistsWindowManager.showTop()
                         
                         val response = request.createResponse(
                             if (savedFile == null) -1 else 0,
+                            message = if (savedFile == null) "截图保存失败" else "截图保存成功",
                             data = JsonObject().apply {
                                 addProperty("file", savedFile?.path ?: "")
                             }
                         )
                         response
                     }
+                }
+
+                CallMethod.takeScreenshotToFile -> {
+                    val overlayHiddenScreenshotDelayMillis = request.arguments?.get("overlayHiddenScreenshotDelayMillis")?.asLong ?: 250
+                    val formatStr = request.arguments?.get("format")?.asString ?: "PNG"
+                    val baseFilePath = request.arguments?.get("filePath")?.asString
+                    
+                    // 解析格式参数
+                    val format = when (formatStr.uppercase()) {
+                        "PNG" -> CompressFormat.PNG
+                        "JPEG", "JPG" -> CompressFormat.JPEG
+                        "WEBP" -> CompressFormat.WEBP
+                        else -> CompressFormat.PNG
+                    }
+                    
+                    // 获取文件扩展名
+                    val fileExtension = when (format) {
+                        CompressFormat.PNG -> "png"
+                        CompressFormat.JPEG -> "jpg"
+                        CompressFormat.WEBP -> "webp"
+                        else -> "png"
+                    }
+                    
+                    AssistsWindowManager.hideAll()
+                    delay(overlayHiddenScreenshotDelayMillis)
+                    
+                    val filePaths = arrayListOf<String>()
+                    
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        // Android R 及以上版本
+                        val screenshot = AssistsCore.takeScreenshot()
+                        AssistsWindowManager.showTop()
+                        
+                        if (request.nodes.isNullOrEmpty()) {
+                            // 如果没有指定节点，保存全屏截图
+                            val file = baseFilePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}.$fileExtension")
+                            file.parentFile?.mkdirs()
+                            screenshot?.let {
+                                val success = ImageUtils.save(it, file, format)
+                                if (success) {
+                                    filePaths.add(file.absolutePath)
+                                }
+                                it.recycle()
+                            }
+                        } else {
+                            // 保存多个节点截图
+                            request.nodes?.forEachIndexed { index, nodeRequest ->
+                                val bitmap = NodeCacheManager.get(nodeRequest.nodeId)?.takeScreenshot(screenshot = screenshot)
+                                bitmap?.let {
+                                    val file = if (baseFilePath != null && request.nodes?.size == 1) {
+                                        // 如果只有一个节点且指定了路径，使用指定路径
+                                        File(baseFilePath)
+                                    } else {
+                                        // 多个节点时，使用索引生成文件名
+                                        val fileName = if (baseFilePath != null) {
+                                            val baseFile = File(baseFilePath)
+                                            val nameWithoutExt = baseFile.nameWithoutExtension
+                                            val parent = baseFile.parent ?: PathUtils.getInternalAppFilesPath()
+                                            File(parent, "${nameWithoutExt}_${index}.$fileExtension")
+                                        } else {
+                                            File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}_${index}.$fileExtension")
+                                        }
+                                        fileName
+                                    }
+                                    file.parentFile?.mkdirs()
+                                    val success = ImageUtils.save(it, file, format)
+                                    if (success) {
+                                        filePaths.add(file.absolutePath)
+                                    }
+                                    it.recycle()
+                                }
+                            }
+                            screenshot?.recycle()
+                        }
+                    } else {
+                        // Android R 以下版本使用 MPManager
+                        val takeScreenshot2Bitmap = MPManager.takeScreenshot2Bitmap()
+                        AssistsWindowManager.showTop()
+                        
+                        takeScreenshot2Bitmap?.let {
+                            if (request.nodes.isNullOrEmpty()) {
+                                // 如果没有指定节点，保存全屏截图
+                                val file = baseFilePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}.$fileExtension")
+                                file.parentFile?.mkdirs()
+                                val success = ImageUtils.save(it, file, format)
+                                if (success) {
+                                    filePaths.add(file.absolutePath)
+                                }
+                            } else {
+                                // 保存多个节点截图
+                                request.nodes?.forEachIndexed { index, nodeRequest ->
+                                    val bitmap = NodeCacheManager.get(nodeRequest.nodeId)?.getBitmap(screenshot = it)
+                                    bitmap?.let { nodeBitmap ->
+                                        val file = if (baseFilePath != null && request.nodes?.size == 1) {
+                                            // 如果只有一个节点且指定了路径，使用指定路径
+                                            File(baseFilePath)
+                                        } else {
+                                            // 多个节点时，使用索引生成文件名
+                                            val fileName = if (baseFilePath != null) {
+                                                val baseFile = File(baseFilePath)
+                                                val nameWithoutExt = baseFile.nameWithoutExtension
+                                                val parent = baseFile.parent ?: PathUtils.getInternalAppFilesPath()
+                                                File(parent, "${nameWithoutExt}_${index}.$fileExtension")
+                                            } else {
+                                                File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}_${index}.$fileExtension")
+                                            }
+                                            fileName
+                                        }
+                                        file.parentFile?.mkdirs()
+                                        val success = ImageUtils.save(nodeBitmap, file, format)
+                                        if (success) {
+                                            filePaths.add(file.absolutePath)
+                                        }
+                                        nodeBitmap.recycle()
+                                    }
+                                }
+                            }
+                            it.recycle()
+                        }
+                    }
+                    
+                    val response = request.createResponse(
+                        if (filePaths.isEmpty()) -1 else 0,
+                        message = if (filePaths.isEmpty()) "截图保存失败" else "截图保存成功",
+                        data = JsonObject().apply {
+                            add("files", JsonArray().apply {
+                                filePaths.forEach { add(it) }
+                            })
+                        }
+                    )
+                    response
                 }
 
                 CallMethod.performLinearGesture -> {
@@ -1078,6 +1217,32 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     } catch (e: Exception) {
                         LogUtils.e(e)
                         val response = request.createResponse(-1, message = "Error: ${e.message}", data = JsonArray())
+                        response
+                    }
+                }
+
+                CallMethod.saveRootNodeTreeJson -> {
+                    try {
+                        val filePath = request.arguments?.get("filePath")?.asString
+                        val prettyPrint = request.arguments?.get("prettyPrint")?.asBoolean ?: true
+                        
+                        // 构建文件对象
+                        val file = filePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/node_tree_${System.currentTimeMillis()}.json")
+                        
+                        // 保存节点树JSON到文件
+                        val savedFile = AssistsCore.saveRootNodeTreeJson(file = file, prettyPrint = prettyPrint)
+                        
+                        val response = request.createResponse(
+                            if (savedFile == null) -1 else 0,
+                            message = if (savedFile == null) "保存节点树JSON失败" else "保存成功",
+                            data = JsonObject().apply {
+                                addProperty("file", savedFile?.path ?: "")
+                            }
+                        )
+                        response
+                    } catch (e: Exception) {
+                        LogUtils.e(e)
+                        val response = request.createResponse(-1, message = "Error: ${e.message}", data = JsonObject())
                         response
                     }
                 }
