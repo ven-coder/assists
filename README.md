@@ -115,7 +115,7 @@
 
 | 交流群 | 个人微信 |
 |:------:|:--------:|
-| <img src="https://github.com/user-attachments/assets/ee150634-84ba-4d26-8457-12f55e72275b" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
+| <img src="https://github.com/user-attachments/assets/d3bdc73c-6bb0-43e0-9592-ce770a0bb4ec" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
 
 1群已满200人，要进1群可加我备注进1群
 
