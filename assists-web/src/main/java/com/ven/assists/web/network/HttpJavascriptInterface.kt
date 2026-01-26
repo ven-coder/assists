@@ -12,6 +12,7 @@ import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallResponse
 import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.web.createResponse
+import com.ven.assists.web.gallery.GalleryUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,6 +23,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.io.FileInputStream
+import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 
 /**
@@ -335,6 +338,7 @@ class HttpJavascriptInterface(val webView: WebView) {
         val url = request.arguments?.get("url")?.asString ?: ""
         val savePath = request.arguments?.get("savePath")?.asString ?: ""
         val headers = request.arguments?.get("headers")?.asJsonObject
+        val saveToGallery = request.arguments?.get("saveToGallery")?.asBoolean ?: false
 
         if (url.isEmpty()) {
             return request.createResponse(-1, message = "url参数不能为空", data = JsonObject())
@@ -378,11 +382,29 @@ class HttpJavascriptInterface(val webView: WebView) {
                 }
             }
 
+            // 尝试保存到系统相册
+            var galleryResult: com.ven.assists.web.gallery.GalleryResult? = null
+            if (saveToGallery) {
+                galleryResult = try {
+                    saveFileToGallery(saveFile)
+                } catch (e: Exception) {
+                    LogUtils.e(e, "保存文件到相册失败")
+                    null
+                }
+            }
+
             val responseData = JsonObject().apply {
                 addProperty("statusCode", httpResponse.code)
                 addProperty("statusMessage", httpResponse.message)
                 addProperty("savePath", saveFile.absolutePath)
                 addProperty("fileSize", saveFile.length())
+                addProperty("saveToGallerySuccess", galleryResult?.success ?: false)
+                // 添加相册相关信息
+                galleryResult?.let { result ->
+                    addProperty("galleryUri", result.uri?.toString())
+                    addProperty("galleryId", result.id)
+                    addProperty("galleryType", result.type)
+                }
                 add("headers", JsonObject().apply {
                     httpResponse.headers.forEach { pair ->
                         addProperty(pair.first, pair.second)
@@ -396,6 +418,43 @@ class HttpJavascriptInterface(val webView: WebView) {
             request.createResponse(-1, message = "文件下载失败: ${e.message}", data = JsonObject())
         }
     }
+
+    /**
+     * 保存文件到系统相册
+     * 支持图片和视频文件
+     * @param file 要保存的文件
+     * @return GalleryResult 包含 uri、id、type 和 success
+     */
+    private fun saveFileToGallery(file: File): com.ven.assists.web.gallery.GalleryResult? {
+        val context = JavascriptInterfaceContext.getContext() ?: return null
+        if (!file.exists() || !file.isFile) {
+            return null
+        }
+
+        val fileName = file.name
+        val fileExtension = file.extension.lowercase()
+        
+        // 判断文件类型
+        val isImage = GalleryUtils.isImageFile(fileExtension)
+        val isVideo = GalleryUtils.isVideoFile(fileExtension)
+        
+        if (!isImage && !isVideo) {
+            // 不是图片或视频，不保存到相册
+            return null
+        }
+
+        return try {
+            if (isImage) {
+                GalleryUtils.addImageToGallery(context, file, fileName)
+            } else {
+                GalleryUtils.addVideoToGallery(context, file, fileName)
+            }
+        } catch (e: Exception) {
+            LogUtils.e(e, "保存文件到相册异常")
+            null
+        }
+    }
+
 
     /**
      * 处理配置 OkHttpClient 请求
