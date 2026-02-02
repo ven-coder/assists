@@ -305,7 +305,8 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     @Override
     public boolean onEvaluateInputViewShown() {
         final boolean useOnScreen = super.onEvaluateInputViewShown();
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
+        // BAKLAVA = 35, use literal for compatibility with older SDK on JitPack
+        if (Build.VERSION.SDK_INT < 35) {
             return useOnScreen;
         } else {
             return useOnScreen || mSettings.getCurrent().mUseOnScreen;

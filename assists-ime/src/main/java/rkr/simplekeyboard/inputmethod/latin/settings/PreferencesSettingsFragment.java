@@ -46,7 +46,8 @@ public final class PreferencesSettingsFragment extends SubScreenFragment {
         addPreferencesFromResource(R.xml.prefs_screen_preferences);
         updateImeSwitchEnabledPref();
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) {
+        // BAKLAVA = 35, use literal for compatibility with older SDK on JitPack
+        if (Build.VERSION.SDK_INT < 35) {
             removePreference(Settings.PREF_USE_ON_SCREEN);
         }
     }
