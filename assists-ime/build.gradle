@@ -5,9 +5,9 @@ plugins {
 }
 android {
     defaultConfig {
-        compileSdk 36
+        compileSdk rootProject.ext.compileSdk
         minSdkVersion 23
-        targetSdkVersion 36
+        targetSdkVersion rootProject.ext.targetSdk
     }
     buildTypes {
         release {
