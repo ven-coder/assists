@@ -26,6 +26,7 @@ import com.ven.assists.web.gallery.GalleryJavascriptInterface
 import com.ven.assists.web.network.HttpJavascriptInterface
 import com.ven.assists.web.ime.ImeJavascriptInterface
 import com.ven.assists.web.imageutils.ImageUtilsJavascriptInterface
+import com.ven.assists.web.mlkit.MlkitJavascriptInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -122,6 +123,7 @@ open class ASWebView @JvmOverloads constructor(
     val httpJavascriptInterface = HttpJavascriptInterface(webView = this)
     val imeJavascriptInterface = ImeJavascriptInterface(webView = this)
     val imageUtilsJavascriptInterface = ImageUtilsJavascriptInterface(webView = this)
+    val mlkitJavascriptInterface = MlkitJavascriptInterface(webView = this)
     val galleryJavascriptInterface = GalleryJavascriptInterface(webView = this)
 
 
@@ -222,6 +224,7 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(httpJavascriptInterface, "assistsxHttp")
         addJavascriptInterface(imeJavascriptInterface, "assistsxIme")
         addJavascriptInterface(imageUtilsJavascriptInterface, "assistsxImageUtils")
+        addJavascriptInterface(mlkitJavascriptInterface, "assistsxMlkit")
         addJavascriptInterface(galleryJavascriptInterface, "assistsxGallery")
         AssistsService.listeners.add(assistsServiceListener)
     }

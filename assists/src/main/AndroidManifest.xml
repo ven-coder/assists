@@ -14,6 +14,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/assists_provider_paths" />
         </provider>
+        
+        <activity
+            android:name="com.ven.assists.ui.ClipboardActivity"
+            android:theme="@style/TransparentActivityTheme"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="" />
 
     </application>
 </manifest>

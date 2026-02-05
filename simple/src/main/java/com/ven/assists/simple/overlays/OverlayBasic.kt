@@ -44,6 +44,7 @@ import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
+import com.ven.assists.simple.ClipboardTestActivity
 import com.ven.assists.simple.MultiTouchDrawingActivity
 import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.simple.TestActivity
@@ -57,6 +58,8 @@ import rkr.simplekeyboard.inputmethod.latin.inputlogic.InputLogic
 import java.io.File
 import androidx.core.graphics.createBitmap
 import com.ven.assists.AssistsCore.getMD5
+import com.ven.assists.web.mlkit.MlkitScreenTextUtils
+import kotlin.math.log
 
 object OverlayBasic : AssistsServiceListener {
 
@@ -66,6 +69,13 @@ object OverlayBasic : AssistsServiceListener {
         get() {
             if (field == null) {
                 field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                    btnTest.visibility = if (AppUtils.isAppDebug()) View.VISIBLE else View.GONE
+                    btnTest.setOnClickListener {
+                        CoroutineWrapper.launch {
+                            val clipboardText = AssistsCore.getClipboardText()
+                            LogUtils.d(clipboardText)
+                        }
+                    }
                     //点击
                     btnClick.setOnClickListener {
                         CoroutineWrapper.launch(isMain = true) {

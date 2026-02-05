@@ -142,6 +142,91 @@ object TextRecognitionChineseLocator {
     }
 
     /**
+     * 识别结果：屏幕中所有文字及其位置
+     */
+    data class AllTextPositionsResult(
+        val fullText: String,
+        val positions: List<WordPosition>,
+        val processingTimeMillis: Long
+    )
+
+    /**
+     * 通过 Bitmap 识别所有文字及其位置
+     */
+    suspend fun getAllTextPositions(
+        bitmap: Bitmap,
+        rotationDegrees: Int = 0
+    ): AllTextPositionsResult {
+        val image = InputImage.fromBitmap(bitmap, rotationDegrees)
+        return processImageForAllPositions(image)
+    }
+
+    /**
+     * 在指定截图区域内识别所有文字并返回原截图中的坐标
+     */
+    suspend fun getAllTextPositionsInRegion(
+        bitmap: Bitmap,
+        region: Rect,
+        rotationDegrees: Int = 0
+    ): AllTextPositionsResult {
+        require(!region.isEmpty) { "Region must not be empty" }
+        val bounds = Rect(0, 0, bitmap.width, bitmap.height)
+        require(bounds.contains(region)) { "Region must be inside bitmap bounds" }
+
+        val croppedBitmap = Bitmap.createBitmap(
+            bitmap,
+            region.left,
+            region.top,
+            region.width(),
+            region.height()
+        )
+
+        return try {
+            val result = getAllTextPositions(croppedBitmap, rotationDegrees)
+            if (result.positions.isEmpty()) {
+                result
+            } else {
+                val adjusted = result.positions.map { position ->
+                    position.copy(
+                        left = position.left + region.left,
+                        top = position.top + region.top,
+                        right = position.right + region.left,
+                        bottom = position.bottom + region.top
+                    )
+                }
+                result.copy(positions = adjusted)
+            }
+        } finally {
+            if (!croppedBitmap.isRecycled) {
+                croppedBitmap.recycle()
+            }
+        }
+    }
+
+    /**
+     * 直接通过当前截图的指定区域识别所有文字位置
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    suspend fun getAllTextPositionsInScreenshotRegion(
+        region: Rect? = null,
+        rotationDegrees: Int = 0
+    ): AllTextPositionsResult {
+        val screenshot = AssistsCore.takeScreenshot()
+            ?: throw IllegalStateException("Screenshot capture failed")
+        return try {
+            if (region == null || region.isEmpty) {
+                getAllTextPositions(screenshot, rotationDegrees)
+            } else {
+                getAllTextPositionsInRegion(screenshot, region, rotationDegrees)
+            }
+        } finally {
+            if (!screenshot.isRecycled) {
+                screenshot.recycle()
+            }
+        }
+    }
+
+    /**
      * 释放识别器资源
      */
     fun close() {
@@ -165,6 +250,44 @@ object TextRecognitionChineseLocator {
             targetPositions = positions,
             processingTimeMillis = duration
         )
+    }
+
+    private suspend fun processImageForAllPositions(image: InputImage): AllTextPositionsResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            val recognizedText = recognizer.process(image).await()
+            val positions = collectAllPositions(recognizedText)
+            val duration = System.currentTimeMillis() - startTime
+            AllTextPositionsResult(
+                fullText = recognizedText.text,
+                positions = positions,
+                processingTimeMillis = duration
+            )
+        }
+
+    /** 收集识别结果中所有文字元素及其边界框 */
+    private fun collectAllPositions(recognizedText: Text): List<WordPosition> {
+        val results = mutableListOf<WordPosition>()
+        recognizedText.textBlocks.forEach { block ->
+            block.lines.forEach { line ->
+                line.elements.forEach { element ->
+                    val boundingBox = element.boundingBox ?: return@forEach
+                    val text = element.text
+                    if (text.isNotBlank()) {
+                        results.add(
+                            WordPosition(
+                                text = text,
+                                left = boundingBox.left,
+                                top = boundingBox.top,
+                                right = boundingBox.right,
+                                bottom = boundingBox.bottom
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        return results
     }
 
     private fun findTargetPositions(

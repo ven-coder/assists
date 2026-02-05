@@ -30,6 +30,8 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
 import com.blankj.utilcode.util.ActivityUtils
+import com.blankj.utilcode.util.AppUtils
+import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.ImageUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.PathUtils
@@ -43,6 +45,7 @@ import com.ven.assists.window.AssistsWindowManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.concurrent.Executors
 import androidx.core.graphics.toColorInt
@@ -52,6 +55,7 @@ import androidx.core.graphics.createBitmap
 import com.blankj.utilcode.util.FileUtils
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.ven.assists.ui.ClipboardActivity
 import com.ven.assists.utils.BitmapUtils
 
 /**
@@ -1476,5 +1480,52 @@ object AssistsCore {
             file.writeText(json)
             file
         }.getOrNull()
+    }
+
+    /**
+     * 获取剪贴板内容
+     * 如果应用在前台，直接获取剪贴板内容
+     * 如果应用在后台，启动透明Activity获取剪贴板内容
+     * @return 剪贴板文本内容，如果获取失败或为空则返回null
+     */
+    suspend fun getClipboardText(): CharSequence? {
+        return try {
+            // 判断应用是否在前台
+            val isAppForeground = AppUtils.isAppForeground()
+
+            if (isAppForeground) {
+                // 应用在前台，直接获取剪贴板
+                val text = ClipboardUtils.getText()
+                LogUtils.d(LOG_TAG, "getClipboardText (foreground): $text")
+                text
+            } else {
+                // 应用在后台，启动透明Activity获取剪贴板
+                LogUtils.d(LOG_TAG, "getClipboardText (background): 启动透明Activity")
+                val deferred = CompletableDeferred<CharSequence?>()
+                ClipboardActivity.setClipboardResult(deferred)
+
+                // 使用AssistsService的上下文启动Activity
+                AssistsService.instance?.let { service ->
+                    val intent = Intent(service, ClipboardActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    service.startActivity(intent)
+
+                    // 等待Activity返回结果，设置超时时间为5秒
+                    val result = withTimeoutOrNull(2500) {
+                        deferred.await()
+                    }
+                    LogUtils.d(LOG_TAG, "getClipboardText (background result): $result")
+                    result
+                } ?: run {
+                    LogUtils.e(LOG_TAG, "getClipboardText: AssistsService.instance is null")
+                    deferred.complete(null)
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            LogUtils.e(LOG_TAG, "getClipboardText error: ${e.message}")
+            null
+        }
     }
 }
