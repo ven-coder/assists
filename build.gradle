@@ -9,9 +9,9 @@ buildscript {
         targetSdk = 33
         
         // 应用版本
-        versionCode = 27
-        versionName = "3.2.215"
-        mavenVersion = "3.2.215"
+        versionCode = 28
+        versionName = "3.2.218"
+        mavenVersion = "3.2.218"
         
         // 依赖库版本
         coreKtxVersion = "1.13.1"

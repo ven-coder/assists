@@ -1247,6 +1247,25 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                     }
                 }
 
+                CallMethod.getClipboardText -> {
+                    try {
+                        val clipboardText = AssistsCore.getClipboardText()
+                        val response = request.createResponse(
+                            code = 0,
+                            data = JsonObject().apply {
+                                addProperty("text", clipboardText?.toString() ?: "")
+                            }
+                        )
+                        response
+                    } catch (e: Exception) {
+                        LogUtils.e(e)
+                        val response = request.createResponse(-1, message = "获取剪贴板内容失败: ${e.message}", data = JsonObject().apply {
+                            addProperty("text", "")
+                        })
+                        response
+                    }
+                }
+
                 else -> {
                     request.createResponse(-1, message = "方法未支持")
                 }

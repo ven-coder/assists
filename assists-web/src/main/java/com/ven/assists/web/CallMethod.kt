@@ -62,6 +62,7 @@ object CallMethod {
     const val isAppInstalled = "isAppInstalled"
 
     const val getClipboardLatestText = "getClipboardLatestText"
+    const val getClipboardText = "getClipboardText"
 
     const val openUrlInBrowser = "openUrlInBrowser"
     const val keepScreenOn = "keepScreenOn"
