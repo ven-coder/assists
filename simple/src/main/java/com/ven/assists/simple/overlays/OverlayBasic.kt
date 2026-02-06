@@ -44,7 +44,6 @@ import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
-import com.ven.assists.simple.ClipboardTestActivity
 import com.ven.assists.simple.MultiTouchDrawingActivity
 import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.simple.TestActivity
