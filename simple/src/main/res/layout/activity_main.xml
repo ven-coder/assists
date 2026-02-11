@@ -57,6 +57,14 @@
                 android:text="Web支持"
                 android:textAllCaps="false" />
 
+            <Button
+                android:id="@+id/btn_test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="测试"
+                android:textAllCaps="false" />
+
         </LinearLayout>
 
     </LinearLayout>

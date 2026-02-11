@@ -19,6 +19,7 @@ import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.runMain
+import com.ven.assists.web.barutils.BarUtilsJavascriptInterface
 import com.ven.assists.web.filesystem.PathJavascriptInterface
 import com.ven.assists.web.filesystem.fileio.FileIOJavascriptInterface
 import com.ven.assists.web.filesystem.fileutils.FileUtilsJavascriptInterface
@@ -117,6 +118,7 @@ open class ASWebView @JvmOverloads constructor(
     val javascriptInterfaceAsync = ASJavascriptInterfaceAsync(webView = this).apply {
         callIntercept = javascriptCallIntercept
     }
+    val barUtilsJavascriptInterface = BarUtilsJavascriptInterface(webView = this)
     val pathJavascriptInterface = PathJavascriptInterface(webView = this)
     val fileIOJavascriptInterface = FileIOJavascriptInterface(webView = this)
     val fileUtilsJavascriptInterface = FileUtilsJavascriptInterface(webView = this)
@@ -218,6 +220,7 @@ open class ASWebView @JvmOverloads constructor(
         isFocusable = true
         addJavascriptInterface(javascriptInterface, "assistsx")
         addJavascriptInterface(javascriptInterfaceAsync, "assistsxAsync")
+        addJavascriptInterface(barUtilsJavascriptInterface, "assistsxBarUtils")
         addJavascriptInterface(pathJavascriptInterface, "assistsxPath")
         addJavascriptInterface(fileIOJavascriptInterface, "assistsxFileIO")
         addJavascriptInterface(fileUtilsJavascriptInterface, "assistsxFileUtils")

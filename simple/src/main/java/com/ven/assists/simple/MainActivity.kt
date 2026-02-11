@@ -26,6 +26,7 @@ import com.ven.assists.simple.databinding.ActivityMainBinding
 import com.ven.assists.simple.overlays.OverlayAdvanced
 import com.ven.assists.simple.overlays.OverlayBasic
 import com.ven.assists.simple.overlays.OverlayPro
+import com.ven.assists.simple.overlays.OverlayStatusCard
 import com.ven.assists.simple.overlays.OverlayWeb
 import com.ven.assists.utils.ContactsUtil
 import com.ven.assists.utils.CoroutineWrapper
@@ -80,6 +81,18 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
                 } else {
 
                     OverlayWeb.show()
+                }
+            }
+            btnTest.isVisible = AppUtils.isAppDebug()
+            btnTest.setOnClickListener {
+                OverlayStatusCard.onClose = {
+                    OverlayStatusCard.hide()
+                }
+                if (OverlayStatusCard.showed) {
+                    OverlayStatusCard.hide()
+                } else {
+
+                    OverlayStatusCard.show("")
                 }
             }
         }

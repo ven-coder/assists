@@ -1,5 +1,6 @@
 package com.ven.assists.web
 
+import android.app.Activity
 import android.content.Context
 import com.blankj.utilcode.util.ActivityUtils
 import com.blankj.utilcode.util.Utils
@@ -18,6 +19,14 @@ object JavascriptInterfaceContext {
         return AssistsService.instance
             ?: ActivityUtils.getTopActivity()
             ?: Utils.getApp()
+    }
+
+    /**
+     * 获取当前 Activity。当 getContext() 为 Activity 时直接返回，否则用 ActivityUtils.getTopActivity() 兜底。
+     * @return Activity，无法获取时返回 null
+     */
+    fun getActivity(): Activity? {
+        return (getContext() as? Activity) ?: ActivityUtils.getTopActivity()
     }
 
     /**

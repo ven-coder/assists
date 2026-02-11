@@ -38,6 +38,7 @@ object CallMethod {
     const val setOverlayFlags = "setOverlayFlags"
     const val scanQR = "scanQR"
     const val loadWebViewOverlay = "loadWebViewOverlay"
+    const val closeOverlay = "closeOverlay"
 
 
     //手势方法

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Status Card</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    /* 深色圆角状态卡片容器 */
+    .status-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #0d0d0d;
+      border-radius: 24px;
+      max-width: 100%;
+      width: 480px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    /* 左侧图标区域 */
+    .status-card__icon-wrap {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .status-card__icon-wrap svg {
+      width: 36px;
+      height: 36px;
+    }
+    /* 中间文字区域 */
+    .status-card__text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .status-card__status {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-card__label {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 12px;
+    }
+    .status-card__log {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* 右侧录制/停止按钮 */
+    .status-card__action {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .status-card__action:hover {
+      opacity: 0.9;
+    }
+    .status-card__action:active {
+      opacity: 0.8;
+    }
+    .status-card__action svg {
+      width: 24px;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="status-card">
+    <!-- 左侧：蓝绿波浪徽标 -->
+    <div class="status-card__icon-wrap">
+      <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="waveTop" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#2dd4bf" />
+            <stop offset="100%" stop-color="#22d3ee" />
+          </linearGradient>
+        </defs>
+        <circle cx="18" cy="14" r="10" fill="url(#waveTop)" opacity="0.95" />
+        <path d="M8 18 Q18 22 28 18 L28 28 Q18 32 8 28 Z" fill="#22c55e" />
+        <path d="M6 20 Q18 26 30 20 L30 30 Q18 34 6 30 Z" fill="#16a34a" />
+      </svg>
+    </div>
+    <!-- 中间：状态与日志 -->
+    <div class="status-card__text">
+      <div class="status-card__status">
+        <span class="status-card__label">当前状态: </span>Facebook拓客
+      </div>
+      <div class="status-card__log">运行日志日志日志日志日志日志</div>
+    </div>
+    <!-- 右侧：录制/停止图标按钮 -->
+    <button type="button" class="status-card__action" aria-label="Stop recording">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="#9ca3af" stroke-width="2.5" />
+        <circle cx="12" cy="12" r="6" fill="#fff" />
+        <rect x="9" y="9" width="6" height="6" rx="0.5" fill="#ef4444" />
+      </svg>
+    </button>
+  </div>
+</body>
+</html>
