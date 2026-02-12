@@ -9,9 +9,6 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.util.Base64
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.core.view.isVisible
@@ -55,10 +52,8 @@ import com.ven.assists.mp.MPManager.getBitmap
 import com.ven.assists.service.AssistsService
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.web.JavascriptInterfaceContext
-import com.ven.assists.web.databinding.WebFloatingWindowBinding
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
-import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.web.utils.TextRecognitionChineseLocator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -159,12 +154,8 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
 
                 CallMethod.getAppInfo -> handleGetAppInfo(request)
 
-                CallMethod.loadWebViewOverlay -> handleLoadWebViewOverlay(request)
-                CallMethod.closeOverlay -> handleCloseOverlay(request)
-
                 CallMethod.scanQR -> handleScanQR(request)
 
-                CallMethod.setOverlayFlags -> handleSetOverlayFlags(request)
 
                 CallMethod.takeScreenshot -> handleTakeScreenshot(request)
 
@@ -232,7 +223,6 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
 
                 CallMethod.getPackageName -> handleGetPackageName(request)
 
-                CallMethod.overlayToast -> handleOverlayToast(request)
 
                 CallMethod.back -> handleBack(request)
 
@@ -526,109 +516,6 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         return request.createResponse(0, data = appInfo)
     }
 
-    private suspend fun handleCloseOverlay(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val result = runMain {
-            AssistsWindowManager.viewList.values.find {
-                return@find it.view.findViewById<View>(R.id.web_view) == webView
-            }?.let { it ->
-                it.view.findViewById<ASWebView>(R.id.web_view)?.let {
-                    it.loadUrl("about:blank")
-                    it.stopLoading()
-                    it.clearHistory()
-                    it.removeAllViews()
-                    it.destroy()
-                    val viewGroup = it as ViewGroup
-                    viewGroup.removeAllViews()
-                    AssistsWindowManager.removeWindow(it)
-                    AssistsCore.clearKeepScreenOn()
-                }
-                AssistsWindowManager.removeWindow(it.view)
-
-                return@runMain true
-            }
-        }
-        result?.let { return request.createResponse(0, data = it) }
-        return request.createResponse(0, data = false)
-    }
-
-    private suspend fun handleLoadWebViewOverlay(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val url = request.arguments?.get("url")?.asString ?: ""
-        val initialWidth = request.arguments?.get("initialWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.8).toInt()
-        val initialHeight = request.arguments?.get("initialHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
-        val initialX = request.arguments?.get("initialX")?.asInt ?: 0
-        val initialY = request.arguments?.get("initialY")?.asInt ?: 0
-        val minWidth = request.arguments?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt()
-        val minHeight = request.arguments?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
-        val initialCenter = request.arguments?.get("initialCenter")?.asBoolean ?: true
-        val keepScreenOn = request.arguments?.get("keepScreenOn")?.asBoolean ?: false
-        val showTopOperationArea = request.arguments?.get("showTopOperationArea")?.asBoolean ?: true
-        val showBottomOperationArea = request.arguments?.get("showBottomOperationArea")?.asBoolean ?: false
-        val backgroundColor = request.arguments?.get("backgroundColor")?.let { arg ->
-            when {
-                arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> {
-                    val s = arg.asString
-                    if (s.isNullOrBlank()) null else try {
-                        s.toColorInt()
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
-
-                arg.isJsonPrimitive && arg.asJsonPrimitive.isNumber -> arg.asInt
-                else -> null
-            }
-        }
-        runMain {
-            val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(JavascriptInterfaceContext.requireContext())).apply {
-                webView.loadUrl(url)
-                webView.setBackgroundColor(0)
-            }
-            AssistsWindowManager.add(
-                windowWrapper = AssistsWindowWrapper(
-                    wmLayoutParams = AssistsWindowManager.createLayoutParams().apply {
-                        width = initialWidth
-                        height = initialHeight
-                    },
-                    view = webWindowBinding.root,
-                    onClose = {
-                        webWindowBinding.webView.loadUrl("about:blank")
-                        webWindowBinding.webView.stopLoading()
-                        webWindowBinding.webView.clearHistory()
-                        webWindowBinding.webView.removeAllViews()
-                        webWindowBinding.webView.destroy()
-                        webWindowBinding.root.removeAllViews()
-                        val viewGroup = it as ViewGroup
-                        viewGroup.removeAllViews()
-                        AssistsWindowManager.removeWindow(it)
-                        AssistsCore.clearKeepScreenOn()
-                    }
-                ).apply {
-                    viewBinding.ivWebBack.isVisible = showBottomOperationArea
-                    viewBinding.ivWebBack.setOnClickListener { webWindowBinding.webView.goBack() }
-                    viewBinding.ivWebForward.isVisible = showBottomOperationArea
-                    viewBinding.ivWebForward.setOnClickListener { webWindowBinding.webView.goForward() }
-                    viewBinding.ivWebRefresh.isVisible = showBottomOperationArea
-                    viewBinding.ivWebRefresh.setOnClickListener { webWindowBinding.webView.reload() }
-
-                    viewBinding.flHeader.isVisible = showTopOperationArea
-                    viewBinding.llBottomBar.isVisible = showBottomOperationArea
-                    backgroundColor?.let { viewBinding.root.setBackgroundColor(it) }
-
-                    webWindowBinding.webView.onReceivedTitle = { viewBinding.tvTitle.text = it }
-                    this.minWidth = minWidth
-                    this.minHeight = minHeight
-                    this.initialCenter = initialCenter
-                    this.initialX = initialX
-                    this.initialY = initialY
-                    if (keepScreenOn) {
-                        AssistsCore.keepScreenOn()
-                    }
-                }
-            )
-        }
-        return request.createResponse(0, data = true)
-    }
-
     private suspend fun handleScanQR(request: CallRequest<JsonObject>): CallResponse<Any?> {
         AssistsWindowManager.hideAll()
         val scanIntentResult = CustomFileProvider.requestLaunchersScan(ScanOptions())
@@ -636,18 +523,6 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         return request.createResponse(0, data = JsonObject().apply {
             addProperty("value", scanIntentResult?.contents ?: "")
         })
-    }
-
-    private fun handleSetOverlayFlags(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        request.arguments?.apply {
-            val flagList = arrayListOf<Int>()
-            get("flags")?.asJsonArray?.forEach {
-                flagList.add(it.asInt)
-            }
-            val flags = flagList.reduce { a, b -> a or b }
-            CoroutineWrapper.launch { AssistsWindowManager.setFlags(flags) }
-        }
-        return request.createResponse(0, data = true)
     }
 
     private suspend fun handleTakeScreenshot(request: CallRequest<JsonObject>): CallResponse<Any?> {
@@ -1115,13 +990,6 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
     private fun handleGetPackageName(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val packageName = AssistsCore.getPackageName()
         return request.createResponse(0, data = packageName)
-    }
-
-    private fun handleOverlayToast(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val text = request.arguments?.get("text")?.asString ?: ""
-        val delay = request.arguments?.get("delay")?.asLong ?: 2000L
-        text.overlayToast(delay)
-        return request.createResponse(0, data = true)
     }
 
     private fun handleBack(request: CallRequest<JsonObject>): CallResponse<Any?> {

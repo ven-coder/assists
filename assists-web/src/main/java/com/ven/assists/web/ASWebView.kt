@@ -28,6 +28,7 @@ import com.ven.assists.web.network.HttpJavascriptInterface
 import com.ven.assists.web.ime.ImeJavascriptInterface
 import com.ven.assists.web.imageutils.ImageUtilsJavascriptInterface
 import com.ven.assists.web.mlkit.MlkitJavascriptInterface
+import com.ven.assists.web.floatingwindow.FloatJsInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -127,7 +128,9 @@ open class ASWebView @JvmOverloads constructor(
     val imageUtilsJavascriptInterface = ImageUtilsJavascriptInterface(webView = this)
     val mlkitJavascriptInterface = MlkitJavascriptInterface(webView = this)
     val galleryJavascriptInterface = GalleryJavascriptInterface(webView = this)
-
+    val floatJsInterface = FloatJsInterface(webView = this).apply {
+        this.callIntercept = javascriptCallIntercept
+    }
 
     val assistsServiceListener = object : AssistsServiceListener {
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -229,6 +232,7 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(imageUtilsJavascriptInterface, "assistsxImageUtils")
         addJavascriptInterface(mlkitJavascriptInterface, "assistsxMlkit")
         addJavascriptInterface(galleryJavascriptInterface, "assistsxGallery")
+        addJavascriptInterface(floatJsInterface, "assistsxFloat")
         AssistsService.listeners.add(assistsServiceListener)
     }
 
