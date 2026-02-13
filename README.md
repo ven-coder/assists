@@ -104,9 +104,9 @@ Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、�
 
 ## 交流反馈
 
-有问题欢迎反馈交流（微信群二维码失效可以加我拉进群）
+有问题欢迎反馈交流（微信群二维码失效可以加作者拉进群）
 
-| 交流群 | 个人微信 |
+| 交流群 | 作者微信 |
 |:------:|:--------:|
 | <img src="https://github.com/user-attachments/assets/bf0d6ad2-948f-43c9-9513-c5e0848b3d8f" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
 
