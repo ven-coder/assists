@@ -108,7 +108,7 @@ Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、�
 
 | 交流群 | 作者微信 |
 |:------:|:--------:|
-| <img src="https://github.com/user-attachments/assets/bf0d6ad2-948f-43c9-9513-c5e0848b3d8f" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
+| <img src="https://github.com/user-attachments/assets/bbf5b007-a7d7-4503-b62c-7c710019c2ec" width="200" /> | <img src="https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e" width="200" /> |
 
 1群已满200人，要进1群可加我备注进1群
 
