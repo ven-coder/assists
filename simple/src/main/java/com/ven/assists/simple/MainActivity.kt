@@ -17,9 +17,13 @@ import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.PermissionUtils
 import com.blankj.utilcode.util.PermissionUtils.SimpleCallback
+import com.blankj.utilcode.util.TimeUtils
 import com.lxj.xpopup.XPopup
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.logNode
+import com.ven.assists.log.AssistsLog
+import com.ven.assists.log.AssistsLogDiagnostics
+import com.ven.assists.log.log
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.simple.databinding.ActivityMainBinding
@@ -31,6 +35,7 @@ import com.ven.assists.simple.overlays.OverlayWeb
 import com.ven.assists.utils.ContactsUtil
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.NodeClassValue
+import com.ven.assists.window.AssistsWindowManager.overlayToast
 import kotlinx.coroutines.delay
 
 
@@ -84,16 +89,38 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
                 }
             }
             btnTest.isVisible = AppUtils.isAppDebug()
-            btnTest.setOnClickListener {
-                OverlayStatusCard.onClose = {
-                    OverlayStatusCard.hide()
-                }
-                if (OverlayStatusCard.showed) {
-                    OverlayStatusCard.hide()
-                } else {
+            CoroutineWrapper.launch {
+                AssistsLog.latestLine.collect { chunk ->
+                    chunk.overlayToast()
+                    // 使用本次发射的片段；需要整文件内容时用 AssistsLog.readAllText()
+                    LogUtils.d(chunk, chunk.length)
+                    val value = AssistsLog.readAllText()
+                    if (value.length > 50) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "上传日志...".overlayToast()
+                            val result = AssistsLogDiagnostics.uploadLogs()
+                            if (result.success) {
+                                "上传日志成功".overlayToast()
+                            } else {
+                                "上传日志失败".overlayToast()
+                            }
 
-                    OverlayStatusCard.show("")
+                        }
+                    }
                 }
+            }
+            btnTest.setOnClickListener {
+//                OverlayStatusCard.onClose = {
+//                    OverlayStatusCard.hide()
+//                }
+//                if (OverlayStatusCard.showed) {
+//                    OverlayStatusCard.hide()
+//                } else {
+//
+//                    OverlayStatusCard.show("")
+//                }
+
+                "${TimeUtils.getNowString()}-测试log\n".log()
             }
         }
     }
