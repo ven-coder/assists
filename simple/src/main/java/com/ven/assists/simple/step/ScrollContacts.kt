@@ -9,8 +9,8 @@ import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.scrollForward
 import com.ven.assists.service.AssistsService
 import com.ven.assists.simple.App
-import com.ven.assists.simple.common.LogWrapper
-import com.ven.assists.simple.common.LogWrapper.logAppend
+import com.ven.assists.log.AssistsLog
+import com.ven.assists.log.logAppend
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -22,7 +22,7 @@ class ScrollContacts : StepImpl() {
     override fun onImpl(collector: StepCollector) {
         //1. 打开微信
         collector.next(StepTag.STEP_1, isRunCoroutineIO = true) {//Step.STEP_1为自己定义的常量
-            LogWrapper.logAppend("启动微信")
+            AssistsLog.appendTimestampedEntry("启动微信")
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -39,7 +39,7 @@ class ScrollContacts : StepImpl() {
                 if (screen.left > AssistsCore.getX(1080, 340) &&
                     screen.top > AssistsCore.getX(1920, 1850)
                 ) {
-                    LogWrapper.logAppend("已打开微信主页，点击【通讯录】")
+                    AssistsLog.appendTimestampedEntry("已打开微信主页，点击【通讯录】")
                     it.findFirstParentClickable()?.click()
                     return@next Step.get(StepTag.STEP_3)
                 }

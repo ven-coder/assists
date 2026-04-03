@@ -11,8 +11,8 @@ import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.simple.CaptureLayout
-import com.ven.assists.simple.common.LogWrapper
-import com.ven.assists.simple.common.LogWrapper.logAppend
+import com.ven.assists.log.AssistsLog
+import com.ven.assists.log.logAppend
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -227,7 +227,7 @@ class AntForestEnergy : StepImpl(), AssistsServiceListener {
     }
 
     private fun overLog(value: String) {
-        LogWrapper.logAppend(value)
+        AssistsLog.appendTimestampedEntry(value)
     }
 
     override fun screenCaptureEnable() {

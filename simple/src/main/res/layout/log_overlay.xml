@@ -42,17 +42,26 @@
 
             <Button
                 android:id="@+id/btn_stop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="60dp"
+                android:layout_height="40dp"
                 android:text="停止"
-                android:textSize="12dp" />
+                android:textSize="10dp" />
 
             <Button
                 android:id="@+id/btn_clean"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="60dp"
+                android:layout_height="40dp"
                 android:text="清除"
-                android:textSize="12dp" />
+                android:padding="0dp"
+                android:textSize="10dp" />
+
+            <Button
+                android:id="@+id/btn_report_log"
+                android:layout_width="60dp"
+                android:layout_height="40dp"
+                android:text="上报"
+                android:padding="0dp"
+                android:textSize="10dp" />
 
             <TextView
                 android:id="@+id/tv_length"

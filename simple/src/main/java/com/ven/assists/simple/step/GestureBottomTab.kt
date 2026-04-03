@@ -7,7 +7,7 @@ import com.ven.assists.AssistsCore.getBoundsInScreen
 import com.ven.assists.AssistsCore.nodeGestureClick
 import com.ven.assists.service.AssistsService
 import com.ven.assists.simple.App
-import com.ven.assists.simple.common.LogWrapper
+import com.ven.assists.log.AssistsLog
 import com.ven.assists.stepper.Step
 import com.ven.assists.stepper.StepCollector
 import com.ven.assists.stepper.StepImpl
@@ -16,7 +16,7 @@ import com.ven.assists.stepper.StepManager
 class GestureBottomTab : StepImpl() {
     override fun onImpl(collector: StepCollector) {
         collector.next(StepTag.STEP_1) {
-            LogWrapper.logAppend("启动微信")
+            AssistsLog.appendTimestampedEntry("启动微信")
             Intent().apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -30,7 +30,7 @@ class GestureBottomTab : StepImpl() {
                 if (screen.left > AssistsCore.getX(1080, 90) &&
                     screen.top > AssistsCore.getY(1920, 1850)
                 ) {
-                    LogWrapper.logAppend("点击【微信】")
+                    AssistsLog.appendTimestampedEntry("点击【微信】")
                     it.nodeGestureClick()
                     return@next Step.get(StepTag.STEP_3)
                 }
@@ -47,7 +47,7 @@ class GestureBottomTab : StepImpl() {
 
             return@next Step.repeat
         }.next(StepTag.STEP_3) {
-            LogWrapper.logAppend("点击【通讯录】")
+            AssistsLog.appendTimestampedEntry("点击【通讯录】")
             AssistsCore.findByText("通讯录").forEach {
                 val screen = it.getBoundsInScreen()
                 if (screen.left > AssistsCore.getX(1080, 340) &&
@@ -60,7 +60,7 @@ class GestureBottomTab : StepImpl() {
             }
             return@next Step.none
         }.next(StepTag.STEP_4) {
-            LogWrapper.logAppend("点击【发现】")
+            AssistsLog.appendTimestampedEntry("点击【发现】")
 
             AssistsCore.findByText("发现").forEach {
                 val screen = it.getBoundsInScreen()
@@ -73,7 +73,7 @@ class GestureBottomTab : StepImpl() {
             }
             return@next Step.none
         }.next(StepTag.STEP_5, isRunCoroutineIO = true) {
-            LogWrapper.logAppend("点击【我】")
+            AssistsLog.appendTimestampedEntry("点击【我】")
 
             AssistsCore.findByText("我").forEach {
                 val screen = it.getBoundsInScreen()

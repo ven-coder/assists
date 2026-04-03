@@ -679,6 +679,10 @@ object AssistsCore {
     fun AccessibilityNodeInfo.getBoundsInScreen(): Rect {
         val boundsInScreen = Rect()
         getBoundsInScreen(boundsInScreen)
+        boundsInScreen.centerX()
+        boundsInScreen.centerY()
+        boundsInScreen.width()
+        boundsInScreen.height()
         return boundsInScreen
     }
 

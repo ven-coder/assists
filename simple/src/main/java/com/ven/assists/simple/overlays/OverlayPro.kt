@@ -19,8 +19,8 @@ import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.simple.ImageGalleryActivity
 import com.ven.assists.simple.ScreenshotReviewActivity
-import com.ven.assists.simple.common.LogWrapper
-import com.ven.assists.simple.common.LogWrapper.logAppend
+import com.ven.assists.log.AssistsLog
+import com.ven.assists.log.logAppend
 import com.ven.assists.simple.databinding.ProOverlayBinding
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.mp.MPManager
@@ -43,7 +43,7 @@ object OverlayPro : AssistsServiceListener {
                         }
                         CoroutineWrapper.launch(isMain = true) {
                             OverlayLog.show()
-                            LogWrapper.logAppend("通知监听中...")
+                            AssistsLog.appendTimestampedEntry("通知监听中...")
                         }
                     }
                     btnDisablePullNotification.setOnClickListener {

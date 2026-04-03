@@ -28,6 +28,26 @@ object AssistsLogDiagnostics {
 
     private const val UPLOAD_KEY = "ulk_lQ1sVFKCcLQMI5RBpz5lo8bchWssCwoshUDOsynC-CM"
 
+    /** Debug 包：局域网调试；Release 包：线上日志服务 */
+    private fun defaultUploadLogsUrl(): String = if (BuildConfig.DEBUG) {
+//        "http://192.168.0.2:3001/api/logs/upload"
+        "http://47.242.231.216:3002/api/logs/upload"
+
+    } else {
+        "http://47.242.231.216:3002/api/logs/upload"
+    }
+
+    /**
+     * 与 [defaultUploadLogsUrl] 同环境的管理后台根地址（协议、IP、端口与上传接口一致）
+     */
+    fun adminWebBaseUrl(): String = if (BuildConfig.DEBUG) {
+//        "http://192.168.0.2:3001"
+        "http://47.242.231.216:3002"
+
+    } else {
+        "http://47.242.231.216:3002"
+    }
+
     private val uploadResponseGson = Gson()
 
     private fun extensionForFormat(format: CompressFormat): String = when (format) {
@@ -83,7 +103,7 @@ object AssistsLogDiagnostics {
      */
     @RequiresApi(Build.VERSION_CODES.R)
     suspend fun uploadLogs(
-        baseUrl: String = "http://192.168.0.16:3001/api/logs/upload",
+        baseUrl: String = defaultUploadLogsUrl(),
         format: CompressFormat = CompressFormat.PNG,
         prettyPrint: Boolean = true,
         overlayHiddenDelayMillis: Long = 250L,

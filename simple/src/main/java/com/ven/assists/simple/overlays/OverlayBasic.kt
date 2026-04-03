@@ -47,7 +47,6 @@ import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.simple.MultiTouchDrawingActivity
 import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.simple.TestActivity
-import com.ven.assists.simple.common.LogWrapper
 import com.ven.assists.simple.databinding.BasicOverlayBinding
 import com.ven.assists.utils.AudioPlayerUtil
 import com.ven.assists.utils.CoroutineWrapper

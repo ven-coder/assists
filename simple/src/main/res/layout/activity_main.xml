@@ -6,13 +6,70 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical">
+    <com.google.android.flexbox.FlexboxLayout
+        android:id="@+id/ll_option"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:alignItems="center"
+        android:paddingHorizontal="30dp"
+        android:layout_gravity="center"
+        app:justifyContent="center"
+        app:flexDirection="row"
+        app:flexWrap="wrap">
+
+        <Button
+            android:id="@+id/btn_basic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="基础" />
+
+        <Button
+            android:id="@+id/btn_pro"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="进阶" />
+
+        <Button
+            android:id="@+id/btn_advanced"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="高级" />
+
+        <Button
+            android:id="@+id/btn_web"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="web支持"
+            android:textAllCaps="false" />
+        <Button
+            android:id="@+id/btn_log"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="日志"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btn_test"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="测试"
+            android:textAllCaps="false" />
+
+    </com.google.android.flexbox.FlexboxLayout>
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingHorizontal="8dp">
 
         <Button
             android:id="@+id/btn_enable"
@@ -21,51 +78,6 @@
             android:backgroundTint="@color/colorAccent"
             android:text="开启服务" />
 
-        <LinearLayout
-            android:id="@+id/ll_option"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <Button
-                android:id="@+id/btn_basic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="基础" />
-
-            <Button
-                android:id="@+id/btn_pro"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="进阶" />
-
-            <Button
-                android:id="@+id/btn_advanced"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="高级" />
-
-            <Button
-                android:id="@+id/btn_web"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="Web支持"
-                android:textAllCaps="false" />
-
-            <Button
-                android:id="@+id/btn_test"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/colorAccent"
-                android:text="测试"
-                android:textAllCaps="false" />
-
-        </LinearLayout>
 
     </LinearLayout>
 

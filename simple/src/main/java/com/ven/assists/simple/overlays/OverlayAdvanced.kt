@@ -18,7 +18,7 @@ import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
-import com.ven.assists.simple.common.LogWrapper.logAppend
+import com.ven.assists.log.logAppend
 import com.ven.assists.simple.databinding.AdvancedOverlayBinding
 import com.ven.assists.simple.step.AntForestEnergy
 import com.ven.assists.simple.step.GestureBottomTab

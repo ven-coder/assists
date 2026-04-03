@@ -29,6 +29,7 @@ import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.simple.databinding.ActivityMainBinding
 import com.ven.assists.simple.overlays.OverlayAdvanced
 import com.ven.assists.simple.overlays.OverlayBasic
+import com.ven.assists.simple.overlays.OverlayLog
 import com.ven.assists.simple.overlays.OverlayPro
 import com.ven.assists.simple.overlays.OverlayStatusCard
 import com.ven.assists.simple.overlays.OverlayWeb
@@ -88,39 +89,28 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
                     OverlayWeb.show()
                 }
             }
-            btnTest.isVisible = AppUtils.isAppDebug()
-            CoroutineWrapper.launch {
-                AssistsLog.latestLine.collect { chunk ->
-                    chunk.overlayToast()
-                    // 使用本次发射的片段；需要整文件内容时用 AssistsLog.readAllText()
-                    LogUtils.d(chunk, chunk.length)
-                    val value = AssistsLog.readAllText()
-                    if (value.length > 50) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            "上传日志...".overlayToast()
-                            val result = AssistsLogDiagnostics.uploadLogs()
-                            if (result.success) {
-                                "上传日志成功".overlayToast()
-                            } else {
-                                "上传日志失败".overlayToast()
-                            }
-
-                        }
-                    }
+            btnLog.setOnClickListener {
+                OverlayLog.onClose = {
+                    OverlayLog.hide()
+                }
+                if (OverlayLog.showed) {
+                    OverlayLog.hide()
+                } else {
+                    OverlayLog.show(clearLog = false, mainPageLogViewer = true)
                 }
             }
+            btnTest.isVisible = AppUtils.isAppDebug()
             btnTest.setOnClickListener {
-//                OverlayStatusCard.onClose = {
-//                    OverlayStatusCard.hide()
-//                }
-//                if (OverlayStatusCard.showed) {
-//                    OverlayStatusCard.hide()
-//                } else {
-//
-//                    OverlayStatusCard.show("")
-//                }
+                OverlayStatusCard.onClose = {
+                    OverlayStatusCard.hide()
+                }
+                if (OverlayStatusCard.showed) {
+                    OverlayStatusCard.hide()
+                } else {
 
-                "${TimeUtils.getNowString()}-测试log\n".log()
+                    OverlayStatusCard.show("")
+                }
+
             }
         }
     }
