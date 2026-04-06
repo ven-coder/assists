@@ -1,3 +1,5 @@
 /build
 # 本地环境密钥，从 environment.env.example 复制为 environment.env
 src/main/assets/environment.env
+.env
+.env1
