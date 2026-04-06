@@ -1,4 +1,4 @@
-package com.ven.assists.web.floatingwindow
+package com.ven.assists.web.floating
 
 import android.util.Base64
 import android.view.LayoutInflater
@@ -24,7 +24,10 @@ import com.ven.assists.web.databinding.WebFloatingWindowBinding
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.runMain
 import com.ven.assists.window.AssistsWindowManager
+import com.ven.assists.window.AssistsWindowManager.ViewWrapper
+import com.ven.assists.window.AssistsWindowManager.nonTouchableByWrapper
 import com.ven.assists.window.AssistsWindowManager.overlayToast
+import com.ven.assists.window.AssistsWindowManager.touchableByWrapper
 import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.base.databinding.AssistsWindowLayoutWrapperBinding
 import androidx.core.graphics.toColorInt
@@ -36,7 +39,8 @@ import java.nio.charset.StandardCharsets
 
 /**
  * 浮窗独立 JsInterface，与 ASJavascriptInterfaceAsync 平级
- * 通过 assistsxFloat.call(json) 调用，回调 assistsxFloatCallback
+ * 通过 assistsxFloat.call(json) 调用，回调 assistsxFloatCallback。
+ * 封装 [AssistsWindowManager] 的全局能力与当前 Web 浮窗（[R.id.web_view]）相关操作。
  */
 class FloatJsInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -90,6 +94,19 @@ class FloatJsInterface(val webView: WebView) {
                 FloatCallMethod.toast -> toast(request)
                 FloatCallMethod.move -> move(request)
                 FloatCallMethod.refresh -> refresh(request)
+                FloatCallMethod.hideAll -> hideAll(request)
+                FloatCallMethod.hideTop -> hideTop(request)
+                FloatCallMethod.showAll -> showAll(request)
+                FloatCallMethod.showTop -> showTop(request)
+                FloatCallMethod.temporarilyHideAll -> temporarilyHideAll(request)
+                FloatCallMethod.touchableByAll -> touchableByAll(request)
+                FloatCallMethod.nonTouchableByAll -> nonTouchableByAll(request)
+                FloatCallMethod.pop -> pop(request)
+                FloatCallMethod.removeAllWindows -> removeAllWindows(request)
+                FloatCallMethod.hideCurrent -> hideCurrent(request)
+                FloatCallMethod.showCurrent -> showCurrent(request)
+                FloatCallMethod.isCurrentVisible -> isCurrentVisible(request)
+                FloatCallMethod.containsCurrent -> containsCurrent(request)
                 else -> request.createResponse(-1, message = "方法未支持")
             }
             callbackResponse(response)
@@ -99,12 +116,14 @@ class FloatJsInterface(val webView: WebView) {
         }
     }
 
+    /** 解析当前 JS 所在 Web 浮窗的 [ViewWrapper] */
+    private fun findWrapperForWebView(): ViewWrapper? =
+        AssistsWindowManager.viewList.values.find { it.view.findViewById<View>(R.id.web_view) == webView }
+
     /** 关闭当前浮窗 */
     private suspend fun close(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val result = runMain {
-            AssistsWindowManager.viewList.values.find {
-                it.view.findViewById<View>(R.id.web_view) == webView
-            }?.let { wrapper ->
+            findWrapperForWebView()?.let { wrapper ->
                 wrapper.view.findViewById<ASWebView>(R.id.web_view)?.let { wv ->
                     wv.loadUrl("about:blank")
                     wv.stopLoading()
@@ -151,7 +170,7 @@ class FloatJsInterface(val webView: WebView) {
                 else -> null
             }
         }
-        runMain {
+        val added = runMain {
             val binding = WebFloatingWindowBinding.inflate(LayoutInflater.from(JavascriptInterfaceContext.requireContext())).apply {
                 this.webView.loadUrl(url)
                 this.webView.setBackgroundColor(0)
@@ -194,7 +213,11 @@ class FloatJsInterface(val webView: WebView) {
                 }
             )
         }
-        return request.createResponse(0, data = true)
+        val data = JsonObject().apply {
+            addProperty("success", true)
+            added?.let { addProperty("uniqueId", it.uniqueId) }
+        }
+        return request.createResponse(0, data = data)
     }
 
     /** 设置浮窗标志位 */
@@ -220,9 +243,7 @@ class FloatJsInterface(val webView: WebView) {
     private suspend fun move(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val dx = request.arguments?.get("x")?.asInt ?: return request.createResponse(-1, message = "x 不能为空")
         val dy = request.arguments?.get("y")?.asInt ?: return request.createResponse(-1, message = "y 不能为空")
-        val wrapper = AssistsWindowManager.viewList.values.find {
-            it.view.findViewById<View>(R.id.web_view) == webView
-        } ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
         withContext(Dispatchers.Main) {
             wrapper.layoutParams.x += dx
             wrapper.layoutParams.y += dy
@@ -233,9 +254,7 @@ class FloatJsInterface(val webView: WebView) {
 
     /** 刷新浮窗 view 配置：接受 showTopOperationArea、showBottomOperationArea、backgroundColor、width、height、x、y，参数为空则不赋值 */
     private suspend fun refresh(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val wrapper = AssistsWindowManager.viewList.values.find {
-            it.view.findViewById<View>(R.id.web_view) == webView
-        } ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
         withContext(Dispatchers.Main) {
             request.arguments?.let { args ->
                 AssistsWindowLayoutWrapperBinding.bind(wrapper.view).apply {
@@ -268,5 +287,105 @@ class FloatJsInterface(val webView: WebView) {
             AssistsWindowManager.updateViewLayout(wrapper.view, wrapper.layoutParams)
         }
         return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.hideAll] */
+    private suspend fun hideAll(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.hideAll(isTouchable)
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.hideTop] */
+    private suspend fun hideTop(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.hideTop(isTouchable)
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.showAll] */
+    private suspend fun showAll(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.showAll(isTouchable)
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.showTop] */
+    private suspend fun showTop(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.showTop(isTouchable)
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.temporarilyHideAll] */
+    private fun temporarilyHideAll(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val durationMs = request.arguments?.get("durationMs")?.asLong ?: 500L
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.temporarilyHideAll(durationMs, isTouchable, emptyList())
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.touchableByAll] */
+    private suspend fun touchableByAll(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        AssistsWindowManager.touchableByAll()
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.nonTouchableByAll] */
+    private suspend fun nonTouchableByAll(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        AssistsWindowManager.nonTouchableByAll()
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.pop]：移除栈顶浮窗 */
+    private suspend fun pop(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val showTopArg = request.arguments?.get("showTop")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.pop(showTopArg)
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.removeAllWindow]，必须传 confirm: true */
+    private fun removeAllWindows(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val confirm = request.arguments?.get("confirm")?.asBoolean == true
+        if (!confirm) return request.createResponse(-1, message = "需要 confirm: true")
+        AssistsWindowManager.removeAllWindow()
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.hide]：仅作用于当前 Web 浮窗 */
+    private suspend fun hideCurrent(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        AssistsWindowManager.hide(wrapper.view, isTouchable)
+        return request.createResponse(0, data = true)
+    }
+
+    /** 显示当前 Web 浮窗（与 showTop 中单窗逻辑一致） */
+    private suspend fun showCurrent(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val isTouchable = request.arguments?.get("isTouchable")?.takeIf { !it.isJsonNull }?.asBoolean ?: true
+        withContext(Dispatchers.Main) {
+            wrapper.view.isVisible = true
+            if (isTouchable) wrapper.touchableByWrapper() else wrapper.nonTouchableByWrapper()
+        }
+        return request.createResponse(0, data = true)
+    }
+
+    /** 对应 [AssistsWindowManager.isVisible]：当前 Web 浮窗 */
+    private suspend fun isCurrentVisible(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val visible = withContext(Dispatchers.Main) {
+            AssistsWindowManager.isVisible(wrapper.view)
+        }
+        return request.createResponse(0, data = visible)
+    }
+
+    /** 对应 [AssistsWindowManager.contains]：当前 Web 浮窗是否已加入管理器 */
+    private suspend fun containsCurrent(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val c = withContext(Dispatchers.Main) {
+            AssistsWindowManager.contains(wrapper.view)
+        }
+        return request.createResponse(0, data = c)
     }
 }

@@ -39,6 +39,7 @@ dependencies {
     implementation "androidx.core:core-ktx:${rootProject.ext.coreKtxVersion}"
     implementation "com.google.code.gson:gson:2.11.0"
     implementation project(':assists')
+    implementation project(':assists-log')
     implementation project(':assists-mp')
     implementation project(':assists-ime')
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'

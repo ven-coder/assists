@@ -28,11 +28,14 @@ import com.ven.assists.web.network.HttpJavascriptInterface
 import com.ven.assists.web.ime.ImeJavascriptInterface
 import com.ven.assists.web.imageutils.ImageUtilsJavascriptInterface
 import com.ven.assists.web.mlkit.MlkitJavascriptInterface
-import com.ven.assists.web.floatingwindow.FloatJsInterface
+import com.ven.assists.web.floating.FloatJsInterface
+import com.ven.assists.log.AssistsLog
+import com.ven.assists.web.log.AssistsLogJavascriptInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import java.nio.charset.StandardCharsets
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -44,9 +47,16 @@ open class ASWebView @JvmOverloads constructor(
 
     companion object {
         val globalJavascriptCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
+
+        private const val STREAM_LOG_LATEST_LINE = "latestLine"
+        private const val STREAM_LOG_ENTIRE = "entireLogText"
     }
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
+    /** 与 [notifyOnAssistsLogUpdate] 配套，detach 时取消，避免向已销毁 WebView 推送 */
+    private val assistsLogEventSupervisor = SupervisorJob()
+    private val assistsLogEventScope = CoroutineScope(Dispatchers.Main + assistsLogEventSupervisor)
 
     var onReceivedTitle: ((title: String) -> Unit)? = null
 
@@ -131,6 +141,7 @@ open class ASWebView @JvmOverloads constructor(
     val floatJsInterface = FloatJsInterface(webView = this).apply {
         this.callIntercept = javascriptCallIntercept
     }
+    val assistsLogJavascriptInterface = AssistsLogJavascriptInterface(webView = this)
 
     val assistsServiceListener = object : AssistsServiceListener {
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -233,7 +244,20 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(mlkitJavascriptInterface, "assistsxMlkit")
         addJavascriptInterface(galleryJavascriptInterface, "assistsxGallery")
         addJavascriptInterface(floatJsInterface, "assistsxFloat")
+        addJavascriptInterface(assistsLogJavascriptInterface, "assistsxLog")
         AssistsService.listeners.add(assistsServiceListener)
+
+        // 与 onAccessibilityEvent 相同风格：日志 Flow 每次发射即 evaluateJavascript，页面可选实现 onAssistsLogUpdate(base64)
+        assistsLogEventScope.launch {
+            AssistsLog.latestLine.collect { text ->
+                notifyOnAssistsLogUpdate(STREAM_LOG_LATEST_LINE, text)
+            }
+        }
+        assistsLogEventScope.launch {
+            AssistsLog.entireLogText.collect { text ->
+                notifyOnAssistsLogUpdate(STREAM_LOG_ENTIRE, text)
+            }
+        }
     }
 
     fun <T> onAccessibilityEvent(result: CallResponse<T>) {
@@ -259,9 +283,39 @@ open class ASWebView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * 将 [AssistsLog] 的 [stream] 与 [text] 以 Base64([CallResponse]) 推给页面全局函数 `onAssistsLogUpdate`（若存在）。
+     * [data] 中含 `stream`：`latestLine` | `entireLogText`，`text`：对应内容。
+     */
+    private fun notifyOnAssistsLogUpdate(stream: String, text: String) {
+        runCatching {
+            val data = JsonObject().apply {
+                addProperty("stream", stream)
+                addProperty("text", text)
+            }
+            val json = GsonUtils.toJson(CallResponse(code = 0, data = data))
+            val encoded = Base64.encodeToString(json.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
+            evaluateJavascript(
+                """
+            try {
+                if (typeof onAssistsLogUpdate === 'function') {
+                    onAssistsLogUpdate("$encoded");
+                }
+            } catch (e) {
+                console.error('Error calling onAssistsLogUpdate:', e);
+            }
+                """.trimIndent(),
+                null
+            )
+        }.onFailure {
+            LogUtils.e("Failed to call onAssistsLogUpdate: ${it.message}")
+        }
+    }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        assistsLogEventSupervisor.cancel()
+        assistsLogJavascriptInterface.dispose()
         AssistsService.listeners.remove(assistsServiceListener)
     }
 }

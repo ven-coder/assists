@@ -26,27 +26,27 @@ import java.util.concurrent.TimeUnit
  */
 object AssistsLogDiagnostics {
 
-    private const val UPLOAD_KEY = "ulk_lQ1sVFKCcLQMI5RBpz5lo8bchWssCwoshUDOsynC-CM"
+    /** 内置默认上传密钥（宿主未注入或 assets 读取失败时使用） */
+    private const val DEFAULT_UPLOAD_KEY = "ulk_lQ1sVFKCcLQMI5RBpz5lo8bchWssCwoshUDOsynC-CM"
 
-    /** Debug 包：局域网调试；Release 包：线上日志服务 */
-    private fun defaultUploadLogsUrl(): String = if (BuildConfig.DEBUG) {
-//        "http://192.168.0.2:3001/api/logs/upload"
-        "http://47.242.231.216:3002/api/logs/upload"
-
-    } else {
-        "http://47.242.231.216:3002/api/logs/upload"
-    }
+    @Volatile
+    private var storedUploadKey: String = DEFAULT_UPLOAD_KEY
 
     /**
-     * 与 [defaultUploadLogsUrl] 同环境的管理后台根地址（协议、IP、端口与上传接口一致）
+     * 由宿主应用注入上传密钥（例如从 assets 的 environment.env 读取）
      */
-    fun adminWebBaseUrl(): String = if (BuildConfig.DEBUG) {
-//        "http://192.168.0.2:3001"
-        "http://47.242.231.216:3002"
-
-    } else {
-        "http://47.242.231.216:3002"
+    fun setUploadKey(key: String) {
+        val t = key.trim()
+        if (t.isNotEmpty()) storedUploadKey = t
     }
+
+    /** 日志服务固定域名（不含接口路径；上传与管理后台同源） */
+    private const val DEFAULT_LOG_SERVICE_BASE_URL = "http://47.242.231.216:3002"
+
+    private fun defaultUploadLogsUrl(): String = "$DEFAULT_LOG_SERVICE_BASE_URL/api/logs/upload"
+
+    /** 与 [DEFAULT_LOG_SERVICE_BASE_URL] 一致的管理后台根地址 */
+    fun adminWebBaseUrl(): String = DEFAULT_LOG_SERVICE_BASE_URL
 
     private val uploadResponseGson = Gson()
 
@@ -76,14 +76,14 @@ object AssistsLogDiagnostics {
     ): File? {
         val ext = extensionForFormat(format)
         val outFile = file ?: AssistsLogPaths.screenshotFile(ext)
-        AssistsWindowManager.hideAll()
+        AssistsWindowManager.temporarilyHideDisplayedTopWindow()
         delay(overlayHiddenDelayMillis)
         val saved = if (targetNode == null) {
             AssistsCore.takeScreenshotSave(file = outFile, format = format)
         } else {
             targetNode.takeScreenshotSave(file = outFile, format = format)
         }
-        AssistsWindowManager.showTop()
+        AssistsWindowManager.restoreTemporarilyHiddenTopWindow()
         return saved
     }
 
@@ -100,6 +100,8 @@ object AssistsLogDiagnostics {
 
     /**
      * 顺序：截图 → 保存节点树 → multipart 上传
+     *
+     * @param uploadKey 非空时作为本次请求的 X-Upload-Key，否则使用 [setUploadKey] 注入值或内置默认
      */
     @RequiresApi(Build.VERSION_CODES.R)
     suspend fun uploadLogs(
@@ -107,7 +109,9 @@ object AssistsLogDiagnostics {
         format: CompressFormat = CompressFormat.PNG,
         prettyPrint: Boolean = true,
         overlayHiddenDelayMillis: Long = 250L,
+        uploadKey: String? = null,
     ): AssistsLogUploadResult {
+        val effectiveUploadKey = uploadKey?.trim()?.takeIf { it.isNotEmpty() } ?: storedUploadKey
         val screenshotFile = AssistsLogPaths.screenshotFile(extensionForFormat(format))
         val logFile = AssistsLogPaths.logFile()
         val nodeTreeFile = AssistsLogPaths.nodeTreeFile()
@@ -159,7 +163,7 @@ object AssistsLogDiagnostics {
 
                 val httpRequest = Request.Builder()
                     .url(baseUrl)
-                    .header("X-Upload-Key", UPLOAD_KEY)
+                    .header("X-Upload-Key", effectiveUploadKey)
                     .post(multipart)
                     .build()
 
