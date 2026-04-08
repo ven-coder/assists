@@ -44,13 +44,14 @@ buildscript {
         kotlinGradleVersion = "1.7.10"
         dokkaVersion = "1.8.10"
     }
+    // google/mavenCentral 优先：CI（如 JitPack）在境外访问阿里云镜像可能 502
     repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        maven { url 'https://repo1.maven.org/maven2/' }
         maven { url 'https://maven.aliyun.com/nexus/content/groups/public/' }
         maven { url "https://maven.aliyun.com/repository/public" }
-        maven { url 'https://repo1.maven.org/maven2/' }
-        maven { url 'https://jitpack.io' }
-        mavenCentral()
-        google()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:7.3.0'
@@ -64,13 +65,14 @@ plugins {
     id 'org.jetbrains.dokka' version '1.8.10'
 }
 allprojects {
+    // 与 buildscript.repositories 顺序一致，见上方注释
     repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        maven { url 'https://repo1.maven.org/maven2/' }
         maven { url 'https://maven.aliyun.com/nexus/content/groups/public/' }
         maven { url "https://maven.aliyun.com/repository/public" }
-        maven { url 'https://repo1.maven.org/maven2/' }
-        maven { url 'https://jitpack.io' }
-        mavenCentral()
-        google()
     }
 }
 
