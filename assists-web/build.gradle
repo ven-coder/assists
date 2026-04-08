@@ -44,7 +44,6 @@ dependencies {
     implementation project(':assists-ime')
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-    api 'com.google.mlkit:text-recognition-chinese:16.0.1'
 }
 task sourcesJar(type: Jar) {
     archiveClassifier.set('sources')
@@ -57,7 +56,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.ven-coder'
                 artifactId = 'assists-web'
-                version = '0.0.24-SNAPSHOT'
+                version = rootProject.ext.mavenVersion
                 artifact sourcesJar
             }
         }

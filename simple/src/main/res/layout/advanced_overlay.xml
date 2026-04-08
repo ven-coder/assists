@@ -79,6 +79,21 @@
                 android:backgroundTint="@color/colorAccent"
                 android:text="检查微信未读消息" />
 
+            <Button
+                android:id="@+id/btn_screen_text_positions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="识别当前屏幕文字位置"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_ocr_click_phrase_basic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="识别并点击词组「基础」"
+                android:textAllCaps="false" />
 
         </com.google.android.flexbox.FlexboxLayout>
 

@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.ven.assists.web.utils.TextRecognitionChineseLocator
+import com.ven.assists.text.TextRecognitionChineseLocator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

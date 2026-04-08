@@ -1,6 +1,7 @@
 package com.ven.assists.simple.overlays
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
@@ -30,7 +31,10 @@ import com.ven.assists.simple.step.StepTag
 import com.ven.assists.simple.wechat.launchWechat
 import com.ven.assists.stepper.StepManager
 import com.ven.assists.stepper2.Step
+import com.ven.assists.text.TextRecognitionChineseLocator
 import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.web.mlkit.MlkitScreenTextUtils
+import kotlinx.coroutines.delay
 
 @SuppressLint("StaticFieldLeak")
 object OverlayAdvanced : AssistsServiceListener {
@@ -92,6 +96,71 @@ object OverlayAdvanced : AssistsServiceListener {
                             Step.run(impl = ::launchWechat)
                         }.onFailure {
                             LogUtils.d(it)
+                        }
+                    }
+                    btnScreenTextPositions.setOnClickListener {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                            "屏幕文字识别需要 Android 11（API 30）及以上系统。".overlayToast()
+                            return@setOnClickListener
+                        }
+                        OverlayLog.show()
+                        CoroutineWrapper.launch {
+                            "开始识别当前屏幕文字位置…".logAppend()
+                            AssistsWindowManager.hideAll()
+                            try {
+                                delay(250L)
+                                val result = MlkitScreenTextUtils.getScreenTextPositions()
+                                result.fold(
+                                    onSuccess = { rec ->
+                                        val previewCount = 20
+                                        "文字块数量=${rec.positions.size} 耗时毫秒=${rec.processingTimeMillis} 全文长度=${rec.fullText.length}".logAppend()
+                                        rec.positions.take(previewCount).forEachIndexed { index, pos ->
+                                            "[${index + 1}] \"${pos.text}\" 左=${pos.left} 上=${pos.top} 右=${pos.right} 下=${pos.bottom} 宽=${pos.width} 高=${pos.height}".logAppend()
+                                        }
+                                        if (rec.positions.size > previewCount) {
+                                            "… 另有 ${rec.positions.size - previewCount} 条已省略".logAppend()
+                                        }
+                                        "识别完成。".logAppend()
+                                    },
+                                    onFailure = { e ->
+                                        LogUtils.e(e)
+                                        "识别失败：${e.message}".logAppend()
+                                    }
+                                )
+                            } finally {
+                                AssistsWindowManager.showAll()
+                            }
+                        }
+                    }
+                    btnOcrClickPhraseBasic.setOnClickListener {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                            "屏幕文字识别需要 Android 11（API 30）及以上系统。".overlayToast()
+                            return@setOnClickListener
+                        }
+                        OverlayLog.show()
+                        CoroutineWrapper.launch {
+                            val phrase = "基础"
+                            "词组识别并手势点击（首个匹配）：$phrase".logAppend()
+                            AssistsWindowManager.hideAll()
+                            try {
+                                delay(250L)
+                                val clicked = runCatching {
+                                    TextRecognitionChineseLocator.gestureClickFirstPhraseMatchOnScreen(
+                                        targetText = phrase,
+                                    )
+                                }.getOrElse { e ->
+                                    LogUtils.e(e)
+                                    "词组识别并点击失败：${e.message}".logAppend()
+                                    false
+                                }
+                                if (clicked) {
+                                    "已在首个匹配区域中心派发点击手势。".logAppend()
+                                } else {
+                                    "未找到匹配或手势点击失败。".logAppend()
+                                }
+                            } finally {
+                                AssistsWindowManager.showAll()
+                            }
                         }
                     }
                 }

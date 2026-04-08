@@ -31,7 +31,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.ven-coder'
                 artifactId = 'assists-ime'
-                version = '0.0.1'
+                version = rootProject.ext.mavenVersion
                 artifact sourcesJar
             }
         }

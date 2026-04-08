@@ -54,7 +54,7 @@ import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
-import com.ven.assists.web.utils.TextRecognitionChineseLocator
+import com.ven.assists.text.TextRecognitionChineseLocator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -330,7 +330,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
 
     private suspend fun handleRecognizeTextInScreenshot(request: CallRequest<JsonObject>): CallResponse<Any?> {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            return request.createResponse(-1, message = "Screenshot recognition requires Android R or above", data = false)
+            return request.createResponse(-1, message = "截图文字识别需要 Android R（API 30）及以上系统", data = false)
         }
         val targetText = request.arguments?.get("targetText")?.asString ?: ""
         val rotationDegrees = request.arguments?.get("rotationDegrees")?.asInt ?: 0
@@ -410,7 +410,7 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
             onFailure = {
                 request.createResponse(
                     -1,
-                    message = it.message ?: "Recognition failed",
+                    message = it.message ?: "识别失败",
                     data = ""
                 )
             }

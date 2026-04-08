@@ -44,6 +44,8 @@ dependencies {
     
     // Gson JSON库
     api "com.google.code.gson:gson:2.11.0"
+
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
 }
 
 dokkaHtml {

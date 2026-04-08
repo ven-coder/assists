@@ -1,10 +1,10 @@
-package com.ven.assists.web.utils
+package com.ven.assists.text
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.os.Build
 import android.net.Uri
+import android.os.Build
 import androidx.annotation.RequiresApi
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.common.InputImage
@@ -139,6 +139,34 @@ object TextRecognitionChineseLocator {
                 screenshot.recycle()
             }
         }
+    }
+
+    /**
+     * 根据词组识别当前屏幕截图中的文字，对第一个匹配区域的中心执行 [AssistsCore.gestureClick]
+     *
+     * @param targetText 要查找的词组，不可为空或空白
+     * @param region 可选，仅在矩形内识别；为 null 或空矩形时表示整屏
+     * @param rotationDegrees 截图旋转角度
+     * @param clickDuration 手势点击持续时间，与 [AssistsCore.gestureClick] 一致
+     * @return 至少有一处匹配且手势派发成功时为 true；未匹配或手势失败为 false
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    suspend fun gestureClickFirstPhraseMatchOnScreen(
+        targetText: String,
+        region: Rect? = null,
+        rotationDegrees: Int = 0,
+        clickDuration: Long = 25L,
+    ): Boolean {
+        require(targetText.isNotBlank()) { "targetText must not be blank" }
+        val recognition = findWordPositionsInScreenshotRegion(
+            region = region,
+            targetText = targetText,
+            rotationDegrees = rotationDegrees,
+        )
+        val first = recognition.targetPositions.firstOrNull() ?: return false
+        val cx = (first.left + first.right) / 2f
+        val cy = (first.top + first.bottom) / 2f
+        return AssistsCore.gestureClick(cx, cy, clickDuration)
     }
 
     /**
@@ -368,4 +396,3 @@ object TextRecognitionChineseLocator {
         }
     }
 }
-
