@@ -203,8 +203,8 @@ object MPManager {
                 it as MediaProjectionManager
             }
         }
-        projectionManager ?: return false
-        val intent = projectionManager!!.createScreenCaptureIntent()
+        val pm = projectionManager ?: return false
+        val intent = pm.createScreenCaptureIntent()
         requestLaunchers[ActivityUtils.getTopActivity()]?.launch(intent)
         completableDeferredEnable = CompletableDeferred()
         if (autoAllow) {

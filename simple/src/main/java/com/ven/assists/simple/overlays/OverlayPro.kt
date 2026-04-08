@@ -2,7 +2,9 @@ package com.ven.assists.simple.overlays
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +13,7 @@ import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.AssistsCore
+import com.ven.assists.AssistsCore.gestureClick
 import com.ven.assists.AssistsCore.isImageView
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
@@ -22,7 +25,9 @@ import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.log.AssistsLog
 import com.ven.assists.log.logAppend
 import com.ven.assists.simple.databinding.ProOverlayBinding
+import com.ven.assists.text.TextRecognitionChineseLocator
 import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.web.mlkit.MlkitScreenTextUtils
 import com.ven.assists.mp.MPManager
 import com.ven.assists.mp.MPManager.takeScreenshot2File
 import kotlinx.coroutines.delay
@@ -100,11 +105,184 @@ object OverlayPro : AssistsServiceListener {
                     btnTakeScreenshotAllImage.setOnClickListener {
                         takeScreenshotAllImage()
                     }
+                    btnScreenTextPositions.setOnClickListener {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                            "屏幕文字识别需要 Android 11（API 30）及以上系统。".overlayToast()
+                            return@setOnClickListener
+                        }
+                        OverlayLog.show()
+                        CoroutineWrapper.launch {
+                            "开始识别当前屏幕文字位置…".logAppend()
+                            AssistsWindowManager.hideAll()
+                            try {
+                                delay(250L)
+                                val result = MlkitScreenTextUtils.getScreenTextPositions()
+                                result.fold(
+                                    onSuccess = { rec ->
+                                        val previewCount = 20
+                                        "文字块数量=${rec.positions.size} 耗时毫秒=${rec.processingTimeMillis} 全文长度=${rec.fullText.length}".logAppend()
+                                        rec.positions.take(previewCount).forEachIndexed { index, pos ->
+                                            "[${index + 1}] \"${pos.text}\" 左=${pos.left} 上=${pos.top} 右=${pos.right} 下=${pos.bottom} 宽=${pos.width} 高=${pos.height}".logAppend()
+                                        }
+                                        if (rec.positions.size > previewCount) {
+                                            "… 另有 ${rec.positions.size - previewCount} 条已省略".logAppend()
+                                        }
+                                        "识别完成。".logAppend()
+                                    },
+                                    onFailure = { e ->
+                                        LogUtils.e(e)
+                                        "识别失败：${e.message}".logAppend()
+                                    }
+                                )
+                            } finally {
+                                AssistsWindowManager.showAll()
+                            }
+                        }
+                    }
+                    btnOcrClickPhraseBasic.setOnClickListener {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                            "屏幕文字识别需要 Android 11（API 30）及以上系统。".overlayToast()
+                            return@setOnClickListener
+                        }
+                        OverlayLog.show()
+                        CoroutineWrapper.launch {
+                            val phrase = "web支持"
+                            "词组识别并手势点击（首个匹配）：$phrase".logAppend()
+                            AssistsWindowManager.hideAll()
+                            try {
+                                delay(250L)
+                                val clicked = runCatching {
+                                    TextRecognitionChineseLocator.gestureClickFirstPhraseMatchOnScreen(
+                                        targetText = phrase,
+                                    )
+                                }.getOrElse { e ->
+                                    LogUtils.e(e)
+                                    "词组识别并点击失败：${e.message}".logAppend()
+                                    false
+                                }
+                                if (clicked) {
+                                    "已在首个匹配区域中心派发点击手势。".logAppend()
+                                } else {
+                                    "未找到匹配或手势点击失败。".logAppend()
+                                }
+                            } finally {
+                                AssistsWindowManager.showAll()
+                            }
+                        }
+                    }
+                    btnMpScreenTextPositions.setOnClickListener {
+                        OverlayLog.show()
+                        CoroutineWrapper.launch {
+                            "开始 MP 录屏截图并识别文字位置…".logAppend()
+                            val bitmap = captureScreenWithMp() ?: return@launch
+                            try {
+                                runCatching {
+                                    TextRecognitionChineseLocator.getAllTextPositions(bitmap)
+                                }.fold(
+                                    onSuccess = { rec ->
+                                        val previewCount = 20
+                                        "文字块数量=${rec.positions.size} 耗时毫秒=${rec.processingTimeMillis} 全文长度=${rec.fullText.length}".logAppend()
+                                        rec.positions.take(previewCount).forEachIndexed { index, pos ->
+                                            "[${index + 1}] \"${pos.text}\" 左=${pos.left} 上=${pos.top} 右=${pos.right} 下=${pos.bottom} 宽=${pos.width} 高=${pos.height}".logAppend()
+                                        }
+                                        if (rec.positions.size > previewCount) {
+                                            "… 另有 ${rec.positions.size - previewCount} 条已省略".logAppend()
+                                        }
+                                        "识别完成。".logAppend()
+                                    },
+                                    onFailure = { e ->
+                                        LogUtils.e(e)
+                                        "识别失败：${e.message}".logAppend()
+                                    }
+                                )
+                            } finally {
+                                if (!bitmap.isRecycled) {
+                                    bitmap.recycle()
+                                }
+                            }
+                        }
+                    }
+                    btnMpOcrClickPhraseBasic.setOnClickListener {
+                        OverlayLog.show()
+                        CoroutineWrapper.launch {
+                            val phrase = "web支持"
+                            "MP 录屏截图：词组识别并手势点击（首个匹配）：$phrase".logAppend()
+                            // 截图阶段不恢复浮窗，识别并点击结束后再 showAll
+                            val bitmap = captureScreenWithMp(restoreOverlaysAfterCapture = false)
+                            if (bitmap == null) {
+                                AssistsWindowManager.showAll()
+                                return@launch
+                            }
+                            try {
+                                runCatching {
+                                    TextRecognitionChineseLocator.findWordPositions(bitmap, phrase)
+                                }.fold(
+                                    onSuccess = { recognition ->
+                                        val first = recognition.targetPositions.firstOrNull()
+                                        if (first == null) {
+                                            "未找到匹配词组。".logAppend()
+                                            return@fold
+                                        }
+                                        val cx = (first.left + first.right) / 2f
+                                        val cy = (first.top + first.bottom) / 2f
+                                        val ok = gestureClick(cx, cy, 25L)
+                                        if (ok) {
+                                            "已在首个匹配区域中心派发点击手势。".logAppend()
+                                        } else {
+                                            "已定位词组但手势点击失败。".logAppend()
+                                        }
+                                    },
+                                    onFailure = { e ->
+                                        LogUtils.e(e)
+                                        "词组识别并点击失败：${e.message}".logAppend()
+                                    }
+                                )
+                            } finally {
+                                if (!bitmap.isRecycled) {
+                                    bitmap.recycle()
+                                }
+                                AssistsWindowManager.showAll()
+                            }
+                        }
+                    }
 
                 }
             }
             return field
         }
+
+    /**
+     * 确保已授予录屏权限后截取一帧屏幕；失败时打日志并 toast。
+     *
+     * @param restoreOverlaysAfterCapture 为 true 时在截图流程结束时恢复浮窗；为 false 时由调用方在后续逻辑结束后再 [AssistsWindowManager.showAll]。
+     */
+    private suspend fun captureScreenWithMp(restoreOverlaysAfterCapture: Boolean = true): Bitmap? {
+        if (!MPManager.isEnable) {
+            val ok = MPManager.request(autoAllow = true, timeOut = 5000)
+            if (!ok) {
+                "获取屏幕录制权限失败或超时".logAppend()
+                "获取屏幕录制权限失败或超时".overlayToast()
+                return null
+            }
+        }
+        AssistsWindowManager.hideAll()
+        return try {
+            delay(250L)
+            runCatching { MPManager.takeScreenshot2Bitmap() }.getOrElse { e ->
+                LogUtils.e(e)
+                "MP 截图失败：${e.message}".logAppend()
+                "请先授予录屏权限后重试".overlayToast()
+                null
+            } ?: run {
+                "MP 截图返回空".logAppend()
+                null
+            }
+        } finally {
+            if (restoreOverlaysAfterCapture) {
+                AssistsWindowManager.showAll()
+            }
+        }
+    }
 
     private fun takeScreenshotAllImage() {
         CoroutineWrapper.launch(isMain = true) {

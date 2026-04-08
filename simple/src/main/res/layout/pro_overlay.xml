@@ -80,6 +80,37 @@
                 android:backgroundTint="@color/colorAccent"
                 android:text="截取当前屏幕所有图片" />
 
+            <Button
+                android:id="@+id/btn_screen_text_positions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="识别当前屏幕文字位置"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_ocr_click_phrase_basic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="识别并点击词组「web支持」"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_mp_screen_text_positions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="MP录屏截图：识别文字位置"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_mp_ocr_click_phrase_basic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorAccent"
+                android:text="MP录屏截图：点击词组「web支持」"
+                android:textAllCaps="false" />
 
         </com.google.android.flexbox.FlexboxLayout>
 
