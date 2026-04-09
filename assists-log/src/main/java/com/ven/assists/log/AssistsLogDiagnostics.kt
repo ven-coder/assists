@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 object AssistsLogDiagnostics {
 
     /** 内置默认上传密钥（宿主未注入或 assets 读取失败时使用） */
-    private const val DEFAULT_UPLOAD_KEY = "ulk_lQ1sVFKCcLQMI5RBpz5lo8bchWssCwoshUDOsynC-CM"
+    private const val DEFAULT_UPLOAD_KEY = "ulk_Y7MnauToi6rS8Ioi5G-HLuIsxQMvGFb45mw1Y91_xi0"
 
     @Volatile
     private var storedUploadKey: String = DEFAULT_UPLOAD_KEY

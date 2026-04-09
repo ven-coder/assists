@@ -28,6 +28,10 @@ object OverlayLog : AssistsServiceListener {
     var runAutoScrollListJob: Job? = null
     private var logCollectJob: Job? = null
 
+    /** 日志上传成功后附加说明：测试账号与保留策略 */
+    private const val LOG_UPLOAD_SUCCESS_TEST_ACCOUNT_ZH =
+        "测试账号：用户名 test，密码 123321。测试账号日志仅保留 10 分钟，且最多 10 条。"
+
     private val onScrollTouchListener = object : OnTouchListener {
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(v: View, event: MotionEvent): Boolean {
@@ -253,6 +257,7 @@ object OverlayLog : AssistsServiceListener {
             summary.logAppend()
             if (result.success) {
                 "请访问 ${AssistsLogDiagnostics.adminWebBaseUrl()} 管理后台查看日志信息和页面节点信息。".logAppend()
+                LOG_UPLOAD_SUCCESS_TEST_ACCOUNT_ZH.logAppend()
             }
         }
     }
