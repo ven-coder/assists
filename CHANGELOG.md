@@ -2,19 +2,17 @@
 
 ### 版本3.2.222
 
-- 新增：（仅示例）Pro 浮窗「录制截图并识别屏幕词组位置」流程（主库无 API 变更）。
+- 新增：（仅示例）演示录制屏幕后识别词组位置。
 
 ### 版本3.2.221
 
-- 新增：屏幕中文文字识别迁入 assists 核心（`TextRecognitionChineseLocator`）。
-- 新增：（仅示例）扩展示例浮窗与中文日志相关展示。
-- 修改：`assistsxMlkit` 与 Kotlin 侧识别能力对齐（词组/全屏文字位置等）。
+- 新增：在核心库中提供中文屏幕文字识别，方便多处复用。
+- 修改：网页端文字识别能力与核心库保持一致，便于在页面脚本里做词组或全屏文字定位。
 
 ### 版本3.2.220
 
-- 新增：`assists-log` 模块与 H5 桥 `assistsxLog`（本地日志、订阅、上传及与后台配合）。
-- 新增：浮窗体系 `assistsxFloat`（多层显隐、`temporarilyHideAll`、当前 Web 浮窗显隐等）。
-- 新增：`assistsxBarUtils`、`assistsxGallery`、主桥剪贴板与截图/节点树 JSON 保存增强；Core 侧剪贴板与 ML Kit 识别基础能力。
-- 新增：路径/文件/网络/音频/图片等分桥（`assistsxPath`、`assistsxFileIO`、`assistsxFileUtils`、`assistsxHttp`、`assistsxIme`、`assistsxImageUtils` 等）。
-- 修改：`assistsxAsync` 移除 WebView 覆盖层相关实现；加载浮层请用主桥 `assistsx` 的 `loadWebViewOverlay` 或改用 `assistsxFloat`。
-- 修改：工程依赖改为本地多模块；JitPack 构建修复；IME 与根工程 SDK 对齐。
+- 新增：内置日志能力，并支持在网页里读写日志、订阅变化以及向服务端上报，便于排查问题。
+- 新增：新的浮窗体系，用浮窗承载界面交互，替代原先基于覆盖层的用法。
+- 新增：为网页脚本补充路径、文件、网络、相册、系统栏、输入法、图片等一类系统级能力入口。
+- 新增：支持从主通道读取剪贴板、保存截图与导出无障碍节点树，并在核心层提供剪贴板与文字识别基础。
+- 修改：异步通道不再负责网页覆盖层相关逻辑；加载或关闭这类界面需改走主通道或新的浮窗能力，以免行为不一致。
