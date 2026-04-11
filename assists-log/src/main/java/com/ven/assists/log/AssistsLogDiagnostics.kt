@@ -41,7 +41,7 @@ object AssistsLogDiagnostics {
     }
 
     /** 日志服务固定域名（不含接口路径；上传与管理后台同源） */
-    private const val DEFAULT_LOG_SERVICE_BASE_URL = "http://47.242.231.216:3002"
+    private const val DEFAULT_LOG_SERVICE_BASE_URL = "https://admin.assists.cn"
 
     private fun defaultUploadLogsUrl(): String = "$DEFAULT_LOG_SERVICE_BASE_URL/api/logs/upload"
 
