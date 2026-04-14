@@ -1,6 +1,6 @@
 <div align="center"><a name="readme-top"></a>
 
-<img src="https://github.com/user-attachments/assets/62e6ced0-0e21-420d-b0da-ceb73b850c94" width="800" />
+<img src="https://github.com/user-attachments/assets/d8179c9e-cfab-4dc4-bb4d-5d8517a92b56" width="800" />
 
 基于Android无障碍服务（AccessibilityService）封装的自动化开发框架
 
