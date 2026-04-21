@@ -1,5 +1,12 @@
 # 更新日志
 
+### 3.2.224（2026-04-21）
+
+- 新增：`isA11yEnabled` 判断无障碍是否已在系统设置中开启；省略 `Context` 时使用 `AssistsCore.init` 保存的 `Application`；支持 manifest 中注册为 `AssistsService` 子类的实现。
+- 废弃：`isAccessibilityServiceEnabled`，请改用 `isA11yEnabled`。
+- 修改：`AssistsService` 使用 `getOrNull()`（`@JvmStatic`）获取实例，`instance` 标为过时。
+- 修改：无障碍服务资源补充 `xml-v31` 等声明，适配更高系统版本。
+
 ### 3.2.222（2026-04-09）
 
 - 新增：（仅示例）演示录制屏幕后识别词组位置。
