@@ -27,7 +27,7 @@ class ScrollContacts : StepImpl() {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 component = ComponentName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI")
-                AssistsService.instance?.startActivity(this)
+                AssistsService.getOrNull()?.startActivity(this)
             }
             //执行下一步Step.STEP_2，this::class.java为当前StepImpl实现类的步骤逻辑，如果传其他的StepImpl就会执行指定的StepImpl逻辑
             return@next Step.get(StepTag.STEP_2)

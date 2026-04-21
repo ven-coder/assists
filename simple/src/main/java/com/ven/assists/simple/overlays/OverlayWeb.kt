@@ -28,7 +28,7 @@ object OverlayWeb : AssistsServiceListener {
         @SuppressLint("ClickableViewAccessibility")
         get() {
             if (field == null) {
-                field = WebOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                field = WebOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
                     web.setBackgroundColor(0)
 //                    web.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
 //                    web.background.alpha = 150

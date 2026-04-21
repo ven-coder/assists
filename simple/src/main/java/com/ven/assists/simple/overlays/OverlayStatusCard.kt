@@ -27,7 +27,7 @@ object OverlayStatusCard : AssistsServiceListener {
         @SuppressLint("ClickableViewAccessibility")
         get() {
             if (field == null) {
-                field = WebOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                field = WebOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
                     web.setBackgroundColor(0)
                     web.onReceivedTitle = {
                         assistWindowWrapper?.viewBinding?.tvTitle?.text = it

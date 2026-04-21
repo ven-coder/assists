@@ -8,7 +8,7 @@ import com.ven.assists.service.AssistsService
 
 /**
  * JavascriptInterface 统一的 Context 获取工具类
- * 优先级：AssistsService.instance > ActivityUtils.getTopActivity() > Utils.getApp()
+ * 优先级：无障碍服务（[AssistsService.getOrNull]）> ActivityUtils.getTopActivity() > Utils.getApp()
  */
 object JavascriptInterfaceContext {
     /**
@@ -16,7 +16,7 @@ object JavascriptInterfaceContext {
      * @return Context，如果都为空则返回 null
      */
     fun getContext(): Context? {
-        return AssistsService.instance
+        return AssistsService.getOrNull()
             ?: ActivityUtils.getTopActivity()
             ?: Utils.getApp()
     }

@@ -196,7 +196,7 @@ object MPManager {
      */
     suspend fun request(autoAllow: Boolean = true, timeOut: Long = 5000): Boolean {
         var projectionManager: MediaProjectionManager? = null
-        AssistsService.instance?.let {
+        AssistsService.getOrNull()?.let {
             projectionManager = it.getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         } ?: let {
             projectionManager = ActivityUtils.getTopActivity()?.getSystemService(MEDIA_PROJECTION_SERVICE)?.let {

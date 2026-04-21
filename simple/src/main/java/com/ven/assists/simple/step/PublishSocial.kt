@@ -28,7 +28,7 @@ class PublishSocial : StepImpl() {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 component = ComponentName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI")
-                AssistsService.instance?.startActivity(this)
+                AssistsService.getOrNull()?.startActivity(this)
             }
             it.data?.let {
                 AssistsLog.appendTimestampedEntry("PublishSocial STEP_1 收到数据：$it")

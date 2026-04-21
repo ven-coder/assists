@@ -2,10 +2,12 @@ package com.ven.assists
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityService.TakeScreenshotCallback
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -24,6 +26,7 @@ import android.view.Display
 import android.view.Gravity
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -65,6 +68,9 @@ import com.ven.assists.utils.BitmapUtils
 object AssistsCore {
     /** 日志标签 */
     var LOG_TAG = "assists_log"
+
+    /** [init] 传入的 Application，供 [isA11yEnabled] 无参默认 [Context] 使用 */
+    private var initApplication: Application? = null
 
     /** 当前应用在屏幕中的位置信息缓存 */
     private var appRectInScreen: Rect? = null
@@ -146,7 +152,13 @@ object AssistsCore {
      * @param application Application实例
      */
     fun init(application: Application) {
+        initApplication = application
         LogUtils.getConfig().globalTag = LOG_TAG
+    }
+
+    private fun requireInitApplicationContext(): Context {
+        return initApplication?.applicationContext
+            ?: throw IllegalStateException("Call AssistsCore.init(application) before using default context in isA11yEnabled().")
     }
 
     /**
@@ -163,11 +175,91 @@ object AssistsCore {
      * 检查无障碍服务是否已开启
      * @return true表示服务已开启，false表示服务未开启
      */
+    @Deprecated(
+        message = "依赖 rootInActiveWindow，界面切换或锁屏时易误判；请使用 isA11yEnabled()",
+        replaceWith = ReplaceWith("isA11yEnabled()"),
+    )
     fun isAccessibilityServiceEnabled(): Boolean {
         val result = runCatching {
-            AssistsService.instance?.rootInActiveWindow ?: return false
+            val value = AssistsService.getOrNull()?.rootInActiveWindow
+            LogUtils.d(value)
+            value
+        }.onFailure {
+            LogUtils.e(it)
         }
-        return result.getOrNull() != null
+        val value = result.getOrNull()
+        return value != null
+    }
+
+    /**
+     * 可靠判断本应用的无障碍服务是否已在系统设置中开启（用户已为该组件打开无障碍）。
+     *
+     * 与 [isAccessibilityServiceEnabled] 不同：后者依赖 [android.view.accessibility.AccessibilityNodeInfo]
+     * 活动窗口根节点，在无焦点窗口、锁屏或界面切换时 [AccessibilityService.getRootInActiveWindow] 常为 null，
+     * 易被误判为未开启。本方法依据无障碍总开关、[Settings.Secure] 已启用组件列表，以及
+     * [AccessibilityManager.getEnabledAccessibilityServiceList] 进行校验，并互为补充以降低 OEM 差异带来的误判。
+     *
+     * 判定方式：在本应用包名下，若任一已启用服务的实现类 [java.lang.Class.isAssignableFrom] 自 [serviceClass]（含子类），
+     * 即视为已开启。故 manifest 中 `android:name` 为 [AssistsService] 的子类时，默认 [serviceClass] 为 [AssistsService] 即可匹配。
+     *
+     * @param context 用于读取系统设置；省略时使用 [init] 传入的 [Application] 的 applicationContext
+     * @param serviceClass 期望的无障碍服务基类；子类实例在系统中启用时同样返回 true
+     */
+    @JvmOverloads
+    fun isA11yEnabled(
+        context: Context = requireInitApplicationContext(),
+        serviceClass: Class<out AccessibilityService> = AssistsService::class.java,
+    ): Boolean {
+        if (!isAccessibilityMasterSwitchOn(context)) return false
+        val pkg = context.packageName
+        val classNames = linkedSetOf<String>()
+        runCatching {
+            val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK).forEach { info ->
+                val si = info.resolveInfo.serviceInfo
+                if (si.packageName == pkg) classNames.add(si.name)
+            }
+        }.onFailure { LogUtils.e(it) }
+        val enabledSecure = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+        ) ?: ""
+        val splitter = TextUtils.SimpleStringSplitter(':')
+        splitter.setString(enabledSecure)
+        for (flat in splitter) {
+            val cn = ComponentName.unflattenFromString(flat) ?: continue
+            if (cn.packageName == pkg) classNames.add(cn.className)
+        }
+        for (name in classNames) {
+            if (isAccessibilityServiceAssignable(name, serviceClass)) return true
+        }
+        return false
+    }
+
+    /** 无障碍功能总开关是否打开 */
+    private fun isAccessibilityMasterSwitchOn(context: Context): Boolean {
+        return runCatching {
+            Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+        }.getOrElse {
+            LogUtils.e(it)
+            false
+        }
+    }
+
+    /**
+     * 已启用无障碍实现类是否可赋给 [expectedBase]（用于识别 manifest 中的 [AssistsService] 子类）
+     */
+    private fun isAccessibilityServiceAssignable(
+        implementationClassName: String,
+        expectedBase: Class<out AccessibilityService>,
+    ): Boolean {
+        return runCatching {
+            val impl = Class.forName(implementationClassName)
+            expectedBase.isAssignableFrom(impl)
+        }.getOrElse {
+            LogUtils.e(it)
+            false
+        }
     }
 
     /**
@@ -175,7 +267,7 @@ object AssistsCore {
      * @return 当前窗口的包名，如果获取失败则返回空字符串
      */
     fun getPackageName(): String {
-        return AssistsService.instance?.rootInActiveWindow?.packageName?.toString() ?: ""
+        return AssistsService.getOrNull()?.rootInActiveWindow?.packageName?.toString() ?: ""
     }
 
     /**
@@ -183,7 +275,7 @@ object AssistsCore {
      */
     fun keepScreenOn(tip: String = "屏幕保持常亮") {
         if (AssistsWindowManager.contains("keepScreenOn")) return
-        AssistsService.instance?.let {
+        AssistsService.getOrNull()?.let {
             AssistsWindowManager.add(FrameLayout(it).apply {
                 setBackgroundColor("#80000000".toColorInt())
                 addView(TextView(it).apply {
@@ -217,7 +309,7 @@ object AssistsCore {
      * @return 符合条件的元素列表
      */
     fun findById(id: String, filterText: String? = null, filterDes: String? = null, filterClass: String? = null): List<AccessibilityNodeInfo> {
-        var nodes = AssistsService.instance?.rootInActiveWindow?.findById(id) ?: arrayListOf()
+        var nodes = AssistsService.getOrNull()?.rootInActiveWindow?.findById(id) ?: arrayListOf()
         val filterNodes = filterNodes(nodes, filterText = filterText, filterDes = filterDes, filterClass = filterClass)
         return filterNodes
     }
@@ -250,7 +342,7 @@ object AssistsCore {
      * @return 符合条件的元素列表
      */
     fun findByText(text: String, filterViewId: String? = null, filterDes: String? = null, filterClass: String? = null): List<AccessibilityNodeInfo> {
-        val nodes = AssistsService.instance?.rootInActiveWindow?.findByText(text) ?: arrayListOf()
+        val nodes = AssistsService.getOrNull()?.rootInActiveWindow?.findByText(text) ?: arrayListOf()
         val filterNodes = filterNodes(nodes, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass)
         return filterNodes
     }
@@ -269,7 +361,7 @@ object AssistsCore {
         filterDes: String? = null,
         filterClass: String? = null
     ): List<AccessibilityNodeInfo> {
-        val nodes = AssistsService.instance?.rootInActiveWindow?.findByText(text) ?: arrayListOf()
+        val nodes = AssistsService.getOrNull()?.rootInActiveWindow?.findByText(text) ?: arrayListOf()
         val filterNodes = filterNodes(nodes, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass)
         return filterNodes
     }
@@ -512,7 +604,7 @@ object AssistsCore {
         filterText: String? = null
     ): List<AccessibilityNodeInfo> {
         val nodeList = arrayListOf<AccessibilityNodeInfo>()
-        AssistsService.instance?.rootInActiveWindow?.getNodes(nodeList)
+        AssistsService.getOrNull()?.rootInActiveWindow?.getNodes(nodeList)
         val filterNodes = filterNodes(nodeList, filterViewId, filterDes, filterClass, filterText)
         return filterNodes
     }
@@ -600,7 +692,7 @@ object AssistsCore {
                     completableDeferred.complete(false)
                 }
             }
-            val runResult = AssistsService.instance?.let {
+            val runResult = AssistsService.getOrNull()?.let {
                 AssistsWindowManager.nonTouchableByAll()
                 delay(nonTouchableWindowDelay)
                 runMain { it.dispatchGesture(gesture, gestureResultCallback, null) }
@@ -653,7 +745,7 @@ object AssistsCore {
             val gestureDescription = builder.addStroke(strokeDescription).build()
             val deferred = CompletableDeferred<Boolean>()
             val runResult = runMain {
-                return@runMain AssistsService.instance?.dispatchGesture(gestureDescription, object : AccessibilityService.GestureResultCallback() {
+                return@runMain AssistsService.getOrNull()?.dispatchGesture(gestureDescription, object : AccessibilityService.GestureResultCallback() {
                     override fun onCompleted(gestureDescription: GestureDescription) {
                         deferred.complete(true)
                     }
@@ -853,7 +945,7 @@ object AssistsCore {
      * @return 返回操作是否成功
      */
     fun back(): Boolean {
-        return AssistsService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) ?: false
+        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) ?: false
     }
 
     /**
@@ -861,7 +953,7 @@ object AssistsCore {
      * @return 返回主屏幕操作是否成功
      */
     fun home(): Boolean {
-        return AssistsService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME) ?: false
+        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME) ?: false
     }
 
     /**
@@ -869,7 +961,7 @@ object AssistsCore {
      * @return 打开通知栏操作是否成功
      */
     fun notifications(): Boolean {
-        return AssistsService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS) ?: false
+        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS) ?: false
     }
 
     /**
@@ -877,7 +969,7 @@ object AssistsCore {
      * @return 显示最近任务操作是否成功
      */
     fun recentApps(): Boolean {
-        return AssistsService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS) ?: false
+        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS) ?: false
     }
 
     /**
@@ -887,7 +979,7 @@ object AssistsCore {
      */
     fun AccessibilityNodeInfo.paste(text: String?): Boolean {
         performAction(AccessibilityNodeInfo.ACTION_FOCUS)
-        AssistsService.instance?.let {
+        AssistsService.getOrNull()?.let {
             val clipboard = it.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("label", text)
             clipboard.setPrimaryClip(clip)
@@ -966,7 +1058,7 @@ object AssistsCore {
             delay(timeoutMillis)
             completableDeferred.complete(false)
         }
-        AssistsService.instance?.let {
+        AssistsService.getOrNull()?.let {
             val clipboard = it.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("label", text)
             clipboard.setPrimaryClip(clip)
@@ -1041,7 +1133,7 @@ object AssistsCore {
      * @return 应用窗口的位置信息，如果未找到则返回null
      */
     fun getAppBoundsInScreen(): Rect? {
-        return AssistsService.instance?.let {
+        return AssistsService.getOrNull()?.let {
             return@let findById("android:id/content").firstOrNull()?.getBoundsInScreen()
         }
     }
@@ -1099,11 +1191,11 @@ object AssistsCore {
      */
     suspend fun launchApp(intent: Intent): Boolean {
         val completableDeferred = CompletableDeferred<Boolean>()
-        val view = View(AssistsService.instance).apply {
+        val view = View(AssistsService.getOrNull()).apply {
             setOnClickListener {
                 runCatching {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    AssistsService.instance?.startActivity(intent)
+                    AssistsService.getOrNull()?.startActivity(intent)
                     completableDeferred.complete(true)
                 }.onFailure {
                     completableDeferred.complete(false)
@@ -1130,12 +1222,12 @@ object AssistsCore {
      */
     suspend fun launchApp(packageName: String): Boolean {
         val completableDeferred = CompletableDeferred<Boolean>()
-        val view = View(AssistsService.instance).apply {
+        val view = View(AssistsService.getOrNull()).apply {
             setOnClickListener {
                 runCatching {
-                    val intent = AssistsService.instance?.packageManager?.getLaunchIntentForPackage(packageName)
+                    val intent = AssistsService.getOrNull()?.packageManager?.getLaunchIntentForPackage(packageName)
                     intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    AssistsService.instance?.startActivity(intent)
+                    AssistsService.getOrNull()?.startActivity(intent)
                     completableDeferred.complete(true)
                 }.onFailure {
                     completableDeferred.complete(false)
@@ -1228,7 +1320,7 @@ object AssistsCore {
     @RequiresApi(Build.VERSION_CODES.R)
     suspend fun takeScreenshot(): Bitmap? {
         val completableDeferred = CompletableDeferred<Bitmap?>()
-        AssistsService.instance?.takeScreenshot(Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), object : TakeScreenshotCallback {
+        AssistsService.getOrNull()?.takeScreenshot(Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), object : TakeScreenshotCallback {
             override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
                 Bitmap.wrapHardwareBuffer(
                     screenshot.hardwareBuffer,
@@ -1261,38 +1353,38 @@ object AssistsCore {
         runCatching {
             // 先保存节点的位置信息，确保使用一致的位置（避免多次调用getBoundsInScreen导致的位置变化）
             val nodeBounds = getBoundsInScreen()
-            
+
             // 截取整个屏幕
             val fullScreenshot = AssistsCore.takeScreenshot()
             fullScreenshot ?: throw RuntimeException("bitmap is null")
-            
+
             // 从完整截图中裁剪出节点对应的区域（使用已保存的位置信息）
             val nodeBitmap = Bitmap.createBitmap(
-                fullScreenshot, 
-                nodeBounds.left, 
-                nodeBounds.top, 
-                nodeBounds.width(), 
+                fullScreenshot,
+                nodeBounds.left,
+                nodeBounds.top,
+                nodeBounds.width(),
                 nodeBounds.height()
             )
-            
+
             // 清理完整截图（不再需要）
             fullScreenshot.recycle()
-            
+
             // 对裁剪后的bitmap进行处理（缩放和圆角）
             val cropBitmap = BitmapUtils.cropCenterWithCornerRatio(
-                nodeBitmap, 
-                scale = scale, 
+                nodeBitmap,
+                scale = scale,
                 cornerRatio = cornerRatio
             )
-            
+
             // 清理节点bitmap（如果和cropBitmap不同）
             if (nodeBitmap != cropBitmap) {
                 nodeBitmap.recycle()
             }
-            
+
             val result = ImageUtils.save(cropBitmap, file, format)
             cropBitmap.recycle()
-            
+
             if (result) {
                 val md5 = FileUtils.getFileMD5ToString(file)
                 return md5
@@ -1434,7 +1526,7 @@ object AssistsCore {
      * @return 根节点的NodeTree对象，如果获取失败则返回null
      */
     fun getRootNodeTree(): NodeTree? {
-        return AssistsService.instance?.rootInActiveWindow?.toNodeTree()
+        return AssistsService.getOrNull()?.rootInActiveWindow?.toNodeTree()
     }
 
     /**
@@ -1509,7 +1601,7 @@ object AssistsCore {
                 ClipboardActivity.setClipboardResult(deferred)
 
                 // 使用AssistsService的上下文启动Activity
-                AssistsService.instance?.let { service ->
+                AssistsService.getOrNull()?.let { service ->
                     val intent = Intent(service, ClipboardActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
@@ -1522,7 +1614,7 @@ object AssistsCore {
                     LogUtils.d(LOG_TAG, "getClipboardText (background result): $result")
                     result
                 } ?: run {
-                    LogUtils.e(LOG_TAG, "getClipboardText: AssistsService.instance is null")
+                    LogUtils.e(LOG_TAG, "getClipboardText: AssistsService.getOrNull() is null")
                     deferred.complete(null)
                     null
                 }

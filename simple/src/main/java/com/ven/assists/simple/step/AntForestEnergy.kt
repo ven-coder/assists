@@ -150,7 +150,7 @@ class AntForestEnergy : StepImpl(), AssistsServiceListener {
             val points = OpencvWrapper.getResultWithThreshold(temp3Result, 0.98, ignoreX = temp3.width() * 0.5)
 
             runMain {
-                AssistsService.instance?.let { it ->
+                AssistsService.getOrNull()?.let { it ->
                     AssistsWindowManager.add(CaptureLayout(it).apply {
                         points.forEach {
                             it.y += capBeginY
@@ -194,7 +194,7 @@ class AntForestEnergy : StepImpl(), AssistsServiceListener {
                     if (it.maxVal > 0.99) {
                         val point = it.maxLoc
                         runMain {
-                            AssistsService.instance?.let {
+                            AssistsService.getOrNull()?.let {
                                 AssistsWindowManager.add(CaptureLayout(it).apply {
                                     addPoint(point, templateMat.width(), templateMat.height())
                                     invalidate()

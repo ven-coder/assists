@@ -25,7 +25,7 @@ class GestureScrollSocial : StepImpl() {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 component = ComponentName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI")
-                AssistsService.instance?.startActivity(this)
+                AssistsService.getOrNull()?.startActivity(this)
             }
             return@next Step.get(StepTag.STEP_2)
         }.next(StepTag.STEP_2) {

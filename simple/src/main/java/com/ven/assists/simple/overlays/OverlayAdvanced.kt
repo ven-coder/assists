@@ -40,7 +40,7 @@ object OverlayAdvanced : AssistsServiceListener {
         private set
         get() {
             if (field == null) {
-                field = AdvancedOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                field = AdvancedOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
                     btnAnswerWechatCall.setOnClickListener {
                         if (!AssistsService.listeners.contains(answerWechatCallListener)) {
                             AssistsService.listeners.add(answerWechatCallListener)

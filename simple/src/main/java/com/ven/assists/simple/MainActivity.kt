@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
 
     private fun checkServiceEnable() {
         if (!isActivityResumed) return
-        if (AssistsCore.isAccessibilityServiceEnabled()) {
+        if (AssistsCore.isA11yEnabled()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(foregroundServiceIntent)
             }

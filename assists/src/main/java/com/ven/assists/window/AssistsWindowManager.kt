@@ -74,7 +74,7 @@ object AssistsWindowManager {
      * @return WindowManager实例，如果未初始化则返回null
      */
     fun getWindowManager(): WindowManager? {
-        AssistsService.instance?.getSystemService(Context.WINDOW_SERVICE)?.let { return (it as WindowManager) }
+        AssistsService.getOrNull()?.getSystemService(Context.WINDOW_SERVICE)?.let { return (it as WindowManager) }
         return null
     }
 
@@ -636,7 +636,7 @@ object AssistsWindowManager {
      * @param delay 显示时长，默认2000毫秒
      */
     fun String.overlayToast(delay: Long = 2000) {
-        AssistsService.instance?.let {
+        AssistsService.getOrNull()?.let {
             CoroutineWrapper.launch(isMain = true) {
                 val textView = TextView(it).apply {
                     text = this@overlayToast

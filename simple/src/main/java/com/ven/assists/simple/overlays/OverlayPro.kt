@@ -41,7 +41,7 @@ object OverlayPro : AssistsServiceListener {
         private set
         get() {
             if (field == null) {
-                field = ProOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                field = ProOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
                     btnListenerNotification.setOnClickListener {
                         if (!AssistsService.listeners.contains(notificationListener)) {
                             AssistsService.listeners.add(notificationListener)
@@ -58,7 +58,7 @@ object OverlayPro : AssistsServiceListener {
                             btnDisablePullNotification.setText("禁止下拉通知栏")
                             return@setOnClickListener
                         }
-                        disableNotificationView = View(AssistsService.instance).apply {
+                        disableNotificationView = View(AssistsService.getOrNull()).apply {
                             setBackgroundColor(Color.parseColor("#80000000"))
                             layoutParams = ViewGroup.LayoutParams(-1, BarUtils.getStatusBarHeight())
                         }
@@ -92,7 +92,7 @@ object OverlayPro : AssistsServiceListener {
                         CoroutineWrapper.launch {
                             runCatching {
                                 val file = takeScreenshot2File()
-                                AssistsCore.launchApp(Intent(AssistsService.instance, ScreenshotReviewActivity::class.java).apply {
+                                AssistsCore.launchApp(Intent(AssistsService.getOrNull(), ScreenshotReviewActivity::class.java).apply {
                                     putExtra("path", file?.path)
                                 })
                             }.onFailure {
@@ -300,7 +300,7 @@ object OverlayPro : AssistsServiceListener {
                 }
                 AssistsWindowManager.showAll()
 
-                AssistsCore.launchApp(Intent(AssistsService.instance, ImageGalleryActivity::class.java).apply {
+                AssistsCore.launchApp(Intent(AssistsService.getOrNull(), ImageGalleryActivity::class.java).apply {
                     putStringArrayListExtra("extra_image_paths", list)
                 })
 

@@ -52,7 +52,7 @@ object OverlayLog : AssistsServiceListener {
         @SuppressLint("ClickableViewAccessibility")
         get() {
             if (field == null) {
-                field = LogOverlayBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                field = LogOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
                     scrollView.setOnTouchListener(onScrollTouchListener)
                     btnClean.setOnClickListener {
                         CoroutineWrapper.launch { AssistsLog.clear() }

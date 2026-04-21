@@ -151,7 +151,7 @@ object WindowMinimizeManager : AssistsServiceListener {
         @SuppressLint("ClickableViewAccessibility")
         get() {
             if (field == null) {
-                field = MinimizeFloatingBinding.inflate(LayoutInflater.from(AssistsService.instance)).apply {
+                field = MinimizeFloatingBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
                     wmlp = AssistsWindowManager.createLayoutParams().apply {
                         width = -2
                         height = -2
