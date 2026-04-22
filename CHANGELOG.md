@@ -2,15 +2,9 @@
 
 ### 3.4.0（2026-04-22）
 
-- 新增：`NodeLookupScope`（活动窗口 / 全窗口）与 `getAccessibilityRootNodes`；`findById`、`findByText`、`getAllNodes`、`getRootNodeTree` / `getRootNodeTreeJson` / `saveRootNodeTreeJson`、`getPackageName` 等支持 `scope`，默认在全窗口根上遍历，多窗口时 `getRootNodeTree` 可返回合成根（`__assists_multi_root__`）。
-- 新增：`AssistsNodeClassNames` 与同包顶层 `AccessibilityNodeInfo.isXxx()`，集中维护常见控件 / 布局 / AndroidX / Material 的 `className` 常量。
-- 废弃：`NodeClassValue` 改为委托 `AssistsNodeClassNames` 并整体标记过时；`AssistsCore` 内历史类型判断扩展保留但标为 `@Deprecated`，请改用 `com.ven.assists.utils` 下同名扩展。
-- 修改：`findByTextAllMatch` 在系统子串匹配结果上再过滤为文本或描述与目标完全一致。
-- 修改：`filterNodes` 多条件为非空时按 **同时满足（AND）** 过滤，与「多条件筛选」语义一致。
-- 修改：`findByTags`（全局与子树）抽取 `refineNodesByTags`，减少重复实现。
-- 修改：`nodeGestureClickByDouble` 按两次手势结果返回成功/失败，异常时不再误报成功；窗口触摸层与 `nodeGestureClick` 一致走 `runMain`。
-- 修改：`gesture(Path)` 补充说明：不可改为仅调 `dispatchGesture`，以免与外层 `nonTouchable` 顺序冲突。
-- 清理：`getAllText` 中无效代码；`getBoundsInScreen` 无意义调用；`getChildren` 对 `getChild` 空指针安全。
+- **节点获取增强**：默认走「全窗口」根节点聚合（`NodeLookupScope`），可遍历 **PopupWindow**、**系统级浮窗** 等独立窗口层；许多在 **uiautomatorviewer 中不可见或无法展开** 的节点，在此模式下可被查找与导出。相关查找、`getRootNodeTree*`、包名解析等 API 已与之对齐。
+- **节点类型**：新增 `AssistsNodeClassNames` 及配套 `isXxx()` 判断，扩充常见系统 / AndroidX / Material 类名；原 `NodeClassValue` 与 `AssistsCore` 内旧扩展标为过时，建议迁移至 `com.ven.assists.utils`。
+- **逻辑与稳定性**：修正多条件过滤、全文匹配、双击手势返回值与触摸层调度等边界行为，并做少量清理与内部去重。
 
 ### 3.3.0（2026-04-21）
 
