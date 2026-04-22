@@ -14,7 +14,7 @@ import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.gestureClick
-import com.ven.assists.AssistsCore.isImageView
+import com.ven.assists.utils.isImageView
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager

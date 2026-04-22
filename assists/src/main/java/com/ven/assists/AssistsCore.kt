@@ -42,7 +42,6 @@ import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.utils.CoroutineWrapper
-import com.ven.assists.utils.NodeClassValue
 import com.ven.assists.utils.runMain
 import com.ven.assists.window.AssistsWindowManager
 import kotlinx.coroutines.CompletableDeferred
@@ -59,11 +58,16 @@ import com.blankj.utilcode.util.FileUtils
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.ven.assists.ui.ClipboardActivity
+import com.ven.assists.utils.AssistsNodeClassNames
 import com.ven.assists.utils.BitmapUtils
+import kotlin.DeprecationLevel
 
 /**
  * 无障碍服务核心类
  * 提供对AccessibilityService的封装和扩展功能
+ *
+ * 节点类型判断：推荐使用 [com.ven.assists.utils.AssistsNodeClassNames] 与 `com.ven.assists.utils` 包下顶层 `isXxx()` 扩展；
+ * 本对象内仍保留与历史版本同名的扩展，已标记为 `@Deprecated`。
  */
 object AssistsCore {
     /** 日志标签 */
@@ -75,61 +79,75 @@ object AssistsCore {
     /** 当前应用在屏幕中的位置信息缓存 */
     private var appRectInScreen: Rect? = null
 
-    /**
-     * 以下是一系列用于快速判断元素类型的扩展函数
-     * 通过比对元素的className来判断元素类型
-     */
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isFrameLayout（与 AssistsNodeClassNames 配套）",
+        replaceWith = ReplaceWith("isFrameLayout()", imports = ["com.ven.assists.utils.isFrameLayout"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isFrameLayout(): Boolean = className == AssistsNodeClassNames.FrameLayout
 
-    /** 判断元素是否是FrameLayout */
-    fun AccessibilityNodeInfo.isFrameLayout(): Boolean {
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isViewGroup",
+        replaceWith = ReplaceWith("isViewGroup()", imports = ["com.ven.assists.utils.isViewGroup"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isViewGroup(): Boolean = className == AssistsNodeClassNames.ViewGroup
 
-        return className == NodeClassValue.FrameLayout
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isView",
+        replaceWith = ReplaceWith("isView()", imports = ["com.ven.assists.utils.isView"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isView(): Boolean = className == AssistsNodeClassNames.View
 
-    /** 判断元素是否是ViewGroup */
-    fun AccessibilityNodeInfo.isViewGroup(): Boolean {
-        return className == NodeClassValue.ViewGroup
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isImageView",
+        replaceWith = ReplaceWith("isImageView()", imports = ["com.ven.assists.utils.isImageView"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isImageView(): Boolean = className == AssistsNodeClassNames.ImageView
 
-    /** 判断元素是否是View */
-    fun AccessibilityNodeInfo.isView(): Boolean {
-        return className == NodeClassValue.View
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isTextView",
+        replaceWith = ReplaceWith("isTextView()", imports = ["com.ven.assists.utils.isTextView"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isTextView(): Boolean = className == AssistsNodeClassNames.TextView
 
-    /** 判断元素是否是ImageView */
-    fun AccessibilityNodeInfo.isImageView(): Boolean {
-        return className == NodeClassValue.ImageView
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isLinearLayout",
+        replaceWith = ReplaceWith("isLinearLayout()", imports = ["com.ven.assists.utils.isLinearLayout"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isLinearLayout(): Boolean = className == AssistsNodeClassNames.LinearLayout
 
-    /** 判断元素是否是TextView */
-    fun AccessibilityNodeInfo.isTextView(): Boolean {
-        return className == NodeClassValue.TextView
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isRelativeLayout",
+        replaceWith = ReplaceWith("isRelativeLayout()", imports = ["com.ven.assists.utils.isRelativeLayout"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isRelativeLayout(): Boolean = className == AssistsNodeClassNames.RelativeLayout
 
-    /** 判断元素是否是LinearLayout */
-    fun AccessibilityNodeInfo.isLinearLayout(): Boolean {
-        return className == NodeClassValue.LinearLayout
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isButton",
+        replaceWith = ReplaceWith("isButton()", imports = ["com.ven.assists.utils.isButton"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isButton(): Boolean = className == AssistsNodeClassNames.Button
 
-    /** 判断元素是否是RelativeLayout */
-    fun AccessibilityNodeInfo.isRelativeLayout(): Boolean {
-        return className == NodeClassValue.RelativeLayout
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isImageButton",
+        replaceWith = ReplaceWith("isImageButton()", imports = ["com.ven.assists.utils.isImageButton"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isImageButton(): Boolean = className == AssistsNodeClassNames.ImageButton
 
-    /** 判断元素是否是Button */
-    fun AccessibilityNodeInfo.isButton(): Boolean {
-        return className == NodeClassValue.Button
-    }
-
-    /** 判断元素是否是ImageButton */
-    fun AccessibilityNodeInfo.isImageButton(): Boolean {
-        return className == NodeClassValue.ImageButton
-    }
-
-    /** 判断元素是否是EditText */
-    fun AccessibilityNodeInfo.isEditText(): Boolean {
-        return className == NodeClassValue.EditText
-    }
+    @Deprecated(
+        message = "请改用 com.ven.assists.utils.isEditText",
+        replaceWith = ReplaceWith("isEditText()", imports = ["com.ven.assists.utils.isEditText"]),
+        level = DeprecationLevel.WARNING,
+    )
+    fun AccessibilityNodeInfo.isEditText(): Boolean = className == AssistsNodeClassNames.EditText
 
     /**
      * 获取元素的文本内容
@@ -438,11 +456,10 @@ object AssistsCore {
         filterClass: String? = null,
         scope: NodeLookupScope = NodeLookupScope.AllWindows,
     ): List<AccessibilityNodeInfo> {
-        val nodes = arrayListOf<AccessibilityNodeInfo>()
-        getAccessibilityRootNodes(scope).forEach { root ->
-            nodes.addAll(root.findByText(text))
+        // 与 findByText 相同先做系统子串查找与附加条件过滤，再保留 text 或 contentDescription 与目标完全一致的节点
+        return findByText(text, filterViewId, filterDes, filterClass, scope).filter { node ->
+            node.txt() == text || node.des() == text
         }
-        return filterNodes(nodes, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass)
     }
 
     /**
@@ -482,28 +499,13 @@ object AssistsCore {
         filterClass: String? = null,
         filterText: String? = null
     ): List<AccessibilityNodeInfo> {
-        val filterNodes = nodes.filter { node ->
-
-            filterViewId?.let {
-                if (it.isEmpty()) return@let
-                return@filter node.viewIdResourceName?.equals(filterViewId) == true
-            }
-            filterText?.let {
-                if (it.isEmpty()) return@let
-                return@filter node.text?.toString()?.equals(filterText) == true
-            }
-            filterDes?.let {
-                if (it.isEmpty()) return@let
-                return@filter node.contentDescription?.toString()?.equals(filterDes) == true
-            }
-            filterClass?.let {
-                if (it.isEmpty()) return@let
-                return@filter node.className?.toString()?.equals(filterClass) == true
-            }
-
-            true
+        // 各条件非空时同时生效（AND），避免原先仅第一个非空条件生效与其它 API 语义冲突
+        return nodes.filter { node ->
+            (filterViewId.isNullOrEmpty() || node.viewIdResourceName == filterViewId) &&
+                (filterText.isNullOrEmpty() || node.text?.toString() == filterText) &&
+                (filterDes.isNullOrEmpty() || node.contentDescription?.toString() == filterDes) &&
+                (filterClass.isNullOrEmpty() || node.className?.toString() == filterClass)
         }
-        return filterNodes
     }
 
     /**
@@ -529,7 +531,6 @@ object AssistsCore {
     fun AccessibilityNodeInfo?.getAllText(): ArrayList<String> {
         if (this == null) return arrayListOf()
         val texts = arrayListOf<String>()
-        texts.filter { false }
         getText()?.let {
             texts.add(it.toString())
         }
@@ -548,6 +549,37 @@ object AssistsCore {
      * @param scope 与 [getAllNodes] 相同，控制全树扫描范围，默认 [NodeLookupScope.AllWindows]
      * @return 符合所有条件的元素列表
      */
+    /**
+     * 在候选节点上按 className 与可选 viewId/text/des 链式过滤（与历史 findByTags 行为一致）
+     */
+    private fun refineNodesByTags(
+        candidates: List<AccessibilityNodeInfo>,
+        className: String,
+        viewId: String?,
+        text: String?,
+        des: String?,
+    ): List<AccessibilityNodeInfo> {
+        var nodeList = arrayListOf<AccessibilityNodeInfo>().apply {
+            addAll(candidates.filter { TextUtils.equals(className, it.className) })
+        }
+        if (!viewId.isNullOrEmpty()) {
+            nodeList = arrayListOf<AccessibilityNodeInfo>().apply {
+                addAll(nodeList.filter { it.viewIdResourceName == viewId })
+            }
+        }
+        if (!text.isNullOrEmpty()) {
+            nodeList = arrayListOf<AccessibilityNodeInfo>().apply {
+                addAll(nodeList.filter { it.txt() == text })
+            }
+        }
+        if (!des.isNullOrEmpty()) {
+            nodeList = arrayListOf<AccessibilityNodeInfo>().apply {
+                addAll(nodeList.filter { it.des() == des })
+            }
+        }
+        return nodeList
+    }
+
     @JvmOverloads
     fun findByTags(
         className: String,
@@ -556,42 +588,7 @@ object AssistsCore {
         des: String? = null,
         scope: NodeLookupScope = NodeLookupScope.AllWindows,
     ): List<AccessibilityNodeInfo> {
-        var nodeList = arrayListOf<AccessibilityNodeInfo>()
-        getAllNodes(scope = scope).forEach {
-            if (TextUtils.equals(className, it.className)) {
-                nodeList.add(it)
-            }
-        }
-        nodeList = viewId?.let {
-            if (it.isEmpty()) return@let nodeList
-            return@let arrayListOf<AccessibilityNodeInfo>().apply {
-                addAll(nodeList.filter {
-                    return@filter it.viewIdResourceName == viewId
-                })
-            }
-        } ?: let {
-            return@let nodeList
-        }
-
-        nodeList = text?.let {
-            if (it.isEmpty()) return@let nodeList
-
-            return@let arrayListOf<AccessibilityNodeInfo>().apply {
-                addAll(nodeList.filter {
-                    return@filter it.txt() == text
-                })
-            }
-        } ?: let { return@let nodeList }
-        nodeList = des?.let {
-            if (it.isEmpty()) return@let nodeList
-
-            return@let arrayListOf<AccessibilityNodeInfo>().apply {
-                addAll(nodeList.filter {
-                    return@filter it.des() == des
-                })
-            }
-        } ?: let { return@let nodeList }
-        return nodeList
+        return refineNodesByTags(getAllNodes(scope = scope), className, viewId, text, des)
     }
 
     /**
@@ -608,41 +605,7 @@ object AssistsCore {
         text: String? = null,
         des: String? = null
     ): List<AccessibilityNodeInfo> {
-        var nodeList = arrayListOf<AccessibilityNodeInfo>()
-        getNodes().forEach {
-            if (TextUtils.equals(className, it.className)) {
-                nodeList.add(it)
-            }
-        }
-        nodeList = viewId?.let {
-            if (it.isEmpty()) return@let nodeList
-            return@let arrayListOf<AccessibilityNodeInfo>().apply {
-                addAll(nodeList.filter {
-                    return@filter it.viewIdResourceName == viewId
-                })
-            }
-        } ?: let {
-            return@let nodeList
-        }
-
-        nodeList = text?.let {
-            if (it.isEmpty()) return@let nodeList
-            return@let arrayListOf<AccessibilityNodeInfo>().apply {
-                addAll(nodeList.filter {
-                    return@filter it.txt() == text
-                })
-            }
-        } ?: let { return@let nodeList }
-        nodeList = des?.let {
-            if (it.isEmpty()) return@let nodeList
-            return@let arrayListOf<AccessibilityNodeInfo>().apply {
-                addAll(nodeList.filter {
-                    return@filter it.des() == des
-                })
-            }
-        } ?: let { return@let nodeList }
-
-        return nodeList
+        return refineNodesByTags(getNodes(), className, viewId, text, des)
     }
 
     /**
@@ -750,8 +713,7 @@ object AssistsCore {
     fun AccessibilityNodeInfo.getChildren(): ArrayList<AccessibilityNodeInfo> {
         val nodes = arrayListOf<AccessibilityNodeInfo>()
         for (i in 0 until this.childCount) {
-            val child = getChild(i)
-            nodes.add(child)
+            getChild(i)?.let { nodes.add(it) }
         }
         return nodes
     }
@@ -827,6 +789,8 @@ object AssistsCore {
         startTime: Long,
         duration: Long,
     ): Boolean {
+        // 注意：不可改为直接调用 [dispatchGesture]，否则 [nodeGestureClick] 等外层已包一层 nonTouchable/touchable 时，
+        // 手势完成回调会提前 touchableByAll，与外层延迟与恢复顺序冲突。
         return runCatching {
             val builder = GestureDescription.Builder()
             val strokeDescription = GestureDescription.StrokeDescription(path, startTime, duration)
@@ -846,10 +810,8 @@ object AssistsCore {
                 }
             }
             if (!runResult) return false
-            val result = deferred.await()
-            return result
+            deferred.await()
         }.getOrDefault(false)
-
     }
 
     /**
@@ -859,10 +821,6 @@ object AssistsCore {
     fun AccessibilityNodeInfo.getBoundsInScreen(): Rect {
         val boundsInScreen = Rect()
         getBoundsInScreen(boundsInScreen)
-        boundsInScreen.centerX()
-        boundsInScreen.centerY()
-        boundsInScreen.width()
-        boundsInScreen.height()
         return boundsInScreen
     }
 
@@ -973,19 +931,23 @@ object AssistsCore {
         clickInterval: Long = 25,
     ): Boolean {
         return runCatching {
-            AssistsWindowManager.nonTouchableByAll()
+            runMain { AssistsWindowManager.nonTouchableByAll() }
             delay(switchWindowIntervalDelay)
             val bounds = getBoundsInScreen()
 
             val x = bounds.centerX().toFloat() + offsetX
             val y = bounds.centerY().toFloat() + offsetY
 
-            AssistsCore.gestureClick(x, y, clickDuration)
+            val first = gestureClick(x, y, clickDuration)
+            if (!first) {
+                runMain { AssistsWindowManager.touchableByAll() }
+                return@runCatching false
+            }
             delay(clickInterval)
-            AssistsCore.gestureClick(x, y, clickDuration)
-            AssistsWindowManager.touchableByAll()
-            return@runCatching true
-        }.getOrDefault(true)
+            val second = gestureClick(x, y, clickDuration)
+            runMain { AssistsWindowManager.touchableByAll() }
+            second
+        }.getOrDefault(false)
     }
 
     /**

@@ -1,5 +1,17 @@
 # 更新日志
 
+### 3.4.0（2026-04-22）
+
+- 新增：`NodeLookupScope`（活动窗口 / 全窗口）与 `getAccessibilityRootNodes`；`findById`、`findByText`、`getAllNodes`、`getRootNodeTree` / `getRootNodeTreeJson` / `saveRootNodeTreeJson`、`getPackageName` 等支持 `scope`，默认在全窗口根上遍历，多窗口时 `getRootNodeTree` 可返回合成根（`__assists_multi_root__`）。
+- 新增：`AssistsNodeClassNames` 与同包顶层 `AccessibilityNodeInfo.isXxx()`，集中维护常见控件 / 布局 / AndroidX / Material 的 `className` 常量。
+- 废弃：`NodeClassValue` 改为委托 `AssistsNodeClassNames` 并整体标记过时；`AssistsCore` 内历史类型判断扩展保留但标为 `@Deprecated`，请改用 `com.ven.assists.utils` 下同名扩展。
+- 修改：`findByTextAllMatch` 在系统子串匹配结果上再过滤为文本或描述与目标完全一致。
+- 修改：`filterNodes` 多条件为非空时按 **同时满足（AND）** 过滤，与「多条件筛选」语义一致。
+- 修改：`findByTags`（全局与子树）抽取 `refineNodesByTags`，减少重复实现。
+- 修改：`nodeGestureClickByDouble` 按两次手势结果返回成功/失败，异常时不再误报成功；窗口触摸层与 `nodeGestureClick` 一致走 `runMain`。
+- 修改：`gesture(Path)` 补充说明：不可改为仅调 `dispatchGesture`，以免与外层 `nonTouchable` 顺序冲突。
+- 清理：`getAllText` 中无效代码；`getBoundsInScreen` 无意义调用；`getChildren` 对 `getChild` 空指针安全。
+
 ### 3.3.0（2026-04-21）
 
 - 新增：`isA11yEnabled` 判断无障碍是否已在系统设置中开启；省略 `Context` 时使用 `AssistsCore.init` 保存的 `Application`；支持 manifest 中注册为 `AssistsService` 子类的实现。
