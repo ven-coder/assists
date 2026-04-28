@@ -1,5 +1,12 @@
 # 更新日志
 
+### 3.5.0（2026-04-28）
+
+- **构建与目标平台**：Gradle / Android Gradle Plugin **8.9**、Kotlin **2.1**、Gradle Wrapper 等与 **compileSdk / targetSdk 36** 对齐；`settings.gradle` 集中管理插件版本，便于后续升级。
+- **无障碍服务声明**：按 API 层级补充 **xml-v26 / v33 / v34** 等资源变体；默认配置收窄监听的事件类型（减少对滚动、悬停等极高频事件的订阅）、调整 `notificationTimeout` 等以降低事件风暴；扩展无障碍能力与 flag（如增强网页无障碍、过滤按键事件等）。集成方若依赖特定事件类型，请核对新版 `assists_service.xml` 是否与业务一致。
+- **前台服务（Android 14+）**：`assists-mp` 的 `MPService` 使用 `ServiceCompat.startForeground` 并声明 **mediaProjection** 类型，与 Manifest 及权限一致；**simple** 示例的前台服务改为 **specialUse** 类型并配合 Manifest，避免 API 34+ 缺少类型导致的异常。
+- **示例应用**：Manifest 与 Overlay 等随上述约束做小调整；移除示例内重复的独立无障碍 XML，统一引用核心库声明。
+
 ### 3.4.0（2026-04-22）
 
 - **节点获取增强**：默认走「全窗口」根节点聚合（`NodeLookupScope`），可遍历 **PopupWindow**、**系统级浮窗** 等独立窗口层；许多在 **uiautomatorviewer 中不可见或无法展开** 的节点，在此模式下可被查找与导出。相关查找、`getRootNodeTree*`、包名解析等 API 已与之对齐。
