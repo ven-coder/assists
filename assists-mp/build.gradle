@@ -38,10 +38,6 @@ dependencies {
     implementation "androidx.core:core-ktx:${rootProject.ext.coreKtxVersion}"
     implementation project(':assists')
 }
-task sourcesJar(type: Jar) {
-    archiveClassifier.set('sources')
-    from android.sourceSets.main.java.srcDirs
-}
 afterEvaluate {
     publishing {
         publications {
@@ -50,9 +46,6 @@ afterEvaluate {
                 groupId = 'com.github.ven-coder'
                 artifactId = 'assists-mp'
                 version = rootProject.ext.mavenVersion
-
-                artifact sourcesJar
-
             }
         }
     }
