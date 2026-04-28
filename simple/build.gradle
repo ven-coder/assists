@@ -3,6 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
+    namespace 'com.ven.assists.simple'
     compileSdk rootProject.ext.compileSdk
     defaultConfig {
         applicationId "com.ven.assists.demo"
@@ -42,11 +43,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
     buildFeatures {
         dataBinding true
-    }
-    viewBinding {
-        enabled = true
+        viewBinding true
     }
 }
 
@@ -74,6 +76,6 @@ dependencies {
     implementation "com.google.android.material:material:${rootProject.ext.materialVersion}"
     implementation "androidx.recyclerview:recyclerview:${rootProject.ext.recyclerviewVersion}"
     implementation "com.github.bumptech.glide:glide:${rootProject.ext.glideVersion}"
-    annotationProcessor "com.github.bumptech.glide:compiler:${rootProject.ext.glideVersion}"
+    kapt "com.github.bumptech.glide:compiler:${rootProject.ext.glideVersion}"
     implementation "com.google.android.flexbox:flexbox:${rootProject.ext.flexboxVersion}"
 }

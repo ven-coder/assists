@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 性能：收窄事件类型（去掉列表滚动/悬停类极高频事件），保持能力与 flag 不变；notificationTimeout 降低同类型事件风暴 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged|typeAllMask"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeWindowsChanged|typeNotificationStateChanged|typeViewClicked|typeViewLongClicked|typeViewSelected|typeViewFocused|typeViewTextChanged|typeViewTextSelectionChanged|typeAnnouncement|typeViewAccessibilityFocused|typeViewAccessibilityFocusCleared|typeViewTextTraversedAtMovementGranularity|typeTouchExplorationGestureStart|typeTouchExplorationGestureEnd|typeGestureDetectionStart|typeGestureDetectionEnd|typeTouchInteractionStart|typeTouchInteractionEnd|typeContextClicked|typeAssistReadingContext"
     android:accessibilityFeedbackType="feedbackAllMask"
-    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagReportViewIds|flagIncludeNotImportantViews|flagRequestTouchExplorationMode"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagReportViewIds|flagIncludeNotImportantViews|flagRequestTouchExplorationMode|flagRequestEnhancedWebAccessibility|flagRequestFilterKeyEvents|flagRequestFingerprintGestures|flagServiceHandlesDoubleTap|flagRequestMultiFingerGestures|flagSendMotionEvents|flagEnableAccessibilityVolume|flagRequestShortcutWarningDialogSpokenFeedback"
+    android:canControlMagnification="true"
     android:canPerformGestures="true"
-    android:description="@string/assists_description"
-    android:canTakeScreenshot="true"
-    android:isAccessibilityTool="true"
+    android:canRequestEnhancedWebAccessibility="true"
+    android:canRequestFilterKeyEvents="true"
+    android:canRequestFingerprintGestures="true"
+    android:canRequestTouchExplorationMode="false"
     android:canRetrieveWindowContent="true"
-    android:notificationTimeout="100" />
+    android:canTakeScreenshot="true"
+    android:description="@string/assists_description"
+    android:interactiveUiTimeout="100"
+    android:isAccessibilityTool="true"
+    android:nonInteractiveUiTimeout="100"
+    android:notificationTimeout="200"
+    android:summary="@string/assists_description" />

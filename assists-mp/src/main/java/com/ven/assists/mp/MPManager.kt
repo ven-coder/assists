@@ -150,7 +150,7 @@ object MPManager {
                 intent.getParcelableExtra<Intent>(REQUEST_DATA)
             }
             val mediaProjection = mediaProjectionManager.getMediaProjection(requestCode, requestData!!)
-            mediaProjection.registerCallback(object : MediaProjection.Callback() {
+            mediaProjection?.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
                     mediaProjectionCallback?.onStop()
                 }
@@ -165,7 +165,7 @@ object MPManager {
                     mediaProjectionCallback?.onCapturedContentVisibilityChanged(isVisible)
                 }
             }, Handler(Looper.getMainLooper()))
-            mediaProjection.createVirtualDisplay(
+            mediaProjection?.createVirtualDisplay(
                 "assists_mp",
                 screenWidth,
                 screenHeight,

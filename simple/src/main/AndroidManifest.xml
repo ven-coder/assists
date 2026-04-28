@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.ven.assists.simple">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
@@ -20,6 +19,8 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -66,8 +67,21 @@
             android:name=".ImageGalleryActivity"
             android:exported="false" />
 
+        <service
+            android:name="com.ven.assists.service.AssistsService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <!--android:priority="10000" 可提高服务在设置中的权重，排在前面     -->
+            <intent-filter android:priority="10000">
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/assists_service" />
+        </service>
         <!--        <service-->
-        <!--            android:name="com.ven.assists.service.AssistsService"-->
+        <!--            android:name="com.google.android.accessibility.selecttospeak.SelectToSpeakService"-->
         <!--            android:enabled="true"-->
         <!--            android:exported="true"-->
         <!--            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">-->
@@ -80,19 +94,13 @@
         <!--                android:resource="@xml/assists_service" />-->
         <!--        </service>-->
         <service
-            android:name="com.google.android.accessibility.selecttospeak.SelectToSpeakService"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <!--android:priority="10000" 可提高服务在设置中的权重，排在前面     -->
-            <intent-filter android:priority="10000">
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/assists_service" />
+            android:name="com.ven.assists.simple.ForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps Assists running with a persistent notification when the user enables it; use case is not covered by other foreground service types." />
         </service>
-        <service android:name="com.ven.assists.simple.ForegroundService" />
 
     </application>
 

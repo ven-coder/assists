@@ -13,6 +13,7 @@ import com.blankj.utilcode.util.ScreenUtils
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.ven.assists.AssistsCore
+import com.ven.assists.base.R as BaseR
 import com.ven.assists.web.ASWebView
 import com.ven.assists.web.CallInterceptResult
 import com.ven.assists.web.CallRequest
@@ -266,7 +267,7 @@ class FloatJsInterface(val webView: WebView) {
                         arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> {
                             val s = arg.asString
                             if (s == "default") {
-                                wrapper.view.setBackgroundResource(R.drawable.bg_1)
+                                wrapper.view.setBackgroundResource(BaseR.drawable.bg_1)
                             } else if (!s.isNullOrBlank()) {
                                 try {
                                     wrapper.view.setBackgroundColor(s.toColorInt())

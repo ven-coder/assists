@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- API 31–32；性能：收窄事件类型，能力与 flag 不变 -->
+<!-- API 34+；性能：收窄事件类型，能力与 flag 不变 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeWindowsChanged|typeNotificationStateChanged|typeViewClicked|typeViewLongClicked|typeViewSelected|typeViewFocused|typeViewTextChanged|typeViewTextSelectionChanged|typeAnnouncement|typeViewAccessibilityFocused|typeViewAccessibilityFocusCleared|typeViewTextTraversedAtMovementGranularity|typeTouchExplorationGestureStart|typeTouchExplorationGestureEnd|typeGestureDetectionStart|typeGestureDetectionEnd|typeTouchInteractionStart|typeTouchInteractionEnd|typeContextClicked|typeAssistReadingContext"
     android:accessibilityFeedbackType="feedbackAllMask"
@@ -13,6 +13,7 @@
     android:canRetrieveWindowContent="true"
     android:canTakeScreenshot="true"
     android:description="@string/assists_description"
+    android:intro="@string/assists_description"
     android:interactiveUiTimeout="100"
     android:isAccessibilityTool="true"
     android:nonInteractiveUiTimeout="100"

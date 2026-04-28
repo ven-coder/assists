@@ -5,11 +5,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.os.Build
 import android.os.IBinder
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.ven.assists.base.R
 
 class MPService : Service() {
@@ -43,7 +45,13 @@ class MPService : Service() {
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .build()
-        startForeground(1, notification)
+        // 与 manifest 中 foregroundServiceType=mediaProjection 一致，且需 FOREGROUND_SERVICE_MEDIA_PROJECTION 权限
+        ServiceCompat.startForeground(
+            this,
+            1,
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        )
     }
 
     /** 创建通知通道 */

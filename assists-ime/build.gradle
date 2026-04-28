@@ -3,23 +3,31 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'maven-publish'
 }
+
 android {
+    namespace 'rkr.simplekeyboard.inputmethod'
+    compileSdk rootProject.ext.compileSdk
+
     defaultConfig {
-        compileSdk rootProject.ext.compileSdk
-        minSdkVersion 23
-        targetSdkVersion rootProject.ext.targetSdk
+        minSdk 23
+        targetSdk rootProject.ext.targetSdk
     }
     buildTypes {
         release {
-//            minifyEnabled true
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    namespace 'rkr.simplekeyboard.inputmethod'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
 }
+
 task sourcesJar(type: Jar) {
     archiveClassifier.set('sources')
     from android.sourceSets.main.java.srcDirs

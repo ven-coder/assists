@@ -37,15 +37,12 @@ import com.ven.assists.AssistsCore.scrollBackward
 import com.ven.assists.AssistsCore.scrollForward
 import com.ven.assists.AssistsCore.selectionText
 import com.ven.assists.AssistsCore.setNodeText
-import com.ven.assists.AssistsCore.takeScreenshot
-import com.ven.assists.AssistsCore.takeScreenshotSave
 import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.simple.MultiTouchDrawingActivity
-import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.simple.TestActivity
 import com.ven.assists.simple.databinding.BasicOverlayBinding
 import com.ven.assists.utils.AudioPlayerUtil

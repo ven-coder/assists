@@ -102,6 +102,32 @@ object OverlayPro : AssistsServiceListener {
                         }
 
                     }
+                    // AccessibilityService.takeScreenshot，需 API 30+ 且无障碍 XML 中 canTakeScreenshot=true
+                    btnTakeScreenshotAcc.setOnClickListener {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                            "无障碍截屏需要 Android 11（API 30）及以上系统。".overlayToast()
+                            return@setOnClickListener
+                        }
+                        CoroutineWrapper.launch {
+                            AssistsWindowManager.hideAll()
+                            try {
+                                delay(250L)
+                                val file = AssistsCore.takeScreenshotSave()
+                                if (file != null) {
+                                    AssistsService.getOrNull()?.startActivity(
+                                        Intent(AssistsService.getOrNull(), ScreenshotReviewActivity::class.java).apply {
+                                            putExtra("path", file.absolutePath)
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        },
+                                    )
+                                } else {
+                                    "无障碍截屏失败，请确认服务已开启且配置含 canTakeScreenshot".overlayToast()
+                                }
+                            } finally {
+                                AssistsWindowManager.showAll()
+                            }
+                        }
+                    }
                     btnTakeScreenshotAllImage.setOnClickListener {
                         takeScreenshotAllImage()
                     }

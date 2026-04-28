@@ -63,7 +63,6 @@
                 android:backgroundTint="@color/colorAccent"
                 android:text="截取当前屏幕（使用屏幕录制权限）" />
 
-            <!--            TODO 未实现-->
             <Button
                 android:id="@+id/btn_take_screenshot_acc"
                 android:layout_width="wrap_content"
