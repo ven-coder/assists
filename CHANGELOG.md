@@ -7,6 +7,20 @@
 - **前台服务（Android 14+）**：`assists-mp` 的 `MPService` 使用 `ServiceCompat.startForeground` 并声明 **mediaProjection** 类型，与 Manifest 及权限一致；**simple** 示例的前台服务改为 **specialUse** 类型并配合 Manifest，避免 API 34+ 缺少类型导致的异常。
 - **示例应用**：Manifest 与 Overlay 等随上述约束做小调整；移除示例内重复的独立无障碍 XML，统一引用核心库声明。
 
+#### 集成方升级到 3.5.0 的适配说明
+
+以下为**任意依赖 assists 的应用或中间层库**在升级到 **3.5.0** 时的自检步骤；按顺序核对可减少编译错误与运行时异常。
+
+1. **构建栈**：本版本与 **Android Gradle Plugin 8.9.x**、**Kotlin 2.1.x**、**Gradle 8.11.x** 档及 **compileSdk / targetSdk 36** 对齐。请在宿主工程中同步升级上述组合（可参考本仓库根目录 [`build.gradle`](build.gradle)、[`settings.gradle`](settings.gradle)、[`gradle/wrapper/gradle-wrapper.properties`](gradle/wrapper/gradle-wrapper.properties)）。若宿主同时使用 **Kotlin 2.x** 与 **Room**：优先用 **KSP** 替代 kapt 引入 **`room-compiler`**，以免 suspend DAO 与 kapt 在 Kotlin 2.x 下不兼容。
+2. **无障碍配置 XML**
+   - **引用库内默认声明**：在 `AndroidManifest` 的无障碍服务 `meta-data` 中使用 **`@xml/assists_service`** 时，各档位资源由 **`assists-base`（或等价工件）**随版本提供；一般**无需**在应用内复制 `assists_service.xml`，除非你 intentionally 覆盖。
+   - **使用自定义资源名**：若 `android:resource` 指向**自有文件名**（例如 `@xml/my_accessibility_service`），须在应用的 **`res/xml/`** 以及 **`xml-v26` / `xml-v30` / `xml-v31` / `xml-v33` / `xml-v34`** 等目录中，将**同名文件**与本仓库 **`assists` 模块中对应 API 档位的 `assists_service.xml`**保持结构一致（事件类型、`notificationTimeout`、`accessibilityFlags`、`can*`、`intro` 等），仅保留你的 `@string/...` 文案。
+   - **事件列表收窄**：默认不再订阅滚动、悬停等极高频事件；若业务脚本依赖这些事件，在应用模块对**实际生效的资源名**提供覆盖文件并扩展 `accessibilityEventTypes`。
+3. **前台服务（targetSdk ≥ 34）**
+   - **MediaProjection / 投屏**：依赖 **`assists-mp`** 时，`MPService` 已使用 **`mediaProjection`** 类型；合并后的 Manifest 应包含 **`FOREGROUND_SERVICE_MEDIA_PROJECTION`**（通常由 **`assists-mp`** AAR 合并，发布前用合并清单核对）。
+   - **应用自有前台服务**：凡自行 **`startForeground`** 且非上述类型，须声明 **`foregroundServiceType`** 并使用 **`ServiceCompat.startForeground`**；用于「无法用其它类型概括」的场景可参考 **`simple`** 模块 [`ForegroundService`](simple/src/main/java/com/ven/assists/simple/ForegroundService.kt)：**specialUse** + Manifest 内 **`PROPERTY_SPECIAL_USE_FGS_SUBTYPE`** + 权限 **`FOREGROUND_SERVICE_SPECIAL_USE`**。
+4. **API 与行为**：无障碍开关判断请逐步改用 **`AssistsCore.isA11yEnabled()`**（详见上文 **3.3.0** 条目）；服务实例请使用 **`AssistsService.getOrNull()`**。升级后建议在 **API 34+** 设备上验证无障碍开启、投屏与前台服务路径无 **`SecurityException` / `MissingForegroundServiceTypeException`**。
+
 ### 3.4.0（2026-04-22）
 
 - **节点获取增强**：默认走「全窗口」根节点聚合（`NodeLookupScope`），可遍历 **PopupWindow**、**系统级浮窗** 等独立窗口层；许多在 **uiautomatorviewer 中不可见或无法展开** 的节点，在此模式下可被查找与导出。相关查找、`getRootNodeTree*`、包名解析等 API 已与之对齐。
