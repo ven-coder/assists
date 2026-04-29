@@ -192,10 +192,10 @@ object AssistsCore {
 
     /**
      * 按范围获取用于节点遍历的根节点列表（统一入口）
-     * @param scope 查找范围，默认 [NodeLookupScope.AllWindows]
+     * @param scope 查找范围，默认 [NodeLookupScope.ActiveWindow]
      */
     @JvmOverloads
-    fun getAccessibilityRootNodes(scope: NodeLookupScope = NodeLookupScope.AllWindows): List<AccessibilityNodeInfo> {
+    fun getAccessibilityRootNodes(scope: NodeLookupScope = NodeLookupScope.ActiveWindow): List<AccessibilityNodeInfo> {
         val service = AssistsService.getOrNull() ?: return emptyList()
         return when (scope) {
             NodeLookupScope.ActiveWindow -> listOfNotNull(service.rootInActiveWindow)
@@ -315,11 +315,11 @@ object AssistsCore {
 
     /**
      * 获取当前窗口所属的应用包名
-     * @param scope 查找范围，默认 [NodeLookupScope.AllWindows]；[NodeLookupScope.AllWindows] 时优先 [android.view.accessibility.AccessibilityWindowInfo] 的 isFocused 窗口根之 packageName，无则回退为活动根再回退为全窗口根列表中第一个
+     * @param scope 查找范围，默认 [NodeLookupScope.ActiveWindow]；[NodeLookupScope.AllWindows] 时优先 [android.view.accessibility.AccessibilityWindowInfo] 的 isFocused 窗口根之 packageName，无则回退为活动根再回退为全窗口根列表中第一个
      * @return 当前窗口的包名，如果获取失败则返回空字符串
      */
     @JvmOverloads
-    fun getPackageName(scope: NodeLookupScope = NodeLookupScope.AllWindows): String {
+    fun getPackageName(scope: NodeLookupScope = NodeLookupScope.ActiveWindow): String {
         if (scope == NodeLookupScope.ActiveWindow) {
             return getAccessibilityRootNodes(NodeLookupScope.ActiveWindow).firstOrNull()?.packageName?.toString() ?: ""
         }
@@ -378,7 +378,7 @@ object AssistsCore {
      * @param filterText 可选的文本过滤条件
      * @param filterDes 可选的描述文本过滤条件
      * @param filterClass 可选的类名过滤条件
-     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.AllWindows]
+     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.ActiveWindow]
      * @return 符合条件的元素列表
      */
     @JvmOverloads
@@ -387,7 +387,7 @@ object AssistsCore {
         filterText: String? = null,
         filterDes: String? = null,
         filterClass: String? = null,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): List<AccessibilityNodeInfo> {
         val nodes = arrayListOf<AccessibilityNodeInfo>()
         getAccessibilityRootNodes(scope).forEach { root ->
@@ -421,7 +421,7 @@ object AssistsCore {
      * @param filterViewId 可选的资源id过滤条件
      * @param filterDes 可选的描述文本过滤条件
      * @param filterClass 可选的类名过滤条件
-     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.AllWindows]
+     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.ActiveWindow]
      * @return 符合条件的元素列表
      */
     @JvmOverloads
@@ -430,7 +430,7 @@ object AssistsCore {
         filterViewId: String? = null,
         filterDes: String? = null,
         filterClass: String? = null,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): List<AccessibilityNodeInfo> {
         val nodes = arrayListOf<AccessibilityNodeInfo>()
         getAccessibilityRootNodes(scope).forEach { root ->
@@ -445,7 +445,7 @@ object AssistsCore {
      * @param filterViewId 可选的资源id过滤条件
      * @param filterDes 可选的描述文本过滤条件
      * @param filterClass 可选的类名过滤条件
-     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.AllWindows]
+     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.ActiveWindow]
      * @return 文本完全匹配的元素列表
      */
     @JvmOverloads
@@ -454,7 +454,7 @@ object AssistsCore {
         filterViewId: String? = null,
         filterDes: String? = null,
         filterClass: String? = null,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): List<AccessibilityNodeInfo> {
         // 与 findByText 相同先做系统子串查找与附加条件过滤，再保留 text 或 contentDescription 与目标完全一致的节点
         return findByText(text, filterViewId, filterDes, filterClass, scope).filter { node ->
@@ -546,7 +546,7 @@ object AssistsCore {
      * @param viewId 可选的资源id过滤条件
      * @param text 可选的文本过滤条件
      * @param des 可选的描述文本过滤条件
-     * @param scope 与 [getAllNodes] 相同，控制全树扫描范围，默认 [NodeLookupScope.AllWindows]
+     * @param scope 与 [getAllNodes] 相同，控制全树扫描范围，默认 [NodeLookupScope.ActiveWindow]
      * @return 符合所有条件的元素列表
      */
     /**
@@ -586,7 +586,7 @@ object AssistsCore {
         viewId: String? = null,
         text: String? = null,
         des: String? = null,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): List<AccessibilityNodeInfo> {
         return refineNodesByTags(getAllNodes(scope = scope), className, viewId, text, des)
     }
@@ -640,7 +640,7 @@ object AssistsCore {
      * @param filterDes 可选的描述文本过滤条件
      * @param filterClass 可选的类名过滤条件
      * @param filterText 可选的文本过滤条件
-     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.AllWindows]；多根时整次收集共享 10000 个节点的全局上限
+     * @param scope 根节点来源：活动窗口或全部窗口，默认 [NodeLookupScope.ActiveWindow]；多根时整次收集共享 10000 个节点的全局上限
      * @return 包含所有元素的列表
      */
     @JvmOverloads
@@ -649,7 +649,7 @@ object AssistsCore {
         filterDes: String? = null,
         filterClass: String? = null,
         filterText: String? = null,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): List<AccessibilityNodeInfo> {
         val nodeList = arrayListOf<AccessibilityNodeInfo>()
         getAccessibilityRootNodes(scope).forEach { root ->
@@ -1614,11 +1614,11 @@ object AssistsCore {
 
     /**
      * 获取当前窗口所有节点的树形结构
-     * @param scope 默认 [NodeLookupScope.AllWindows]；[NodeLookupScope.AllWindows] 且多根时为各窗口根 [toNodeTree] 之列表包在合成根下（[className] 为 [MULTI_ROOT_CLASS_NAME]），与单 [NodeLookupScope.ActiveWindow] 时 JSON 形状不同
+     * @param scope 默认 [NodeLookupScope.ActiveWindow]；[NodeLookupScope.AllWindows] 且多根时为各窗口根 [toNodeTree] 之列表包在合成根下（[className] 为 [MULTI_ROOT_CLASS_NAME]），与单 [NodeLookupScope.ActiveWindow] 时 JSON 形状不同
      * @return 根节点的NodeTree对象，如果获取失败则返回null
      */
     @JvmOverloads
-    fun getRootNodeTree(scope: NodeLookupScope = NodeLookupScope.AllWindows): NodeTree? {
+    fun getRootNodeTree(scope: NodeLookupScope = NodeLookupScope.ActiveWindow): NodeTree? {
         return when (scope) {
             NodeLookupScope.ActiveWindow -> {
                 getAccessibilityRootNodes(NodeLookupScope.ActiveWindow).firstOrNull()?.toNodeTree()
@@ -1639,13 +1639,13 @@ object AssistsCore {
     /**
      * 获取当前窗口所有节点的JSON字符串（树形结构）
      * @param prettyPrint 是否格式化输出JSON，默认为false
-     * @param scope 与 [getRootNodeTree] 相同，默认 [NodeLookupScope.AllWindows]
+     * @param scope 与 [getRootNodeTree] 相同，默认 [NodeLookupScope.ActiveWindow]
      * @return JSON字符串，如果获取失败则返回空字符串
      */
     @JvmOverloads
     fun getRootNodeTreeJson(
         prettyPrint: Boolean = false,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): String {
         val nodeTree = getRootNodeTree(scope) ?: return ""
         val gson = if (prettyPrint) {
@@ -1675,14 +1675,14 @@ object AssistsCore {
      * 获取当前窗口所有节点的JSON字符串并保存到文件
      * @param file 保存JSON的文件，默认为应用内部文件路径下的时间戳命名文件
      * @param prettyPrint 是否格式化输出JSON，默认为true
-     * @param scope 与 [getRootNodeTree] 相同，默认 [NodeLookupScope.AllWindows]
+     * @param scope 与 [getRootNodeTree] 相同，默认 [NodeLookupScope.ActiveWindow]
      * @return 保存成功时返回文件对象，失败时返回null
      */
     @JvmOverloads
     fun saveRootNodeTreeJson(
         file: File = File(PathUtils.getInternalAppFilesPath() + "/node_tree_${System.currentTimeMillis()}.json"),
         prettyPrint: Boolean = true,
-        scope: NodeLookupScope = NodeLookupScope.AllWindows,
+        scope: NodeLookupScope = NodeLookupScope.ActiveWindow,
     ): File? {
         val json = getRootNodeTreeJson(prettyPrint, scope)
         if (json.isEmpty()) return null

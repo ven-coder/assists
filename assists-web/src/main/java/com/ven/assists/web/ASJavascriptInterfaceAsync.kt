@@ -76,6 +76,7 @@ import com.ven.assists.utils.ContactsUtil
 import com.ven.assists.utils.FileDownloadUtil
 import com.ven.assists.utils.runMain
 import com.ven.assists.web.utils.AudioPlayManager
+import com.ven.assists.web.utils.NodeLookupScopeParse
 import kotlinx.coroutines.CompletableDeferred
 import androidx.core.graphics.toColorInt
 
@@ -868,11 +869,13 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val filterDes = request.arguments?.get("filterDes")?.asString ?: ""
         val filterClass = request.arguments?.get("filterClass")?.asString ?: ""
         val filterViewId = request.arguments?.get("filterViewId")?.asString ?: ""
+        val scope = NodeLookupScopeParse.fromArguments(request.arguments)
         val nodes = AssistsCore.getAllNodes(
             filterClass = filterClass,
             filterDes = filterDes,
             filterViewId = filterViewId,
-            filterText = filterText
+            filterText = filterText,
+            scope = scope
         ).toNodes()
         return request.createResponse(0, data = nodes)
     }
@@ -882,9 +885,16 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val filterText = request.arguments?.get("filterText")?.asString ?: ""
         val filterDes = request.arguments?.get("filterDes")?.asString ?: ""
         val filterClass = request.arguments?.get("filterClass")?.asString ?: ""
+        val scope = NodeLookupScopeParse.fromArguments(request.arguments)
         val nodes = request.node?.get()?.let {
             it.findById(id, filterText = filterText, filterClass = filterClass, filterDes = filterDes).toNodes()
-        } ?: AssistsCore.findById(id, filterText = filterText, filterClass = filterClass, filterDes = filterDes).toNodes()
+        } ?: AssistsCore.findById(
+            id,
+            filterText = filterText,
+            filterClass = filterClass,
+            filterDes = filterDes,
+            scope = scope
+        ).toNodes()
         return request.createResponse(0, data = nodes)
     }
 
@@ -893,9 +903,16 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val filterViewId = request.arguments?.get("filterViewId")?.asString ?: ""
         val filterDes = request.arguments?.get("filterDes")?.asString ?: ""
         val filterClass = request.arguments?.get("filterClass")?.asString ?: ""
+        val scope = NodeLookupScopeParse.fromArguments(request.arguments)
         val nodes = request.node?.get()?.let {
             it.findByText(text, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass).toNodes()
-        } ?: AssistsCore.findByText(text, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass).toNodes()
+        } ?: AssistsCore.findByText(
+            text,
+            filterViewId = filterViewId,
+            filterDes = filterDes,
+            filterClass = filterClass,
+            scope = scope
+        ).toNodes()
         return request.createResponse(0, data = nodes)
     }
 
@@ -904,9 +921,16 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         val text = request.arguments?.get("filterText")?.asString ?: ""
         val viewId = request.arguments?.get("filterViewId")?.asString ?: ""
         val des = request.arguments?.get("filterDes")?.asString ?: ""
+        val scope = NodeLookupScopeParse.fromArguments(request.arguments)
         val nodes = request.node?.get()?.let {
             it.findByTags(className = className, viewId = viewId, des = des, text = text).toNodes()
-        } ?: AssistsCore.findByTags(className = className, text = text, viewId = viewId, des = des).toNodes()
+        } ?: AssistsCore.findByTags(
+            className = className,
+            text = text,
+            viewId = viewId,
+            des = des,
+            scope = scope
+        ).toNodes()
         return request.createResponse(0, data = nodes)
     }
 
@@ -928,7 +952,11 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
     }
 
     private fun handleFindByTextAllMatch(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val nodes = AssistsCore.findByTextAllMatch(request.arguments?.get("text")?.asString ?: "").toNodes()
+        val scope = NodeLookupScopeParse.fromArguments(request.arguments)
+        val nodes = AssistsCore.findByTextAllMatch(
+            request.arguments?.get("text")?.asString ?: "",
+            scope = scope
+        ).toNodes()
         return request.createResponse(0, data = nodes)
     }
 
@@ -988,7 +1016,8 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
     }
 
     private fun handleGetPackageName(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val packageName = AssistsCore.getPackageName()
+        val scope = NodeLookupScopeParse.fromArguments(request.arguments)
+        val packageName = AssistsCore.getPackageName(scope)
         return request.createResponse(0, data = packageName)
     }
 
@@ -1132,11 +1161,12 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         return try {
             val filePath = request.arguments?.get("filePath")?.asString
             val prettyPrint = request.arguments?.get("prettyPrint")?.asBoolean ?: true
+            val scope = NodeLookupScopeParse.fromArguments(request.arguments)
 
             val file =
                 filePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/node_tree_${System.currentTimeMillis()}.json")
 
-            val savedFile = AssistsCore.saveRootNodeTreeJson(file = file, prettyPrint = prettyPrint)
+            val savedFile = AssistsCore.saveRootNodeTreeJson(file = file, prettyPrint = prettyPrint, scope = scope)
 
             request.createResponse(
                 if (savedFile == null) -1 else 0,

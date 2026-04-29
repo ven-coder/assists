@@ -76,6 +76,7 @@ import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.ActivityUtils
 import com.ven.assists.web.utils.AudioPlayManager
+import com.ven.assists.web.utils.NodeLookupScopeParse
 
 class ASJavascriptInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -645,11 +646,13 @@ class ASJavascriptInterface(val webView: WebView) {
                     val filterDes = request.arguments?.get("filterDes")?.asString ?: ""
                     val filterClass = request.arguments?.get("filterClass")?.asString ?: ""
                     val filterViewId = request.arguments?.get("filterViewId")?.asString ?: ""
+                    val scope = NodeLookupScopeParse.fromArguments(request.arguments)
                     val nodes = AssistsCore.getAllNodes(
                         filterClass = filterClass,
                         filterDes = filterDes,
                         filterViewId = filterViewId,
-                        filterText = filterText
+                        filterText = filterText,
+                        scope = scope
                     ).toNodes()
                     result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                 }
@@ -659,11 +662,18 @@ class ASJavascriptInterface(val webView: WebView) {
                     val filterText = request.arguments?.get("filterText")?.asString ?: ""
                     val filterDes = request.arguments?.get("filterDes")?.asString ?: ""
                     val filterClass = request.arguments?.get("filterClass")?.asString ?: ""
+                    val scope = NodeLookupScopeParse.fromArguments(request.arguments)
                     request.node?.get()?.let {
                         val nodes = it.findById(id, filterText = filterText, filterClass = filterClass, filterDes = filterDes).toNodes()
                         result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                     } ?: let {
-                        val nodes = AssistsCore.findById(id, filterText = filterText, filterClass = filterClass, filterDes = filterDes).toNodes()
+                        val nodes = AssistsCore.findById(
+                            id,
+                            filterText = filterText,
+                            filterClass = filterClass,
+                            filterDes = filterDes,
+                            scope = scope
+                        ).toNodes()
                         result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                     }
                 }
@@ -674,12 +684,19 @@ class ASJavascriptInterface(val webView: WebView) {
                     val filterViewId = request.arguments?.get("filterViewId")?.asString ?: ""
                     val filterDes = request.arguments?.get("filterDes")?.asString ?: ""
                     val filterClass = request.arguments?.get("filterClass")?.asString ?: ""
+                    val scope = NodeLookupScopeParse.fromArguments(request.arguments)
                     request.node?.get()?.let {
                         val nodes = it.findByText(text, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass).toNodes()
                         result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                     } ?: let {
                         val nodes =
-                            AssistsCore.findByText(text, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass).toNodes()
+                            AssistsCore.findByText(
+                                text,
+                                filterViewId = filterViewId,
+                                filterDes = filterDes,
+                                filterClass = filterClass,
+                                scope = scope
+                            ).toNodes()
                         result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                     }
                 }
@@ -689,11 +706,18 @@ class ASJavascriptInterface(val webView: WebView) {
                     val text = request.arguments?.get("filterText")?.asString ?: ""
                     val viewId = request.arguments?.get("filterViewId")?.asString ?: ""
                     val des = request.arguments?.get("filterDes")?.asString ?: ""
+                    val scope = NodeLookupScopeParse.fromArguments(request.arguments)
                     request.node?.get()?.let {
                         val nodes = it.findByTags(className = className, viewId = viewId, des = des, text = text).toNodes()
                         result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                     } ?: let {
-                        val nodes = AssistsCore.findByTags(className = className, text = text, viewId = viewId, des = des).toNodes()
+                        val nodes = AssistsCore.findByTags(
+                            className = className,
+                            text = text,
+                            viewId = viewId,
+                            des = des,
+                            scope = scope
+                        ).toNodes()
                         result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                     }
                 }
@@ -716,7 +740,11 @@ class ASJavascriptInterface(val webView: WebView) {
                 }
 
                 CallMethod.findByTextAllMatch -> {
-                    val nodes = AssistsCore.findByTextAllMatch(request.arguments?.get("text")?.asString ?: "").toNodes()
+                    val scope = NodeLookupScopeParse.fromArguments(request.arguments)
+                    val nodes = AssistsCore.findByTextAllMatch(
+                        request.arguments?.get("text")?.asString ?: "",
+                        scope = scope
+                    ).toNodes()
                     result = GsonUtils.toJson(CallResponse<List<Node>>(code = 0, data = nodes))
                 }
 
@@ -782,7 +810,8 @@ class ASJavascriptInterface(val webView: WebView) {
                 }
 
                 CallMethod.getPackageName -> {
-                    val packageName = AssistsCore.getPackageName()
+                    val scope = NodeLookupScopeParse.fromArguments(request.arguments)
+                    val packageName = AssistsCore.getPackageName(scope)
                     result = GsonUtils.toJson(CallResponse<String>(code = 0, data = packageName))
                 }
 
