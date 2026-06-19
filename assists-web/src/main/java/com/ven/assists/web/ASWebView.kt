@@ -31,6 +31,7 @@ import com.ven.assists.web.mlkit.MlkitJavascriptInterface
 import com.ven.assists.web.floating.FloatJsInterface
 import com.ven.assists.log.AssistsLog
 import com.ven.assists.web.log.AssistsLogJavascriptInterface
+import com.ven.assists.web.screenshot.ScreenshotJavascriptInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -142,6 +143,7 @@ open class ASWebView @JvmOverloads constructor(
         this.callIntercept = javascriptCallIntercept
     }
     val assistsLogJavascriptInterface = AssistsLogJavascriptInterface(webView = this)
+    val screenshotJavascriptInterface = ScreenshotJavascriptInterface(webView = this)
 
     val assistsServiceListener = object : AssistsServiceListener {
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -245,6 +247,7 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(galleryJavascriptInterface, "assistsxGallery")
         addJavascriptInterface(floatJsInterface, "assistsxFloat")
         addJavascriptInterface(assistsLogJavascriptInterface, "assistsxLog")
+        addJavascriptInterface(screenshotJavascriptInterface, "assistsxScreenshot")
         AssistsService.listeners.add(assistsServiceListener)
 
         // 与 onAccessibilityEvent 相同风格：日志 Flow 每次发射即 evaluateJavascript，页面可选实现 onAssistsLogUpdate(base64)

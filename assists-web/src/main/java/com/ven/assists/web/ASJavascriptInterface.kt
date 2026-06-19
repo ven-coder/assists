@@ -54,6 +54,7 @@ import com.ven.assists.mp.MPManager.getBitmap
 import com.ven.assists.service.AssistsService
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.web.JavascriptInterfaceContext
+import com.ven.assists.web.screenshot.ScreenshotCaptureHelper
 import com.ven.assists.utils.runIO
 import com.ven.assists.utils.runMain
 import com.ven.assists.web.databinding.WebFloatingWindowBinding
@@ -405,47 +406,20 @@ class ASJavascriptInterface(val webView: WebView) {
                 CallMethod.takeScreenshot -> {
                     CoroutineWrapper.launch {
                         val overlayHiddenScreenshotDelayMillis = request.arguments?.get("overlayHiddenScreenshotDelayMillis")?.asLong ?: 250
-                        AssistsWindowManager.hideAll()
-                        delay(overlayHiddenScreenshotDelayMillis)
-                        val list = arrayListOf<String>()
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            val screenshot = AssistsCore.takeScreenshot()
-                            AssistsWindowManager.showTop()
-
-                            request.nodes?.forEach {
-                                val bitmap = NodeCacheManager.get(it.nodeId)?.takeScreenshot(screenshot = screenshot)
-                                bitmap?.let {
-                                    val base64 = bitmapToBase64(it)
-                                    list.add(base64)
-                                }
-                                bitmap?.recycle()
-                            }
-                        } else {
-                            val takeScreenshot2Bitmap = MPManager.takeScreenshot2Bitmap()
-                            AssistsWindowManager.showTop()
-
-                            takeScreenshot2Bitmap ?: let {
-                                callback(CallResponse<JsonObject>(code = -1, message = "截屏失败", callbackId = request.callbackId))
-                                return@launch
-                            }
-                            request.nodes?.forEach {
-                                val bitmap = NodeCacheManager.get(it.nodeId)?.getBitmap(screenshot = takeScreenshot2Bitmap)
-                                bitmap?.let {
-                                    val base64 = bitmapToBase64(it)
-                                    list.add(base64)
-                                }
-                                bitmap?.recycle()
-                            }
-                            takeScreenshot2Bitmap.recycle()
+                        val nodeIds = request.nodes?.mapNotNull { it.nodeId } ?: emptyList()
+                        val list = ScreenshotCaptureHelper.captureNodesScreenshotBase64(
+                            nodeIds = nodeIds,
+                            overlayHiddenScreenshotDelayMillis = overlayHiddenScreenshotDelayMillis,
+                        )
+                        if (list.isEmpty()) {
+                            callback(CallResponse<JsonObject>(code = -1, message = "截屏失败", callbackId = request.callbackId))
+                            return@launch
                         }
                         callback(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
                             add("images", JsonArray().apply {
-                                list.forEach {
-                                    add(it)
-                                }
+                                list.forEach { add(it) }
                             })
                         }, callbackId = request.callbackId))
-
                     }
 
                     result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {

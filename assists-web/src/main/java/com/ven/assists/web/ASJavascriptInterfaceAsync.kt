@@ -52,6 +52,7 @@ import com.ven.assists.mp.MPManager.getBitmap
 import com.ven.assists.service.AssistsService
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.web.JavascriptInterfaceContext
+import com.ven.assists.web.screenshot.ScreenshotCaptureHelper
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.text.TextRecognitionChineseLocator
@@ -528,37 +529,11 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
 
     private suspend fun handleTakeScreenshot(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val overlayHiddenScreenshotDelayMillis = request.arguments?.get("overlayHiddenScreenshotDelayMillis")?.asLong ?: 250
-        AssistsWindowManager.hideAll()
-        delay(overlayHiddenScreenshotDelayMillis)
-        val list = arrayListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val screenshot = AssistsCore.takeScreenshot()
-            AssistsWindowManager.showTop()
-
-            request.nodes?.forEach {
-                val bitmap = NodeCacheManager.get(it.nodeId)?.takeScreenshot(screenshot = screenshot)
-                bitmap?.let {
-                    val base64 = bitmapToBase64(it)
-                    list.add(base64)
-                }
-                bitmap?.recycle()
-            }
-        } else {
-            val takeScreenshot2Bitmap = MPManager.takeScreenshot2Bitmap()
-            AssistsWindowManager.showTop()
-
-            takeScreenshot2Bitmap?.let {
-                request.nodes?.forEach {
-                    val bitmap = NodeCacheManager.get(it.nodeId)?.getBitmap(screenshot = takeScreenshot2Bitmap)
-                    bitmap?.let {
-                        val base64 = bitmapToBase64(it)
-                        list.add(base64)
-                    }
-                    bitmap?.recycle()
-                }
-                takeScreenshot2Bitmap.recycle()
-            }
-        }
+        val nodeIds = request.nodes?.mapNotNull { it.nodeId } ?: emptyList()
+        val list = ScreenshotCaptureHelper.captureNodesScreenshotBase64(
+            nodeIds = nodeIds,
+            overlayHiddenScreenshotDelayMillis = overlayHiddenScreenshotDelayMillis,
+        )
         return request.createResponse(if (list.isEmpty()) -1 else 0, data = JsonObject().apply {
             add("images", JsonArray().apply {
                 list.forEach { add(it) }
