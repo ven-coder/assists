@@ -11,4 +11,18 @@ jobs:
     steps:
       - name: Trigger JitPack Build
         run: |
-          curl -X POST https://jitpack.io/com/github/ven-coder/Assists/
+          TAG="${GITHUB_REF#refs/tags/}"
+          # 同时触发带 v 与不带 v 的版本号，避免 JitPack 大小写路径下 tag 格式不一致
+          VERSIONS=("${TAG}")
+          if [[ "${TAG}" == v* ]]; then
+            VERSIONS+=("${TAG#v}")
+          elif [[ "${TAG}" =~ ^[0-9] ]]; then
+            VERSIONS+=("v${TAG}")
+          fi
+
+          for REPO in assists Assists; do
+            for VERSION in "${VERSIONS[@]}"; do
+              echo "Triggering ven-coder/${REPO}@${VERSION}"
+              curl -s -m 900 "https://jitpack.io/com/github/ven-coder/${REPO}/${VERSION}/" || true
+            done
+          done

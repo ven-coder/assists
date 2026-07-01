@@ -60,7 +60,8 @@ dependencies {
      implementation project(':assists-web')
      implementation project(':assists-log')
      implementation project(':assists-ime')
-//   implementation "com.github.ven-coder.assists:assists-base:v3.2.219"
+//   implementation "com.github.ven-coder.assists:assists-base:3.5.1"  // 小写路径（v3.5.1 tag 请写 3.5.1）
+//   implementation "com.github.ven-coder.Assists:assists-base:v3.5.1"  // 大写路径（兼容旧依赖）
 //   implementation "com.github.ven-coder.assists:assists-opcv:v3.2.219"
 //   implementation "com.github.ven-coder.assists:assists-mp:v3.2.219"
 //   implementation "com.github.ven-coder.assists:assists-web:v3.2.219"
