@@ -183,6 +183,23 @@
 
 ---
 
+## 子接口：assistsxDb
+
+**注入名**：`assistsxDb`，**回调**：`assistsxDbCallback`（Base64 JSON）。在应用私有目录内执行 SQLite SQL，支持建表、增删改、查询与事务批量执行。
+
+同步入口 `call` 立即返回占位 `CallResponse(code=0)`，真实结果通过 **`assistsxDbCallback`** 异步返回。
+
+| 方法 | 说明 |
+|------|------|
+| `exec` | 执行非查询 SQL（INSERT / UPDATE / DELETE / CREATE / DROP / ALTER 等）。参数：`sql`（必填）、`dbPath` 或 `dbName`（二选一）、可选 `bindArgs`。成功 `data`：`rowsAffected`、`lastInsertRowId` |
+| `query` | 执行查询 SQL（SELECT / PRAGMA 等）。参数同上。成功 `data`：`columns`、`rows`、`rowCount`；BLOB 字段为 Base64 字符串 |
+| `execBatch` | 事务内批量执行多条 SQL。参数：`statements`（`string[]`）、`dbPath` 或 `dbName`。任一条失败则全部回滚 |
+| `close` | 关闭并释放指定数据库连接。参数：`dbPath` 或 `dbName` |
+
+**路径安全**：`dbPath` 仅允许应用内部数据目录（`getInternalAppDataPath`）与应用外部数据目录（`getExternalAppDataPath`）及其子路径；`dbName` 由原生侧拼接为 `getInternalAppDbPath(dbName)`。
+
+---
+
 ## 子接口：assistsxHttp
 
 **注入名**：`assistsxHttp`。独立 HTTP 封装：`httpGet`、`httpPost`、`httpPostFile`、`httpDownload`、`httpConfigure`、`httpReset`、`httpGetConfig`。

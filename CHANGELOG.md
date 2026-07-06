@@ -1,5 +1,9 @@
 # 更新日志
 
+### 3.5.1（2026-07-04）
+
+- **assists-web**：新增 **`assistsxDb`** 子接口，支持 WebView JS 在应用私有目录内通过 SQL 操作 SQLite（`exec` / `query` / `execBatch` / `close`）；详见 [`docs/web-framework-api.md`](docs/web-framework-api.md)。
+
 ### 3.5.0（2026-04-28）
 
 - **构建与目标平台**：Gradle / Android Gradle Plugin **8.9**、Kotlin **2.1**、Gradle Wrapper 等与 **compileSdk / targetSdk 36** 对齐；`settings.gradle` 集中管理插件版本，便于后续升级。

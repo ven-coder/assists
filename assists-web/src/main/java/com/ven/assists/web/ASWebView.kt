@@ -20,6 +20,7 @@ import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.runMain
 import com.ven.assists.web.barutils.BarUtilsJavascriptInterface
+import com.ven.assists.web.db.DbJavascriptInterface
 import com.ven.assists.web.filesystem.PathJavascriptInterface
 import com.ven.assists.web.filesystem.fileio.FileIOJavascriptInterface
 import com.ven.assists.web.filesystem.fileutils.FileUtilsJavascriptInterface
@@ -144,6 +145,7 @@ open class ASWebView @JvmOverloads constructor(
     }
     val assistsLogJavascriptInterface = AssistsLogJavascriptInterface(webView = this)
     val screenshotJavascriptInterface = ScreenshotJavascriptInterface(webView = this)
+    val dbJavascriptInterface = DbJavascriptInterface(webView = this)
 
     val assistsServiceListener = object : AssistsServiceListener {
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -248,6 +250,7 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(floatJsInterface, "assistsxFloat")
         addJavascriptInterface(assistsLogJavascriptInterface, "assistsxLog")
         addJavascriptInterface(screenshotJavascriptInterface, "assistsxScreenshot")
+        addJavascriptInterface(dbJavascriptInterface, "assistsxDb")
         AssistsService.listeners.add(assistsServiceListener)
 
         // 与 onAccessibilityEvent 相同风格：日志 Flow 每次发射即 evaluateJavascript，页面可选实现 onAssistsLogUpdate(base64)
