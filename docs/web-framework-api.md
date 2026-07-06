@@ -252,6 +252,22 @@
 | `hideCurrent` / `showCurrent` | 仅当前 Web 浮窗隐藏/显示 |
 | `isCurrentVisible` / `containsCurrent` | 当前 Web 浮窗是否可见 / 是否已加入管理器 |
 
+**浮窗 WebView 工厂**：`float.open` / `loadWebViewOverlay` 通过 [`FloatWindowBridge.webViewProvider`](assists-web/src/main/java/com/ven/assists/web/floating/FloatWindowBridge.kt) 创建内容 WebView；未设置时默认 `ASWebView`。宿主可注入自定义 WebView 子类（如 AssistsX 的 `XWebview`）。
+
+---
+
+## 宿主扩展（ASWebView 全局 Bridge）
+
+无需子类化 `ASWebView` 即可为**所有** WebView 实例（含 `float.open` 新建的浮窗）注册拦截与 URL 改写：
+
+| 成员 | 说明 |
+|------|------|
+| `ASWebView.globalJavascriptCallIntercepts` | `assistsx` / `assistsxAsync` 主接口调用链 |
+| `ASWebView.globalDbCallIntercepts` | `assistsxDb` 调用链 |
+| `ASWebView.globalUrlTransform` | `loadUrl` 前改写 URL（如相对路径补全） |
+| `ASWebView.bridgeConfigurator` | 每个 `ASWebView` 实例 `init` 末尾回调 |
+| `FloatWindowBridge.webViewProvider` | 浮窗内容 WebView 工厂 |
+
 ---
 
 ## 子接口：assistsxLog（新增）

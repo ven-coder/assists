@@ -50,6 +50,17 @@ open class ASWebView @JvmOverloads constructor(
     companion object {
         val globalJavascriptCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
 
+        /** 全局 assistsxDb 调用拦截链（宿主注册，无需子类 ASWebView） */
+        val globalDbCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
+
+        /** 全局 loadUrl 改写（如相对路径补全）；null 时不改写 */
+        @JvmStatic
+        var globalUrlTransform: ((String) -> String)? = null
+
+        /** 每个 ASWebView 实例创建后的可选配置钩子 */
+        @JvmStatic
+        var bridgeConfigurator: ((ASWebView) -> Unit)? = null
+
         private const val STREAM_LOG_LATEST_LINE = "latestLine"
         private const val STREAM_LOG_ENTIRE = "entireLogText"
     }
@@ -264,6 +275,12 @@ open class ASWebView @JvmOverloads constructor(
                 notifyOnAssistsLogUpdate(STREAM_LOG_ENTIRE, text)
             }
         }
+        bridgeConfigurator?.invoke(this)
+    }
+
+    override fun loadUrl(url: String) {
+        val targetUrl = globalUrlTransform?.invoke(url) ?: url
+        super.loadUrl(targetUrl)
     }
 
     fun <T> onAccessibilityEvent(result: CallResponse<T>) {

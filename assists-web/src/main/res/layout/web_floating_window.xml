@@ -5,8 +5,8 @@
     android:background="@android:color/transparent"
     android:orientation="vertical">
 
-    <com.ven.assists.web.ASWebView
-        android:id="@+id/web_view"
+    <FrameLayout
+        android:id="@+id/web_view_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/transparent" />

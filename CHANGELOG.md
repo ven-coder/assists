@@ -1,5 +1,9 @@
 # 更新日志
 
+### 3.5.2（2026-07-06）
+
+- **assists-web**：`ASWebView` 新增 **`globalDbCallIntercepts`**、**`globalUrlTransform`**、**`bridgeConfigurator`**；`float.open` / `loadWebViewOverlay` 支持通过 **`FloatWindowBridge.webViewProvider`** 注入浮窗 WebView；抽取 **`FloatWindowOpener`** 统一浮窗打开逻辑。
+
 ### 3.5.1（2026-07-04）
 
 - **assists-web**：新增 **`assistsxDb`** 子接口，支持 WebView JS 在应用私有目录内通过 SQL 操作 SQLite（`exec` / `query` / `execBatch` / `close`）；详见 [`docs/web-framework-api.md`](docs/web-framework-api.md)。

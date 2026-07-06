@@ -8,6 +8,8 @@ import com.blankj.utilcode.util.LogUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
+import com.ven.assists.web.ASWebView
+import com.ven.assists.web.CallInterceptResult
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallResponse
 import com.ven.assists.web.createResponse
@@ -20,6 +22,7 @@ import java.nio.charset.StandardCharsets
  * SQLite 数据库 JavascriptInterface
  */
 class DbJavascriptInterface(val webView: WebView) {
+    var callIntercept: ((json: String) -> CallInterceptResult)? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     fun <T> callbackResponse(result: CallResponse<T>) {
@@ -49,8 +52,31 @@ class DbJavascriptInterface(val webView: WebView) {
     }
 
     private suspend fun CoroutineScope.processCall(originJson: String) {
+        var requestJson = originJson
+        val intercepted = runCatching {
+            ASWebView.globalDbCallIntercepts.forEach { intercept ->
+                val result = intercept.invoke(requestJson)
+                if (result.intercept) {
+                    callback(result.result)
+                    return@runCatching true
+                } else {
+                    requestJson = result.result
+                }
+            }
+            callIntercept?.invoke(requestJson)?.let {
+                if (it.intercept) {
+                    callback(it.result)
+                    true
+                } else {
+                    requestJson = it.result
+                    false
+                }
+            } ?: false
+        }.onFailure { LogUtils.e(it) }
+        if (intercepted.getOrNull() == true) return
+
         val request = GsonUtils.fromJson<CallRequest<JsonObject>>(
-            originJson,
+            requestJson,
             object : TypeToken<CallRequest<JsonObject>>() {}.type,
         )
         runCatching {

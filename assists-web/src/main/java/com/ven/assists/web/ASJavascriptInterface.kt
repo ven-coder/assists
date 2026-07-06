@@ -57,7 +57,8 @@ import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.web.screenshot.ScreenshotCaptureHelper
 import com.ven.assists.utils.runIO
 import com.ven.assists.utils.runMain
-import com.ven.assists.web.databinding.WebFloatingWindowBinding
+import com.ven.assists.web.floating.FloatWindowOpenOptions
+import com.ven.assists.web.floating.FloatWindowOpener
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
@@ -316,60 +317,24 @@ class ASJavascriptInterface(val webView: WebView) {
                 CallMethod.loadWebViewOverlay -> {
                     CoroutineWrapper.launch(isMain = true) {
                         runCatching {
-                            val url = request.arguments?.get("url")?.asString ?: ""
-                            val initialWidth = request.arguments?.get("initialWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.8).toInt()
-                            val initialHeight = request.arguments?.get("initialHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
-                            val minWidth = request.arguments?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt()
-                            val minHeight = request.arguments?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt()
-                            val initialCenter = request.arguments?.get("initialCenter")?.asBoolean ?: true
-                            val keepScreenOn = request.arguments?.get("keepScreenOn")?.asBoolean ?: false
-                            val webWindowBinding = WebFloatingWindowBinding.inflate(LayoutInflater.from(JavascriptInterfaceContext.requireContext())).apply {
-                                webView.loadUrl(url)
-                                webView.setBackgroundColor(0)
-                            }
-
-                            AssistsWindowManager.add(
-                                windowWrapper = AssistsWindowWrapper(
-                                    wmLayoutParams = AssistsWindowManager.createLayoutParams().apply {
-                                        width = initialWidth
-                                        height = initialHeight
-                                    },
-                                    view = webWindowBinding.root,
-                                    onClose = {
-                                        webWindowBinding.webView.loadUrl("about:blank")
-                                        webWindowBinding.webView.stopLoading()
-                                        webWindowBinding.webView.clearHistory()
-                                        webWindowBinding.webView.removeAllViews()
-                                        webWindowBinding.webView.destroy()
-                                        webWindowBinding.root.removeAllViews()
-                                        val viewGroup = it as ViewGroup
-                                        viewGroup.removeAllViews()
-                                        AssistsWindowManager.removeWindow(it)
-                                        AssistsCore.clearKeepScreenOn()
-                                    }
-                                ).apply {
-                                    viewBinding.ivWebBack.isVisible = true
-                                    viewBinding.ivWebBack.setOnClickListener { webWindowBinding.webView.goBack() }
-                                    viewBinding.ivWebForward.isVisible = true
-                                    viewBinding.ivWebForward.setOnClickListener { webWindowBinding.webView.goBack() }
-
-                                    viewBinding.ivWebRefresh.isVisible = true
-                                    viewBinding.ivWebRefresh.setOnClickListener { webWindowBinding.webView.reload() }
-                                    webWindowBinding.webView.onReceivedTitle = { viewBinding.tvTitle.text = it }
-                                    this.minWidth = minWidth
-                                    this.minHeight = minHeight
-                                    this.initialCenter = initialCenter
-                                    if (keepScreenOn) {
-                                        AssistsCore.keepScreenOn()
-                                    }
-                                }
+                            val args = request.arguments
+                            val options = FloatWindowOpenOptions(
+                                url = args?.get("url")?.asString ?: "",
+                                initialWidth = args?.get("initialWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.8).toInt(),
+                                initialHeight = args?.get("initialHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
+                                minWidth = args?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt(),
+                                minHeight = args?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
+                                initialCenter = args?.get("initialCenter")?.asBoolean ?: true,
+                                keepScreenOn = args?.get("keepScreenOn")?.asBoolean ?: false,
+                                showTopOperationArea = true,
+                                showBottomOperationArea = true,
                             )
+                            FloatWindowOpener.open(options)
                         }.onSuccess {
                             callback(CallResponse<Boolean>(code = 0, data = true, callbackId = request.callbackId))
                         }.onFailure {
                             callback(CallResponse<Boolean>(code = -1, data = false, callbackId = request.callbackId))
                         }
-
                     }
 
                     result = GsonUtils.toJson(CallResponse<JsonObject>(code = 0, data = JsonObject().apply {
