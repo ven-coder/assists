@@ -145,9 +145,6 @@ class DbJavascriptInterface(val webView: WebView) {
         val args = request.arguments
         val dbPathArg = args?.get("dbPath")?.asString
         val dbName = args?.get("dbName")?.asString
-        if (dbPathArg.isNullOrBlank() && dbName.isNullOrBlank()) {
-            return request.createResponse(-1, message = "dbPath或dbName必须指定其一", data = null)
-        }
         return try {
             val dbPath = DbDatabaseManager.resolveDbPath(dbPathArg, dbName)
             val data = block(dbPath)

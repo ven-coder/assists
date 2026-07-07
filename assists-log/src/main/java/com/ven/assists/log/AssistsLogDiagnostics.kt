@@ -113,9 +113,13 @@ object AssistsLogDiagnostics {
         target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
     ): AssistsLogUploadResult {
         val effectiveUploadKey = uploadKey?.trim()?.takeIf { it.isNotEmpty() } ?: storedUploadKey
-        val screenshotFile = AssistsLogPaths.screenshotFile(extensionForFormat(format))
         val logFile = AssistsLogPaths.resolveLogFile(target, ensureWritable = true)
-        val nodeTreeFile = AssistsLogPaths.nodeTreeFile()
+        val screenshotFile = AssistsLogPaths.resolveScreenshotFile(
+            target = target,
+            extension = extensionForFormat(format),
+            ensureWritable = true,
+        )
+        val nodeTreeFile = AssistsLogPaths.resolveNodeTreeFile(target, ensureWritable = true)
 
         if (!logFile.exists()) {
             logFile.parentFile?.mkdirs()

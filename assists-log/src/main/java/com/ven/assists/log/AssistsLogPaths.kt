@@ -5,25 +5,53 @@ import java.io.File
 import java.io.IOException
 
 /**
- * 日志路径解析：诊断固定文件名 + 可自定义日志目录/文件名（后缀固定 .txt）
+ * 日志路径解析：日志与伴生文件（截图、节点树）共用目录与基础文件名，扩展名各自独立。
  */
 object AssistsLogPaths {
-    const val LOG_FILE_NAME = "assists_log.txt"
-    const val DEFAULT_LOG_BASE_NAME = "assists_log"
+    const val LOG_FILE_NAME = "log-default.txt"
+    const val DEFAULT_LOG_BASE_NAME = "log-default"
     const val LOG_FILE_EXTENSION = ".txt"
-    const val SCREENSHOT_FILE_NAME = "assists_screenshot.png"
-    const val NODE_TREE_FILE_NAME = "assists_node_tree.json"
+    const val SCREENSHOT_FILE_NAME = "log-default.png"
+    const val NODE_TREE_FILE_NAME = "log-default.json"
 
     /** 默认单文件路径（向后兼容） */
     fun logFile(): File = resolveLogFile(AssistsLogTarget.DEFAULT)
 
     /** 默认 PNG；其它格式传入对应扩展名，如 jpg、webp */
     fun screenshotFile(extension: String = "png"): File =
-        File(PathUtils.getInternalAppFilesPath(), "assists_screenshot.$extension")
+        resolveScreenshotFile(AssistsLogTarget.DEFAULT, extension)
 
     fun screenshotFile(): File = screenshotFile("png")
 
-    fun nodeTreeFile(): File = File(PathUtils.getInternalAppFilesPath(), NODE_TREE_FILE_NAME)
+    fun nodeTreeFile(): File = resolveNodeTreeFile(AssistsLogTarget.DEFAULT)
+
+    /**
+     * 解析与日志同目录、同基础文件名的截图路径（扩展名由 [extension] 指定，如 png、jpg、webp）。
+     */
+    fun resolveScreenshotFilePath(
+        target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        extension: String = "png",
+        ensureWritable: Boolean = false,
+    ): String = resolveSiblingFilePath(target, extension, ensureWritable)
+
+    fun resolveScreenshotFile(
+        target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        extension: String = "png",
+        ensureWritable: Boolean = false,
+    ): File = File(resolveScreenshotFilePath(target, extension, ensureWritable))
+
+    /**
+     * 解析与日志同目录、同基础文件名的节点树 JSON 路径。
+     */
+    fun resolveNodeTreeFilePath(
+        target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        ensureWritable: Boolean = false,
+    ): String = resolveSiblingFilePath(target, "json", ensureWritable)
+
+    fun resolveNodeTreeFile(
+        target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        ensureWritable: Boolean = false,
+    ): File = File(resolveNodeTreeFilePath(target, ensureWritable))
 
     /**
      * 解析日志文件绝对路径（不创建文件）。
@@ -60,13 +88,34 @@ object AssistsLogPaths {
     }
 
     fun normalizeLogFileName(fileName: String?): String {
+        return "${resolveLogBaseName(fileName)}$LOG_FILE_EXTENSION"
+    }
+
+    /** 解析日志基础文件名（不含 .txt 后缀），与截图/节点树共用。 */
+    fun resolveLogBaseName(fileName: String?): String {
         val raw = fileName?.trim().orEmpty().ifBlank { DEFAULT_LOG_BASE_NAME }
         val withoutExt = if (raw.endsWith(LOG_FILE_EXTENSION, ignoreCase = true)) {
             raw.dropLast(LOG_FILE_EXTENSION.length)
         } else {
             raw
         }.trim().ifBlank { DEFAULT_LOG_BASE_NAME }
-        return "$withoutExt$LOG_FILE_EXTENSION"
+        return withoutExt
+    }
+
+    /**
+     * 解析与日志同目录、同基础文件名的伴生文件路径（扩展名由 [extension] 指定）。
+     */
+    fun resolveSiblingFilePath(
+        target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        extension: String,
+        ensureWritable: Boolean = false,
+    ): String {
+        val dir = resolveLogDir(target)
+        if (ensureWritable) {
+            ensureWritableDir(dir)
+        }
+        val ext = extension.trim().trimStart('.').ifBlank { "png" }
+        return File(dir, "${resolveLogBaseName(target.fileName)}.$ext").absolutePath
     }
 
     private fun validateAllowedDirPath(path: String): String {

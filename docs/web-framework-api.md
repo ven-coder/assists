@@ -191,12 +191,12 @@
 
 | 方法 | 说明 |
 |------|------|
-| `exec` | 执行非查询 SQL（INSERT / UPDATE / DELETE / CREATE / DROP / ALTER 等）。参数：`sql`（必填）、`dbPath` 或 `dbName`（二选一）、可选 `bindArgs`。成功 `data`：`rowsAffected`、`lastInsertRowId` |
+| `exec` | 执行非查询 SQL（INSERT / UPDATE / DELETE / CREATE / DROP / ALTER 等）。参数：`sql`（必填）、可选 `dbPath` 或 `dbName`（均未传时默认 `default.db`）、可选 `bindArgs`。成功 `data`：`rowsAffected`、`lastInsertRowId` |
 | `query` | 执行查询 SQL（SELECT / PRAGMA 等）。参数同上。成功 `data`：`columns`、`rows`、`rowCount`；BLOB 字段为 Base64 字符串 |
-| `execBatch` | 事务内批量执行多条 SQL。参数：`statements`（`string[]`）、`dbPath` 或 `dbName`。任一条失败则全部回滚 |
-| `close` | 关闭并释放指定数据库连接。参数：`dbPath` 或 `dbName` |
+| `execBatch` | 事务内批量执行多条 SQL。参数：`statements`（`string[]`）、可选 `dbPath` 或 `dbName`（默认 `default.db`）。任一条失败则全部回滚 |
+| `close` | 关闭并释放指定数据库连接。参数：可选 `dbPath` 或 `dbName`（默认 `default.db`） |
 
-**路径安全**：`dbPath` 仅允许应用内部数据目录（`getInternalAppDataPath`）与应用外部数据目录（`getExternalAppDataPath`）及其子路径；`dbName` 由原生侧拼接为 `getInternalAppDbPath(dbName)`。
+**路径安全**：`dbPath` 仅允许应用内部数据目录（`getInternalAppDataPath`）与应用外部数据目录（`getExternalAppDataPath`）及其子路径；`dbName` 由原生侧拼接为 `getInternalAppDbPath(dbName)`，均未传时默认 `default.db`。AssistsX 宿主会通过 `globalDbCallIntercepts` 将 `dbName` 解析到 `{internalAppDbs}/db-{pluginPackageName}/{dbName}`，插件环境不支持自定义 `dbPath`。
 
 ---
 
@@ -273,7 +273,7 @@
 
 ## 子接口：assistsxLog（新增）
 
-**注入名**：`assistsxLog`，**回调**：`assistsxLogCallback`（Base64 JSON）。用于读写 `AssistsLog` 日志、订阅流、上传诊断包、查询日志服务域名。支持可选 `dirPath`（**绝对路径**目录）与 `fileName`（不含 `.txt` 后缀）；不传时默认 `{internalAppFiles}/assists_log.txt`。AssistsX 宿主会通过 `globalLogCallIntercepts` 自动追加 `log-{pluginPackageName}` 子目录以实现插件隔离。
+**注入名**：`assistsxLog`，**回调**：`assistsxLogCallback`（Base64 JSON）。用于读写 `AssistsLog` 日志、订阅流、上传诊断包、查询日志服务域名。支持可选 `dirPath`（**绝对路径**目录）与 `fileName`（不含 `.txt` 后缀）；均未传时默认 `{internalAppFiles}/log-default.txt`。AssistsX 宿主会通过 `globalLogCallIntercepts` 自动追加 `log-{pluginPackageName}` 子目录，默认文件名为 `default.txt`。
 
 **管理后台**：`uploadLogs` 将日志文件、截图、节点树 JSON 一并提交到日志服务后，可在 **Assists 管理后台** 中查看对应的 **文本日志**、**截图** 与 **节点树信息**（与 `getLogServiceBaseUrl` 返回的站点同源；默认根地址与原生 `AssistsLogDiagnostics.adminWebBaseUrl()` 一致）。若你在业务里自定义 `baseUrl` 上传，请以实际部署的后台为准。
 

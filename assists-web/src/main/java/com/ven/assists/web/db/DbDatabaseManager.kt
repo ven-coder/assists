@@ -17,6 +17,9 @@ import java.util.concurrent.locks.ReentrantLock
  */
 object DbDatabaseManager {
 
+    /** 未传 dbPath / dbName 时使用的默认库文件名 */
+    const val DEFAULT_DB_NAME = "default.db"
+
     data class ExecResult(
         val rowsAffected: Int,
         val lastInsertRowId: Long,
@@ -29,7 +32,7 @@ object DbDatabaseManager {
         return when {
             !dbPath.isNullOrBlank() -> validateDbPath(dbPath)
             !dbName.isNullOrBlank() -> validateDbPath(PathUtils.getInternalAppDbPath(dbName))
-            else -> throw IllegalArgumentException("dbPath或dbName必须指定其一")
+            else -> validateDbPath(PathUtils.getInternalAppDbPath(DEFAULT_DB_NAME))
         }
     }
 

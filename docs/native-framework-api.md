@@ -214,10 +214,11 @@
 
 ### AssistsLogPaths（`object`）
 
-应用内部 `files` 目录下的固定文件名：
+日志与伴生诊断文件（截图、节点树）共用目录与基础文件名，仅扩展名不同：
 
-- `LOG_FILE_NAME`、`SCREENSHOT_FILE_NAME`、`NODE_TREE_FILE_NAME`
-- `logFile()`、`screenshotFile(extension)`、`nodeTreeFile()`
+- `LOG_FILE_NAME`（`log-default.txt`）、`SCREENSHOT_FILE_NAME`（`log-default.png`）、`NODE_TREE_FILE_NAME`（`log-default.json`）
+- `logFile()`、`screenshotFile(extension)`、`nodeTreeFile()` — 默认目标
+- `resolveLogFile(target)`、`resolveScreenshotFile(target, extension)`、`resolveNodeTreeFile(target)` — 与 [AssistsLogTarget] 对齐的路径解析
 
 ### AssistsLogDiagnostics（`object`）
 

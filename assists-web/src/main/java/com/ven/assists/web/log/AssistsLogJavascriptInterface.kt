@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * AssistsLog 的 JavascriptInterface：读写、Flow 订阅、[AssistsLogDiagnostics.uploadLogs] 上传、
  * [AssistsLogCallMethod.getLogServiceBaseUrl] 获取日志服务当前域名（origin）。
- * 支持可选 arguments：`dirPath`（绝对路径目录）、`fileName`（不含 .txt 后缀）。
+ * 支持可选 arguments：`dirPath`（绝对路径目录）、`fileName`（不含 .txt 后缀）；均未传时默认 `log-default.txt`。
  * uploadLogs 请求体可含 `uploadKey`（非空则覆盖本次上传使用的 X-Upload-Key）。
  * H5 调用 assistsxLog.call(json)，实现 assistsxLogCallback(base64) 接收结果。
  */
