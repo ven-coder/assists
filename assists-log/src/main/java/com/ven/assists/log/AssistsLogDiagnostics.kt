@@ -110,10 +110,11 @@ object AssistsLogDiagnostics {
         prettyPrint: Boolean = true,
         overlayHiddenDelayMillis: Long = 250L,
         uploadKey: String? = null,
+        target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
     ): AssistsLogUploadResult {
         val effectiveUploadKey = uploadKey?.trim()?.takeIf { it.isNotEmpty() } ?: storedUploadKey
         val screenshotFile = AssistsLogPaths.screenshotFile(extensionForFormat(format))
-        val logFile = AssistsLogPaths.logFile()
+        val logFile = AssistsLogPaths.resolveLogFile(target, ensureWritable = true)
         val nodeTreeFile = AssistsLogPaths.nodeTreeFile()
 
         if (!logFile.exists()) {

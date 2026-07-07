@@ -12,7 +12,11 @@ import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.ven.assists.log.AssistsLog
 import com.ven.assists.log.AssistsLogDiagnostics
+import com.ven.assists.log.AssistsLogPaths
+import com.ven.assists.log.AssistsLogTarget
 import com.ven.assists.log.AssistsLogUploadResult
+import com.ven.assists.web.ASWebView
+import com.ven.assists.web.CallInterceptResult
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallResponse
 import com.ven.assists.web.createResponse
@@ -21,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
@@ -30,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * AssistsLog 的 JavascriptInterface：读写、Flow 订阅、[AssistsLogDiagnostics.uploadLogs] 上传、
  * [AssistsLogCallMethod.getLogServiceBaseUrl] 获取日志服务当前域名（origin）。
+ * 支持可选 arguments：`dirPath`（绝对路径目录）、`fileName`（不含 .txt 后缀）。
  * uploadLogs 请求体可含 `uploadKey`（非空则覆盖本次上传使用的 X-Upload-Key）。
  * H5 调用 assistsxLog.call(json)，实现 assistsxLogCallback(base64) 接收结果。
  */
@@ -70,9 +76,24 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
     }
 
     private suspend fun processCall(originJson: String) {
+        var requestJson = originJson
+        val interceptedEarly = runCatching {
+            ASWebView.globalLogCallIntercepts.forEach { intercept ->
+                val result = intercept.invoke(requestJson)
+                if (result.intercept) {
+                    callback(result.result)
+                    return@runCatching true
+                } else {
+                    requestJson = result.result
+                }
+            }
+            false
+        }.onFailure { LogUtils.e(it) }.getOrDefault(false)
+        if (interceptedEarly) return
+
         val request = runCatching {
             GsonUtils.fromJson<CallRequest<JsonObject>>(
-                originJson,
+                requestJson,
                 object : TypeToken<CallRequest<JsonObject>>() {}.type
             )
         }.getOrElse {
@@ -87,9 +108,10 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 return@runCatching
             }
 
+            val target = parseLogTarget(request.arguments)
             val response: CallResponse<JsonObject> = when (request.method) {
                 AssistsLogCallMethod.readAllText -> {
-                    val text = withContext(Dispatchers.IO) { AssistsLog.readAllText() }
+                    val text = withContext(Dispatchers.IO) { AssistsLog.readAllText(target) }
                     request.createResponse(
                         code = 0,
                         data = JsonObject().apply { addProperty("text", text) }
@@ -97,12 +119,12 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 }
 
                 AssistsLogCallMethod.clear -> {
-                    withContext(Dispatchers.IO) { AssistsLog.clear() }
+                    withContext(Dispatchers.IO) { AssistsLog.clear(target) }
                     request.createResponse(code = 0, data = JsonObject())
                 }
 
                 AssistsLogCallMethod.refreshFromFile -> {
-                    withContext(Dispatchers.IO) { AssistsLog.refreshFromFile() }
+                    withContext(Dispatchers.IO) { AssistsLog.refreshFromFile(target) }
                     request.createResponse(code = 0, data = JsonObject())
                 }
 
@@ -111,7 +133,7 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                     val maxLength = request.arguments?.get("maxLength")?.asInt
                         ?: AssistsLog.DEFAULT_MAX_FILE_LENGTH
                     withContext(Dispatchers.IO) {
-                        AssistsLog.appendLine(line, maxLength)
+                        AssistsLog.appendLine(line, maxLength, target)
                     }
                     request.createResponse(code = 0, data = JsonObject())
                 }
@@ -119,7 +141,7 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 AssistsLogCallMethod.appendTimestampedEntry -> {
                     val message = request.arguments?.get("message")?.asString ?: ""
                     withContext(Dispatchers.IO) {
-                        AssistsLog.appendTimestampedEntry(message)
+                        AssistsLog.appendTimestampedEntry(message, target)
                     }
                     request.createResponse(code = 0, data = JsonObject())
                 }
@@ -127,14 +149,24 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 AssistsLogCallMethod.replaceAll -> {
                     val content = request.arguments?.get("content")?.asString ?: ""
                     withContext(Dispatchers.IO) {
-                        AssistsLog.replaceAll(content)
+                        AssistsLog.replaceAll(content, target)
                     }
                     request.createResponse(code = 0, data = JsonObject())
                 }
 
+                AssistsLogCallMethod.resolveLogPath -> {
+                    val logFilePath = withContext(Dispatchers.IO) {
+                        AssistsLogPaths.resolveLogFilePath(target, ensureWritable = true)
+                    }
+                    request.createResponse(
+                        code = 0,
+                        data = JsonObject().apply { addProperty("logFilePath", logFilePath) }
+                    )
+                }
+
                 AssistsLogCallMethod.unsubscribe -> handleUnsubscribe(request)
 
-                AssistsLogCallMethod.uploadLogs -> handleUploadLogs(request)
+                AssistsLogCallMethod.uploadLogs -> handleUploadLogs(request, target)
 
                 AssistsLogCallMethod.getLogServiceBaseUrl -> {
                     val baseUrl = AssistsLogDiagnostics.adminWebBaseUrl()
@@ -165,8 +197,18 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
             callbackResponse(request.createResponse(code = -1, message = "disposed", data = null))
             return
         }
+        val target = parseLogTarget(request.arguments)
+        val logStream = when (stream) {
+            STREAM_LATEST_LINE -> AssistsLog.LogStream.LATEST_LINE
+            STREAM_ENTIRE_LOG_TEXT -> AssistsLog.LogStream.ENTIRE_LOG_TEXT
+            else -> {
+                callbackResponse(request.createResponse(code = -1, message = "invalid stream", data = null))
+                return
+            }
+        }
         val id = UUID.randomUUID().toString()
         val callbackId = request.callbackId
+        val logFilePath = AssistsLogPaths.resolveLogFilePath(target)
         val job = scope.launch {
             callbackResponse(
                 CallResponse(
@@ -175,21 +217,14 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                         addProperty("subscriptionId", id)
                         addProperty("stream", stream)
                         addProperty("event", "subscribed")
+                        addProperty("logFilePath", logFilePath)
                     },
                     callbackId = callbackId
                 )
             )
             try {
-                when (stream) {
-                    STREAM_LATEST_LINE -> AssistsLog.latestLine.collect { text ->
-                        emitUpdate(id, stream, text, callbackId)
-                    }
-
-                    STREAM_ENTIRE_LOG_TEXT -> AssistsLog.entireLogText.collect { text ->
-                        emitUpdate(id, stream, text, callbackId)
-                    }
-
-                    else -> Unit
+                AssistsLog.flowFor(target, logStream).collect { text ->
+                    emitUpdate(id, stream, text, callbackId, logFilePath)
                 }
             } catch (_: CancellationException) {
                 // 正常取消
@@ -204,7 +239,8 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
         subscriptionId: String,
         stream: String,
         text: String,
-        callbackId: String?
+        callbackId: String?,
+        logFilePath: String,
     ) {
         callbackResponse(
             CallResponse(
@@ -214,13 +250,17 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                     addProperty("stream", stream)
                     addProperty("text", text)
                     addProperty("event", "update")
+                    addProperty("logFilePath", logFilePath)
                 },
                 callbackId = callbackId
             )
         )
     }
 
-    private suspend fun handleUploadLogs(request: CallRequest<JsonObject>): CallResponse<JsonObject> {
+    private suspend fun handleUploadLogs(
+        request: CallRequest<JsonObject>,
+        target: AssistsLogTarget,
+    ): CallResponse<JsonObject> {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             return request.createResponse(
                 code = -1,
@@ -240,7 +280,8 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
             format = format,
             prettyPrint = prettyPrint,
             overlayHiddenDelayMillis = overlayHiddenDelayMillis,
-            uploadKey = uploadKey
+            uploadKey = uploadKey,
+            target = target,
         )
         val code = if (result.success) 0 else -1
         return request.createResponse(
@@ -256,14 +297,16 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
         format: CompressFormat,
         prettyPrint: Boolean,
         overlayHiddenDelayMillis: Long,
-        uploadKey: String?
+        uploadKey: String?,
+        target: AssistsLogTarget,
     ): AssistsLogUploadResult {
         return if (baseUrl.isNullOrBlank()) {
             AssistsLogDiagnostics.uploadLogs(
                 format = format,
                 prettyPrint = prettyPrint,
                 overlayHiddenDelayMillis = overlayHiddenDelayMillis,
-                uploadKey = uploadKey
+                uploadKey = uploadKey,
+                target = target,
             )
         } else {
             AssistsLogDiagnostics.uploadLogs(
@@ -271,9 +314,19 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 format = format,
                 prettyPrint = prettyPrint,
                 overlayHiddenDelayMillis = overlayHiddenDelayMillis,
-                uploadKey = uploadKey
+                uploadKey = uploadKey,
+                target = target,
             )
         }
+    }
+
+    private fun parseLogTarget(args: JsonObject?): AssistsLogTarget {
+        val dirPath = args?.get("dirPath")?.takeIf { !it.isJsonNull }?.asString
+        val fileName = args?.get("fileName")?.takeIf { !it.isJsonNull }?.asString
+        return AssistsLogTarget(
+            dirPath = dirPath?.trim()?.takeIf { it.isNotEmpty() },
+            fileName = fileName?.trim()?.takeIf { it.isNotEmpty() },
+        )
     }
 
     private fun parseCompressFormat(raw: String?): CompressFormat {

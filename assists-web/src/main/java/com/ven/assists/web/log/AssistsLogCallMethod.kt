@@ -18,4 +18,20 @@ object AssistsLogCallMethod {
 
     /** 获取日志服务当前域名（origin，无路径；与上传、管理后台同源） */
     const val getLogServiceBaseUrl = "getLogServiceBaseUrl"
+
+    /** 解析日志文件绝对路径（不创建文件） */
+    const val resolveLogPath = "resolveLogPath"
+
+    /** 会读写日志文件的方法（供拦截器判断） */
+    val pathAwareMethods = setOf(
+        readAllText,
+        clear,
+        refreshFromFile,
+        appendLine,
+        appendTimestampedEntry,
+        replaceAll,
+        subscribe,
+        uploadLogs,
+        resolveLogPath,
+    )
 }

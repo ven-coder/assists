@@ -264,6 +264,7 @@
 |------|------|
 | `ASWebView.globalJavascriptCallIntercepts` | `assistsx` / `assistsxAsync` 主接口调用链 |
 | `ASWebView.globalDbCallIntercepts` | `assistsxDb` 调用链 |
+| `ASWebView.globalLogCallIntercepts` | `assistsxLog` 调用链 |
 | `ASWebView.globalUrlTransform` | `loadUrl` 前改写 URL（如相对路径补全） |
 | `ASWebView.bridgeConfigurator` | 每个 `ASWebView` 实例 `init` 末尾回调 |
 | `FloatWindowBridge.webViewProvider` | 浮窗内容 WebView 工厂 |
@@ -272,7 +273,7 @@
 
 ## 子接口：assistsxLog（新增）
 
-**注入名**：`assistsxLog`，**回调**：`assistsxLogCallback`（Base64 JSON）。用于读写 `AssistsLog` 单文件日志、订阅流、上传诊断包、查询日志服务域名。
+**注入名**：`assistsxLog`，**回调**：`assistsxLogCallback`（Base64 JSON）。用于读写 `AssistsLog` 日志、订阅流、上传诊断包、查询日志服务域名。支持可选 `dirPath`（**绝对路径**目录）与 `fileName`（不含 `.txt` 后缀）；不传时默认 `{internalAppFiles}/assists_log.txt`。AssistsX 宿主会通过 `globalLogCallIntercepts` 自动追加 `log-{pluginPackageName}` 子目录以实现插件隔离。
 
 **管理后台**：`uploadLogs` 将日志文件、截图、节点树 JSON 一并提交到日志服务后，可在 **Assists 管理后台** 中查看对应的 **文本日志**、**截图** 与 **节点树信息**（与 `getLogServiceBaseUrl` 返回的站点同源；默认根地址与原生 `AssistsLogDiagnostics.adminWebBaseUrl()` 一致）。若你在业务里自定义 `baseUrl` 上传，请以实际部署的后台为准。
 
@@ -280,16 +281,17 @@
 
 | 方法 | 说明 |
 |------|------|
-| `readAllText` | 读取当前日志全文，`data.text` |
-| `clear` | 清空日志文件并推送空内容 |
-| `refreshFromFile` | 从磁盘重新读入并更新内存态 |
-| `appendLine` | 追加字符串；参数 `line`，可选 `maxLength`（默认与 `AssistsLog.DEFAULT_MAX_FILE_LENGTH` 一致） |
-| `appendTimestampedEntry` | 追加带时间戳的条目，参数 `message` |
-| `replaceAll` | 用 `content` 整体覆盖；空串等价于 clear |
-| `subscribe` | 订阅流；参数 `stream`：`latestLine` 或 `entireLogText`；先回调 `event: subscribed` 与 `subscriptionId`，后续多次 `event: update` 与 `text`；需配合 `callbackId` |
+| `readAllText` | 读取当前日志全文，`data.text`；可选 `dirPath`、`fileName` |
+| `clear` | 清空日志文件并推送空内容；可选 `dirPath`、`fileName` |
+| `refreshFromFile` | 从磁盘重新读入并更新内存态；可选 `dirPath`、`fileName` |
+| `appendLine` | 追加字符串；参数 `line`，可选 `maxLength`（默认与 `AssistsLog.DEFAULT_MAX_FILE_LENGTH` 一致）、`dirPath`、`fileName` |
+| `appendTimestampedEntry` | 追加带时间戳的条目，参数 `message`；可选 `dirPath`、`fileName` |
+| `replaceAll` | 用 `content` 整体覆盖；空串等价于 clear；可选 `dirPath`、`fileName` |
+| `subscribe` | 订阅流；参数 `stream`：`latestLine` 或 `entireLogText`；可选 `dirPath`、`fileName`；先回调 `event: subscribed` 与 `subscriptionId`，后续多次 `event: update` 与 `text`、`logFilePath`；需配合 `callbackId` |
 | `unsubscribe` | 参数 `subscriptionId`，取消对应订阅 |
-| `uploadLogs` | **API 30+**：截图 + 节点树 + 日志 multipart 上传。可选 `baseUrl`（完整上传接口 URL；不传则用内置默认）、`format`（PNG/JPEG/WEBP）、`prettyPrint`、`overlayHiddenDelayMillis`、`uploadKey`（非空则覆盖本次 `X-Upload-Key`） |
+| `uploadLogs` | **API 30+**：截图 + 节点树 + 日志 multipart 上传。可选 `baseUrl`（完整上传接口 URL；不传则用内置默认）、`format`（PNG/JPEG/WEBP）、`prettyPrint`、`overlayHiddenDelayMillis`、`uploadKey`（非空则覆盖本次 `X-Upload-Key`）、`dirPath`、`fileName` |
 | `getLogServiceBaseUrl` | 返回 `data.baseUrl`（管理后台/日志服务 **站点根地址** origin，无路径；可在浏览器打开以进入后台查看已上传的日志、截图与节点树） |
+| `resolveLogPath` | 解析日志文件绝对路径（不创建文件），返回 `data.logFilePath`；可选 `dirPath`、`fileName` |
 
 ---
 

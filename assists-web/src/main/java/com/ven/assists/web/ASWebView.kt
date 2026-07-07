@@ -31,6 +31,8 @@ import com.ven.assists.web.imageutils.ImageUtilsJavascriptInterface
 import com.ven.assists.web.mlkit.MlkitJavascriptInterface
 import com.ven.assists.web.floating.FloatJsInterface
 import com.ven.assists.log.AssistsLog
+import com.ven.assists.log.AssistsLogPaths
+import com.ven.assists.log.AssistsLogTarget
 import com.ven.assists.web.log.AssistsLogJavascriptInterface
 import com.ven.assists.web.screenshot.ScreenshotJavascriptInterface
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +54,9 @@ open class ASWebView @JvmOverloads constructor(
 
         /** 全局 assistsxDb 调用拦截链（宿主注册，无需子类 ASWebView） */
         val globalDbCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
+
+        /** 全局 assistsxLog 调用拦截链（宿主注册，无需子类 ASWebView） */
+        val globalLogCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
 
         /** 全局 loadUrl 改写（如相对路径补全）；null 时不改写 */
         @JvmStatic
@@ -312,9 +317,11 @@ open class ASWebView @JvmOverloads constructor(
      */
     private fun notifyOnAssistsLogUpdate(stream: String, text: String) {
         runCatching {
+            val logFilePath = AssistsLogPaths.resolveLogFilePath(AssistsLogTarget.DEFAULT)
             val data = JsonObject().apply {
                 addProperty("stream", stream)
                 addProperty("text", text)
+                addProperty("logFilePath", logFilePath)
             }
             val json = GsonUtils.toJson(CallResponse(code = 0, data = data))
             val encoded = Base64.encodeToString(json.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
