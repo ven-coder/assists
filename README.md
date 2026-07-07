@@ -100,6 +100,29 @@ Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、�
 
 ## 开发文档
 
+### 依赖集成（JitPack）
+
+当前推荐版本：**3.5.3**（标签 `v3.5.3`）
+
+```gradle
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // 核心库（必选）
+    implementation "com.github.ven-coder.assists:assists-base:3.5.3"
+    // 按需引入，版本号与上相同
+    // implementation "com.github.ven-coder.assists:assists-web:3.5.3"
+    // implementation "com.github.ven-coder.assists:assists-mp:3.5.3"
+    // implementation "com.github.ven-coder.assists:assists-log:3.5.3"
+    // implementation "com.github.ven-coder.assists:assists-ime:3.5.3"
+    // implementation "com.github.ven-coder.assists:assists-opcv:3.5.3"
+}
+```
+
+旧坐标 `com.github.ven-coder.Assists:assists-base:v3.5.3` 仍可用。模块说明见 [架构设计](docs/architecture.md)。
+
 各版本新增与变更见仓库根目录 **[更新日志](CHANGELOG.md)**。
 
 请移步至[在线文档](https://ahcirffybg.feishu.cn/wiki/space/7561797853589553156?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home)
