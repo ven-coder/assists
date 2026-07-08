@@ -284,8 +284,8 @@
 | `readAllText` | 读取当前日志全文，`data.text`；可选 `dirPath`、`fileName` |
 | `clear` | 清空日志文件并推送空内容；可选 `dirPath`、`fileName` |
 | `refreshFromFile` | 从磁盘重新读入并更新内存态；可选 `dirPath`、`fileName` |
-| `appendLine` | 追加字符串；参数 `line`，可选 `maxLength`（默认与 `AssistsLog.DEFAULT_MAX_FILE_LENGTH` 一致）、`dirPath`、`fileName` |
-| `appendTimestampedEntry` | 追加带时间戳的条目，参数 `message`；可选 `dirPath`、`fileName` |
+| `appendLine` | 追加字符串；参数 `line`，可选 `maxLength`（默认与 `AssistsLog.DEFAULT_MAX_FILE_LENGTH` 一致）、`prepend`（默认 `false`，为 `true` 时写入文件头部）、`dirPath`、`fileName` |
+| `appendTimestampedEntry` | 追加带时间戳的条目，参数 `message`；可选 `prepend`（默认 `false`，为 `true` 时写入文件头部）、`dirPath`、`fileName` |
 | `replaceAll` | 用 `content` 整体覆盖；空串等价于 clear；可选 `dirPath`、`fileName` |
 | `subscribe` | 订阅流；参数 `stream`：`latestLine` 或 `entireLogText`；可选 `dirPath`、`fileName`；先回调 `event: subscribed` 与 `subscriptionId`，后续多次 `event: update` 与 `text`、`logFilePath`；需配合 `callbackId` |
 | `unsubscribe` | 参数 `subscriptionId`，取消对应订阅 |

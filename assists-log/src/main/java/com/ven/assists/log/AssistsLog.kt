@@ -58,15 +58,14 @@ object AssistsLog {
     fun appendTimestampedEntry(
         message: CharSequence,
         target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        prepend: Boolean = false,
     ): String {
-        val existing = readAllText(target)
         val piece = buildString {
-            if (existing.isNotEmpty()) append('\n')
             append(TimeUtils.getNowString())
             append('\n')
             append(message)
         }
-        appendLine(piece, target = target)
+        appendLine(piece, target = target, prepend = prepend)
         return message.toString()
     }
 
@@ -74,14 +73,20 @@ object AssistsLog {
         line: String,
         maxLength: Int = DEFAULT_MAX_FILE_LENGTH,
         target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
+        prepend: Boolean = false,
     ) {
         val state = stateFor(target)
         synchronized(state.lock) {
             val file = AssistsLogPaths.resolveLogFile(target, ensureWritable = true)
             val existing = if (file.exists()) FileIOUtils.readFile2String(file) else ""
-            var combined = existing + line
+            var combined = when {
+                existing.isEmpty() -> line
+                prepend -> "$line\n$existing"
+                else -> "$existing\n$line"
+            }
             if (combined.length > maxLength) {
-                combined = combined.takeLast(maxLength)
+                // 尾部追加时保留最新内容；头部追加时保留最前内容
+                combined = if (prepend) combined.take(maxLength) else combined.takeLast(maxLength)
             }
             FileIOUtils.writeFileFromString(file, combined, false)
             state.latestLine.tryEmit(line)

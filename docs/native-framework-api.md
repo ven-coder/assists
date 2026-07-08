@@ -205,8 +205,8 @@
 - `DEFAULT_MAX_FILE_LENGTH` — 默认单文件最大字符数（超出时从头部丢弃最旧内容）
 - `latestLine: SharedFlow<String>` — 每次写入发射本条追加片段（或覆盖时的片段）
 - `entireLogText: StateFlow<String>` — 每次变更后的**整份**正文
-- `appendTimestampedEntry(message)` — 追加「时间戳 + 换行 + 正文」条目
-- `appendLine(line, maxLength)` — 原样拼接写入，超长时从头部截断
+- `appendTimestampedEntry(message, target, prepend)` — 追加「时间戳 + 换行 + 正文」条目；`prepend = true` 时写入文件头部
+- `appendLine(line, maxLength, target, prepend)` — 拼接写入；`prepend = true` 时写入文件头部；超长时尾部追加保留最新内容、头部追加保留最前内容
 - `readAllText()` — 读取当前日志全文
 - `refreshFromFile()` — 从磁盘同步到 `entireLogText`
 - `clear()` — 清空文件与 Flow
