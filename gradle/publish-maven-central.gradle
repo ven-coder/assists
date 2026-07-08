@@ -1,0 +1,13 @@
+// Maven Central 发布配置（各 library 模块在 apply 前设置 ext.mavenArtifactId 并 apply 本插件）
+def artifactId = project.ext.mavenArtifactId
+def pomName = project.ext.mavenPomName
+def pomDescription = project.ext.mavenPomDescription
+
+mavenPublishing {
+    coordinates(rootProject.ext.mavenGroupId, artifactId, rootProject.ext.mavenVersion)
+
+    pom {
+        name = pomName
+        description = pomDescription
+    }
+}

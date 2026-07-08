@@ -77,7 +77,7 @@ flowchart TB
   - **能力增强 API**：在系统无障碍之上做封装与扩展，便于上层统一调用。
   - **浮窗管理**：浮窗的添加、删除、显示、隐藏，以及浮窗的**缩放、移动**，可快速实现悬浮控制面板、小窗等 UI。
 - **依赖**：仅依赖 Android SDK 与通用工具库，不依赖其他 Assists 子模块。
-- **发布**：Maven 产物为 `assists-base`（推荐 `com.github.ven-coder.assists:assists-base:3.5.3`；旧坐标 `com.github.ven-coder.Assists:assists-base:v3.5.3` 仍可用）。
+- **发布**：Maven Central 产物为 `io.github.ven-coder:assists-base:3.5.3`（及同 groupId 下的 `assists-web`、`assists-mp`、`assists-log`、`assists-ime`、`assists-opcv`）。历史版本仍可通过 JitPack 坐标 `com.github.ven-coder.assists:*` 引用。
 
 ### 3.2 assists-ime（自定义输入法）
 

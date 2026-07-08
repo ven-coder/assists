@@ -60,12 +60,12 @@ dependencies {
      implementation project(':assists-web')
      implementation project(':assists-log')
      implementation project(':assists-ime')
-//   implementation "com.github.ven-coder.assists:assists-base:3.5.3"  // 小写路径（v3.5.3 tag 请写 3.5.3）
-//   implementation "com.github.ven-coder.Assists:assists-base:v3.5.3"  // 大写路径（兼容旧依赖）
-//   implementation "com.github.ven-coder.assists:assists-opcv:v3.2.219"
-//   implementation "com.github.ven-coder.assists:assists-mp:v3.2.219"
-//   implementation "com.github.ven-coder.assists:assists-web:v3.2.219"
-//   implementation "com.github.ven-coder.assists:assists-log:${rootProject.ext.mavenVersion}"
+//   implementation "io.github.ven-coder:assists-base:${rootProject.ext.mavenVersion}"
+//   implementation "io.github.ven-coder:assists-opcv:${rootProject.ext.mavenVersion}"
+//   implementation "io.github.ven-coder:assists-mp:${rootProject.ext.mavenVersion}"
+//   implementation "io.github.ven-coder:assists-web:${rootProject.ext.mavenVersion}"
+//   implementation "io.github.ven-coder:assists-log:${rootProject.ext.mavenVersion}"
+//   implementation "io.github.ven-coder:assists-ime:${rootProject.ext.mavenVersion}"
     implementation "androidx.room:room-runtime:${rootProject.ext.roomVersion}"
     implementation "androidx.room:room-ktx:${rootProject.ext.roomVersion}"
     implementation "com.github.mrmike:ok2curl:${rootProject.ext.ok2curlVersion}"

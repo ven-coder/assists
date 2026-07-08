@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish'
 }
 
 android {
@@ -39,15 +39,10 @@ dependencies {
     implementation project(':assists')
     implementation project(':assists-mp')
 }
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId = 'com.github.ven-coder'
-                artifactId = 'assists-opcv'
-                version = rootProject.ext.mavenVersion
-            }
-        }
-    }
+
+ext {
+    mavenArtifactId = 'assists-opcv'
+    mavenPomName = 'Assists OpenCV'
+    mavenPomDescription = 'OpenCV integration library for Assists image recognition'
 }
+apply from: rootProject.file('gradle/publish-maven-central.gradle')

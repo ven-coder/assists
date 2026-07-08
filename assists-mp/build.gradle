@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish'
 }
 
 android {
@@ -38,15 +38,10 @@ dependencies {
     implementation "androidx.core:core-ktx:${rootProject.ext.coreKtxVersion}"
     implementation project(':assists')
 }
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId = 'com.github.ven-coder'
-                artifactId = 'assists-mp'
-                version = rootProject.ext.mavenVersion
-            }
-        }
-    }
+
+ext {
+    mavenArtifactId = 'assists-mp'
+    mavenPomName = 'Assists MP'
+    mavenPomDescription = 'Screen capture and MediaProjection library for Assists'
 }
+apply from: rootProject.file('gradle/publish-maven-central.gradle')

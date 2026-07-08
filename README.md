@@ -6,7 +6,7 @@
 
 简化自动化脚本开发 · 提供各种增强能力 · 提高脚本易维护性 · 支持Web平台自动化脚本开发
 
-[![][jitpack-shield]][jitpack-link]
+[![][maven-central-shield]][maven-central-link]
 [![][license-shield]][license-link]
 [![][stars-shield]][stars-link]
 [![][forks-shield]][forks-link]
@@ -100,28 +100,37 @@ Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、�
 
 ## 开发文档
 
-### 依赖集成（JitPack）
+### 依赖集成（Maven Central）
 
-当前推荐版本：**3.5.3**（标签 `v3.5.3`）
+当前推荐版本：**3.5.3**
 
 ```gradle
 repositories {
-    maven { url 'https://jitpack.io' }
+    mavenCentral()
 }
 
 dependencies {
     // 核心库（必选）
-    implementation "com.github.ven-coder.assists:assists-base:3.5.3"
+    implementation "io.github.ven-coder:assists-base:3.5.3"
     // 按需引入，版本号与上相同
-    // implementation "com.github.ven-coder.assists:assists-web:3.5.3"
-    // implementation "com.github.ven-coder.assists:assists-mp:3.5.3"
-    // implementation "com.github.ven-coder.assists:assists-log:3.5.3"
-    // implementation "com.github.ven-coder.assists:assists-ime:3.5.3"
-    // implementation "com.github.ven-coder.assists:assists-opcv:3.5.3"
+    // implementation "io.github.ven-coder:assists-web:3.5.3"
+    // implementation "io.github.ven-coder:assists-mp:3.5.3"
+    // implementation "io.github.ven-coder:assists-log:3.5.3"
+    // implementation "io.github.ven-coder:assists-ime:3.5.3"
+    // implementation "io.github.ven-coder:assists-opcv:3.5.3"
 }
 ```
 
-旧坐标 `com.github.ven-coder.Assists:assists-base:v3.5.3` 仍可用。模块说明见 [架构设计](docs/architecture.md)。
+| 模块 | artifactId |
+|------|------------|
+| assists | `assists-base` |
+| assists-web | `assists-web` |
+| assists-mp | `assists-mp` |
+| assists-log | `assists-log` |
+| assists-ime | `assists-ime` |
+| assists-opcv | `assists-opcv` |
+
+> **迁移说明**：3.5.3 起官方仓库为 Maven Central（`io.github.ven-coder`）。旧版 JitPack 坐标 `com.github.ven-coder.assists:*` 仍可用于历史版本，新项目请使用上表坐标。模块说明见 [架构设计](docs/architecture.md)。
 
 各版本新增与变更见仓库根目录 **[更新日志](CHANGELOG.md)**。
 
@@ -203,8 +212,8 @@ Copyright © 2025 [ven-coder][profile-link]
 <!-- LINK GROUP -->
 
 [back-to-top]: https://img.shields.io/badge/-返回顶部-151515?style=flat-square
-[jitpack-shield]: https://jitpack.io/v/ven-coder/assists.svg
-[jitpack-link]: https://jitpack.io/#ven-coder/assists
+[maven-central-shield]: https://img.shields.io/maven-central/v/io.github.ven-coder/assists-base?label=maven%20central&color=blue&labelColor=black&style=flat-square
+[maven-central-link]: https://central.sonatype.com/artifact/io.github.ven-coder/assists-base
 [license-shield]: https://img.shields.io/badge/license-GPL--3.0-blue?labelColor=black&style=flat-square
 [license-link]: https://github.com/ven-coder/assists/blob/master/LICENSE
 [stars-shield]: https://img.shields.io/github/stars/ven-coder/assists?color=ffcb47&labelColor=black&style=flat-square

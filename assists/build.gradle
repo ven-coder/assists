@@ -1,8 +1,11 @@
-apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'org.jetbrains.dokka'
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'org.jetbrains.dokka'
+    id 'com.vanniktech.maven.publish'
+}
+
 android {
     namespace 'com.ven.assists.base'
     compileSdk rootProject.ext.compileSdk
@@ -41,10 +44,10 @@ dependencies {
     implementation "androidx.appcompat:appcompat:${rootProject.ext.appcompatVersion}"
     implementation platform("org.jetbrains.kotlin:kotlin-bom:${rootProject.ext.kotlinBomVersion}")
     api "com.blankj:utilcodex:${rootProject.ext.utilcodexVersion}"
-    
+
     // OkHttp 网络库
     api "com.squareup.okhttp3:okhttp:4.10.0"
-    
+
     // Gson JSON库
     api "com.google.code.gson:gson:2.11.0"
 
@@ -60,17 +63,9 @@ dokkaHtml {
 //    }
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId = 'com.github.ven-coder'
-                artifactId = 'assists-base'
-                version = rootProject.ext.mavenVersion
-            }
-        }
-    }
+ext {
+    mavenArtifactId = 'assists-base'
+    mavenPomName = 'Assists Base'
+    mavenPomDescription = 'Core accessibility automation library for Android'
 }
-
-
+apply from: rootProject.file('gradle/publish-maven-central.gradle')

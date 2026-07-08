@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish'
 }
 
 android {
@@ -47,15 +47,10 @@ dependencies {
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 }
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId = 'com.github.ven-coder'
-                artifactId = 'assists-web'
-                version = rootProject.ext.mavenVersion
-            }
-        }
-    }
+
+ext {
+    mavenArtifactId = 'assists-web'
+    mavenPomName = 'Assists Web'
+    mavenPomDescription = 'WebView bridge library for Assists automation framework'
 }
+apply from: rootProject.file('gradle/publish-maven-central.gradle')

@@ -12,6 +12,7 @@ buildscript {
         versionCode = 39
         versionName = "3.5.11"
         mavenVersion = "3.5.3"
+        mavenGroupId = "io.github.ven-coder"
 
         // 依赖库版本
         coreKtxVersion = "1.13.1"
@@ -75,4 +76,17 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+tasks.register('publishAllToMavenCentral') {
+    group = 'publishing'
+    description = 'Publish all library modules to Maven Central'
+    dependsOn(
+            ':assists:publishToMavenCentral',
+            ':assists-web:publishToMavenCentral',
+            ':assists-mp:publishToMavenCentral',
+            ':assists-log:publishToMavenCentral',
+            ':assists-ime:publishToMavenCentral',
+            ':assists-opcv:publishToMavenCentral'
+    )
 }
