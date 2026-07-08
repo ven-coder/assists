@@ -43,7 +43,6 @@ buildscript {
         // Gradle 插件版本（与 settings.gradle pluginManagement 对齐）
         gradleVersion = "8.11.1"
         kotlinGradleVersion = "2.1.0"
-        dokkaVersion = "2.0.0"
     }
     // google/mavenCentral 优先：CI（如 JitPack）在境外访问阿里云镜像可能 502
     repositories {
@@ -58,9 +57,6 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.9.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0"
     }
-}
-plugins {
-    id 'org.jetbrains.dokka' version '2.0.0'
 }
 allprojects {
     // 与 buildscript.repositories 顺序一致，见上方注释

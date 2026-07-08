@@ -2,7 +2,6 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.kapt'
-    id 'org.jetbrains.dokka'
     id 'com.vanniktech.maven.publish'
 }
 
@@ -52,15 +51,6 @@ dependencies {
     api "com.google.code.gson:gson:2.11.0"
 
     implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
-}
-
-dokkaHtml {
-//    outputDirectory.set(file("docs"))
-//    dokkaSourceSets {
-//        configureEach {
-//            reportUndocumented.set(true) // 允许生成没有 KDoc 的代码
-//        }
-//    }
 }
 
 ext {
