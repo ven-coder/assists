@@ -200,6 +200,33 @@
 
 ---
 
+## 子接口：assistsxMmkv
+
+**注入名**：`assistsxMmkv`，**回调**：`assistsxMmkvCallback`（Base64 JSON）。基于腾讯 MMKV 的键值存储，支持常见类型读写与按名称区分多个存储实例。
+
+同步入口 `call` 立即返回占位 `CallResponse(code=0)`，真实结果通过 **`assistsxMmkvCallback`** 异步返回。
+
+| 方法 | 说明 |
+|------|------|
+| `putString` / `getString` | 字符串读写。参数：`key`（必填）、`value`（写）、可选 `mmkvId`（默认 `default`）、可选 `rootPath` |
+| `putBoolean` / `getBoolean` | 布尔读写 |
+| `putInt` / `getInt` | 整型读写 |
+| `putLong` / `getLong` | 长整型读写 |
+| `putFloat` / `getFloat` | 单精度浮点读写 |
+| `putDouble` / `getDouble` | 双精度浮点读写 |
+| `putBytes` / `getBytes` | 字节数组读写（Base64 编码） |
+| `remove` | 删除指定 key |
+| `contains` | 判断 key 是否存在。成功 `data`：`exists` |
+| `clearAll` | 清空当前存储实例全部键值 |
+| `allKeys` | 列出全部 key。成功 `data`：`keys`、`count` |
+| `close` | 关闭并释放指定存储实例连接 |
+
+**读操作**：key 不存在时 `data.value` 为 `null`。
+
+**路径安全**：`rootPath` 仅允许应用内部/外部数据目录及其子路径；未传时使用 MMKV 默认根目录。AssistsX 宿主会通过 `globalMmkvCallIntercepts` 将存储目录解析到 `{internalAppFiles}/mmkv-{pluginPackageName}/`，插件环境不支持自定义 `rootPath`，请使用 `mmkvId` 区分逻辑存储名。
+
+---
+
 ## 子接口：assistsxHttp
 
 **注入名**：`assistsxHttp`。独立 HTTP 封装：`httpGet`、`httpPost`、`httpPostFile`、`httpDownload`、`httpConfigure`、`httpReset`、`httpGetConfig`。
@@ -265,6 +292,7 @@
 | `ASWebView.globalJavascriptCallIntercepts` | `assistsx` / `assistsxAsync` 主接口调用链 |
 | `ASWebView.globalDbCallIntercepts` | `assistsxDb` 调用链 |
 | `ASWebView.globalLogCallIntercepts` | `assistsxLog` 调用链 |
+| `ASWebView.globalMmkvCallIntercepts` | `assistsxMmkv` 调用链 |
 | `ASWebView.globalUrlTransform` | `loadUrl` 前改写 URL（如相对路径补全） |
 | `ASWebView.bridgeConfigurator` | 每个 `ASWebView` 实例 `init` 末尾回调 |
 | `FloatWindowBridge.webViewProvider` | 浮窗内容 WebView 工厂 |

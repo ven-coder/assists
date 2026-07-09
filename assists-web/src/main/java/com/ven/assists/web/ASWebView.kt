@@ -58,6 +58,9 @@ open class ASWebView @JvmOverloads constructor(
         /** 全局 assistsxLog 调用拦截链（宿主注册，无需子类 ASWebView） */
         val globalLogCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
 
+        /** 全局 assistsxMmkv 调用拦截链（宿主注册，无需子类 ASWebView） */
+        val globalMmkvCallIntercepts = arrayListOf<(json: String) -> CallInterceptResult>()
+
         /** 全局 loadUrl 改写（如相对路径补全）；null 时不改写 */
         @JvmStatic
         var globalUrlTransform: ((String) -> String)? = null
@@ -162,6 +165,7 @@ open class ASWebView @JvmOverloads constructor(
     val assistsLogJavascriptInterface = AssistsLogJavascriptInterface(webView = this)
     val screenshotJavascriptInterface = ScreenshotJavascriptInterface(webView = this)
     val dbJavascriptInterface = DbJavascriptInterface(webView = this)
+    val mmkvJavascriptInterface = com.ven.assists.web.mmkv.MmkvJavascriptInterface(webView = this)
 
     val assistsServiceListener = object : AssistsServiceListener {
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -267,6 +271,7 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(assistsLogJavascriptInterface, "assistsxLog")
         addJavascriptInterface(screenshotJavascriptInterface, "assistsxScreenshot")
         addJavascriptInterface(dbJavascriptInterface, "assistsxDb")
+        addJavascriptInterface(mmkvJavascriptInterface, "assistsxMmkv")
         AssistsService.listeners.add(assistsServiceListener)
 
         // 与 onAccessibilityEvent 相同风格：日志 Flow 每次发射即 evaluateJavascript，页面可选实现 onAssistsLogUpdate(base64)
