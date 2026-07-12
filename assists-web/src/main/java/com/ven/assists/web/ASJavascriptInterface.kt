@@ -314,6 +314,8 @@ class ASJavascriptInterface(val webView: WebView) {
                     }))
                 }
 
+                // 已过期：请改用 assistsxFloat.open；保留分支以兼容旧插件
+                @Suppress("DEPRECATION")
                 CallMethod.loadWebViewOverlay -> {
                     CoroutineWrapper.launch(isMain = true) {
                         runCatching {

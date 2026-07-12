@@ -37,7 +37,18 @@ object CallMethod {
     const val takeScreenshotToFile = "takeScreenshotToFile"
     const val setOverlayFlags = "setOverlayFlags"
     const val scanQR = "scanQR"
+    /** @deprecated 请改用 assistsxFloat 的 open（FloatCallMethod.open） */
+    @Deprecated(
+        message = "Use assistsxFloat open (FloatCallMethod.open) instead",
+        replaceWith = ReplaceWith("FloatCallMethod.open", "com.ven.assists.web.floating.FloatCallMethod"),
+    )
     const val loadWebViewOverlay = "loadWebViewOverlay"
+
+    /** @deprecated 请改用 assistsxFloat 的 close（FloatCallMethod.close） */
+    @Deprecated(
+        message = "Use assistsxFloat close (FloatCallMethod.close) instead",
+        replaceWith = ReplaceWith("FloatCallMethod.close", "com.ven.assists.web.floating.FloatCallMethod"),
+    )
     const val closeOverlay = "closeOverlay"
 
 

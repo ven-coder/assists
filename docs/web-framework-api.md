@@ -74,7 +74,7 @@
 | `getAppScreenSize` | 当前应用窗口在屏幕中的区域 |
 | `overlayToast` | 浮窗 Toast，参数 text、delay |
 | `setOverlayFlags` | 设置浮窗 flags（数组） |
-| `loadWebViewOverlay` | 加载 WebView 浮窗，参数 url、initialWidth/Height、minWidth/minHeight、initialCenter、keepScreenOn 等 |
+| `loadWebViewOverlay` | **Deprecated** → `assistsxFloat.open`；加载 WebView 浮窗，参数 url、initialWidth/Height、minWidth/minHeight、initialCenter、keepScreenOn 等 |
 
 ### 设备与剪贴板
 
@@ -113,7 +113,7 @@
 
 > **说明（与源码一致）**
 >
-> - `closeOverlay`：在 `CallMethod` 中保留常量名，但 **`assistsx` / `assistsxAsync` 主接口未实现对应分支**（未匹配方法时返回 `code = -1`）。关闭 Web 浮窗请使用 **`assistsxFloat.close`**。
+> - `loadWebViewOverlay` / `closeOverlay`：**已过期**，请改用 **`assistsxFloat.open` / `assistsxFloat.close`**。`closeOverlay` 在主接口中无实现分支；`loadWebViewOverlay` 仍保留兼容实现。
 > - `pathJoin`：在 `PathCallMethod` 中定义，但 **`assistsxPath` 实现里已注释**，当前不可用。
 
 ---
@@ -259,7 +259,7 @@
 
 ## 子接口：assistsxFloat
 
-**注入名**：`assistsxFloat`，**回调**：`assistsxFloatCallback`。浮窗独立能力（与主接口中的 `loadWebViewOverlay` 等配合使用）。
+**注入名**：`assistsxFloat`，**回调**：`assistsxFloatCallback`。浮窗独立能力（推荐替代已过期的 `loadWebViewOverlay` / `closeOverlay`）。
 
 | 方法 | 说明 |
 |------|------|
@@ -279,7 +279,7 @@
 | `hideCurrent` / `showCurrent` | 仅当前 Web 浮窗隐藏/显示 |
 | `isCurrentVisible` / `containsCurrent` | 当前 Web 浮窗是否可见 / 是否已加入管理器 |
 
-**浮窗 WebView 工厂**：`float.open` / `loadWebViewOverlay` 通过 [`FloatWindowBridge.webViewProvider`](assists-web/src/main/java/com/ven/assists/web/floating/FloatWindowBridge.kt) 创建内容 WebView；未设置时默认 `ASWebView`。宿主可注入自定义 WebView 子类（如 AssistsX 的 `XWebview`）。
+**浮窗 WebView 工厂**：`float.open`（及已过期的 `loadWebViewOverlay`）通过 [`FloatWindowBridge.webViewProvider`](assists-web/src/main/java/com/ven/assists/web/floating/FloatWindowBridge.kt) 创建内容 WebView；未设置时默认 `ASWebView`。宿主可注入自定义 WebView 子类（如 AssistsX 的 `XWebview`）。
 
 ---
 

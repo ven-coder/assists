@@ -36,7 +36,8 @@ data class FloatWindowOpenOptions(
 )
 
 /**
- * 浮窗 Web 打开公共逻辑（FloatJsInterface.open / loadWebViewOverlay 共用）
+ * 浮窗 Web 打开公共逻辑（供 FloatJsInterface.open 使用；
+ * 旧 CallMethod.loadWebViewOverlay 已过期，仍临时复用本实现以兼容旧插件）
  */
 object FloatWindowOpener {
 
