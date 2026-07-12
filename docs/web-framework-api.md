@@ -263,12 +263,12 @@
 
 | 方法 | 说明 |
 |------|------|
-| `open` | 打开浮窗；参数含 url、initialWidth/Height、initialX/Y、minWidth/Height、initialCenter / initialCenterHorizontal / initialCenterVertical、keepScreenOn、showTopOperationArea、showBottomOperationArea、backgroundColor 等；返回含 `uniqueId` |
+| `open` | 打开浮窗；参数含 url、initialWidth/Height、initialX/Y、minWidth/Height、center / centerHorizontal / centerVertical（兼容 initialCenter*）、keepScreenOn、showTopOperationArea、showBottomOperationArea、backgroundColor 等；返回含 `uniqueId` |
 | `close` | 关闭当前 Web 所在浮窗并销毁 WebView |
 | `setFlags` | 设置浮窗 flags |
 | `toast` | 浮窗 Toast |
 | `move` | 移动浮窗（x、y 为**相对当前位置的位移**） |
-| `refresh` | 刷新当前浮窗布局/样式；可选 showTopOperationArea、showBottomOperationArea、backgroundColor（支持 `"default"` 恢复 drawable）、width、height、x、y |
+| `refresh` | 刷新当前浮窗布局/样式；可选 showTopOperationArea、showBottomOperationArea、backgroundColor（支持 `"default"` 恢复 drawable）、width、height、x、y、center / centerHorizontal / centerVertical（兼容 initialCenter*，居中优先于 x/y） |
 | `hideAll` | 对应 `AssistsWindowManager.hideAll`，可选 isTouchable |
 | `hideTop` | 隐藏最顶层浮窗 |
 | `showAll` / `showTop` | 显示全部 / 最顶层浮窗 |

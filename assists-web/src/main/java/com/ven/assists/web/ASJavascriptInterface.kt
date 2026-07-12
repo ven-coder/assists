@@ -326,7 +326,15 @@ class ASJavascriptInterface(val webView: WebView) {
                                 initialHeight = args?.get("initialHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
                                 minWidth = args?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt(),
                                 minHeight = args?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
-                                initialCenter = args?.get("initialCenter")?.asBoolean ?: true,
+                                initialCenter = args?.get("center")?.takeIf { !it.isJsonNull }?.asBoolean
+                                    ?: args?.get("initialCenter")?.asBoolean
+                                    ?: true,
+                                initialCenterHorizontal = args?.get("centerHorizontal")?.takeIf { !it.isJsonNull }?.asBoolean
+                                    ?: args?.get("initialCenterHorizontal")?.asBoolean
+                                    ?: false,
+                                initialCenterVertical = args?.get("centerVertical")?.takeIf { !it.isJsonNull }?.asBoolean
+                                    ?: args?.get("initialCenterVertical")?.asBoolean
+                                    ?: false,
                                 keepScreenOn = args?.get("keepScreenOn")?.asBoolean ?: false,
                                 showTopOperationArea = true,
                                 showBottomOperationArea = true,

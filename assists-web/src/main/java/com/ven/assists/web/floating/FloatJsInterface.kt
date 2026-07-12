@@ -125,18 +125,24 @@ class FloatJsInterface(val webView: WebView) {
     private fun isDpUnit(unit: String?): Boolean =
         unit?.equals("dp", ignoreCase = true) == true
 
+    /** 读取布尔参数；优先新字段名，兼容 initial* 旧名 */
+    private fun boolArg(args: JsonObject?, key: String, legacyKey: String): Boolean? {
+        args?.get(key)?.takeIf { !it.isJsonNull }?.let { return it.asBoolean }
+        args?.get(legacyKey)?.takeIf { !it.isJsonNull }?.let { return it.asBoolean }
+        return null
+    }
+
     /**
-     * 解析 initialCenter：
+     * 解析 open 时的全屏居中（center / initialCenter）：
      * - 显式传了则用传值
      * - 若只传了水平/垂直居中标志，则默认 false，避免覆盖单轴居中
      * - 否则保持兼容默认 true（屏幕居中）
      */
-    private fun resolveInitialCenter(args: JsonObject?): Boolean {
-        val centerEl = args?.get("initialCenter")?.takeIf { !it.isJsonNull }
-        if (centerEl != null) return centerEl.asBoolean
+    private fun resolveOpenCenter(args: JsonObject?): Boolean {
+        boolArg(args, "center", "initialCenter")?.let { return it }
         val hasAxis =
-            args?.get("initialCenterHorizontal")?.takeIf { !it.isJsonNull } != null ||
-                args?.get("initialCenterVertical")?.takeIf { !it.isJsonNull } != null
+            boolArg(args, "centerHorizontal", "initialCenterHorizontal") != null ||
+                boolArg(args, "centerVertical", "initialCenterVertical") != null
         return !hasAxis
     }
 
@@ -203,10 +209,10 @@ class FloatJsInterface(val webView: WebView) {
             minHeight = sizeArg(args?.get("minHeight"), useDp) ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
             maxWidth = sizeArg(args?.get("maxWidth"), useDp) ?: -1,
             maxHeight = sizeArg(args?.get("maxHeight"), useDp) ?: -1,
-            // 若显式传了水平/垂直居中，则不再默认 initialCenter=true，避免覆盖单轴居中
-            initialCenter = resolveInitialCenter(args),
-            initialCenterHorizontal = args?.get("initialCenterHorizontal")?.takeIf { !it.isJsonNull }?.asBoolean ?: false,
-            initialCenterVertical = args?.get("initialCenterVertical")?.takeIf { !it.isJsonNull }?.asBoolean ?: false,
+            // 若显式传了水平/垂直居中，则不再默认 center=true，避免覆盖单轴居中
+            initialCenter = resolveOpenCenter(args),
+            initialCenterHorizontal = boolArg(args, "centerHorizontal", "initialCenterHorizontal") ?: false,
+            initialCenterVertical = boolArg(args, "centerVertical", "initialCenterVertical") ?: false,
             keepScreenOn = args?.get("keepScreenOn")?.asBoolean ?: false,
             showTopOperationArea = args?.get("showTopOperationArea")?.asBoolean ?: true,
             showBottomOperationArea = args?.get("showBottomOperationArea")?.asBoolean ?: false,
@@ -297,7 +303,7 @@ class FloatJsInterface(val webView: WebView) {
 
     /**
      * 应用脚手架显隐/尺寸、背景及可选的窗口布局。
-     * @param applyWindowLayout 为 true 时同时应用 x/y/width/height/min/max（refresh）；open 时为 false
+     * @param applyWindowLayout 为 true 时同时应用 width/height、center*、x/y、min/max（refresh）；open 时为 false
      */
     private fun applyViewConfig(
         wrapper: ViewWrapper,
@@ -371,8 +377,24 @@ class FloatJsInterface(val webView: WebView) {
         if (applyWindowLayout) {
             sizeArg(args.get("width"), windowUseDp)?.let { wrapper.layoutParams.width = it }
             sizeArg(args.get("height"), windowUseDp)?.let { wrapper.layoutParams.height = it }
-            sizeArg(args.get("x"), windowUseDp)?.let { wrapper.layoutParams.x = it }
-            sizeArg(args.get("y"), windowUseDp)?.let { wrapper.layoutParams.y = it }
+
+            // center / centerHorizontal / centerVertical（兼容 initialCenter*）；居中优先于 x/y
+            val centerBoth = boolArg(args, "center", "initialCenter")
+            val centerHFlag = boolArg(args, "centerHorizontal", "initialCenterHorizontal")
+            val centerVFlag = boolArg(args, "centerVertical", "initialCenterVertical")
+            val doCenterH = centerBoth == true || centerHFlag == true
+            val doCenterV = centerBoth == true || centerVFlag == true
+            val lp = wrapper.layoutParams
+            if (doCenterH) {
+                lp.x = ScreenUtils.getScreenWidth() / 2 - lp.width / 2
+            } else {
+                sizeArg(args.get("x"), windowUseDp)?.let { lp.x = it }
+            }
+            if (doCenterV) {
+                lp.y = ScreenUtils.getScreenHeight() / 2 - lp.height / 2
+            } else {
+                sizeArg(args.get("y"), windowUseDp)?.let { lp.y = it }
+            }
 
             wrapper.assistsWindowWrapper?.let { aw ->
                 sizeArg(args.get("minWidth"), windowUseDp)?.let { aw.minWidth = it }
