@@ -1,6 +1,7 @@
 package com.ven.assists.web.floating
 
 import android.util.Base64
+import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
@@ -43,6 +44,7 @@ import java.nio.charset.StandardCharsets
  * 单位约定：
  * - 窗口位置/尺寸（open / move / refresh 的 x,y,width,height,min/max，getBounds）：默认 px，可通过 unit=dp|px 切换
  * - 脚手架组件尺寸（headerHeight、*Size 等）：默认 dp，可通过 scaffoldUnit=dp|px 切换
+ * - 标题文字大小 titleTextSize：单位固定为 sp
  */
 class FloatJsInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -124,6 +126,21 @@ class FloatJsInterface(val webView: WebView) {
         unit?.equals("dp", ignoreCase = true) == true
 
     /**
+     * 解析 initialCenter：
+     * - 显式传了则用传值
+     * - 若只传了水平/垂直居中标志，则默认 false，避免覆盖单轴居中
+     * - 否则保持兼容默认 true（屏幕居中）
+     */
+    private fun resolveInitialCenter(args: JsonObject?): Boolean {
+        val centerEl = args?.get("initialCenter")?.takeIf { !it.isJsonNull }
+        if (centerEl != null) return centerEl.asBoolean
+        val hasAxis =
+            args?.get("initialCenterHorizontal")?.takeIf { !it.isJsonNull } != null ||
+                args?.get("initialCenterVertical")?.takeIf { !it.isJsonNull } != null
+        return !hasAxis
+    }
+
+    /**
      * 解析尺寸参数为 px。
      * @param useDp true 时将数值视为 dp 并转换；false 时直接作为 px
      */
@@ -172,7 +189,7 @@ class FloatJsInterface(val webView: WebView) {
         return request.createResponse(0, data = false)
     }
 
-    /** 加载浮窗；窗口尺寸/位置默认 px，传 unit=dp 时按 dp 转换 */
+    /** 加载浮窗；窗口尺寸/位置默认 px，传 unit=dp 时按 dp 转换；可同时传入 refresh 同款脚手架配置 */
     private suspend fun open(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val args = request.arguments
         val useDp = isDpUnit(args?.get("unit")?.asString)
@@ -186,13 +203,21 @@ class FloatJsInterface(val webView: WebView) {
             minHeight = sizeArg(args?.get("minHeight"), useDp) ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
             maxWidth = sizeArg(args?.get("maxWidth"), useDp) ?: -1,
             maxHeight = sizeArg(args?.get("maxHeight"), useDp) ?: -1,
-            initialCenter = args?.get("initialCenter")?.asBoolean ?: true,
+            // 若显式传了水平/垂直居中，则不再默认 initialCenter=true，避免覆盖单轴居中
+            initialCenter = resolveInitialCenter(args),
+            initialCenterHorizontal = args?.get("initialCenterHorizontal")?.takeIf { !it.isJsonNull }?.asBoolean ?: false,
+            initialCenterVertical = args?.get("initialCenterVertical")?.takeIf { !it.isJsonNull }?.asBoolean ?: false,
             keepScreenOn = args?.get("keepScreenOn")?.asBoolean ?: false,
             showTopOperationArea = args?.get("showTopOperationArea")?.asBoolean ?: true,
             showBottomOperationArea = args?.get("showBottomOperationArea")?.asBoolean ?: false,
             backgroundColor = FloatWindowOpener.parseBackgroundColor(args?.get("backgroundColor")),
         )
-        val added = runMain { FloatWindowOpener.open(options) }
+        val added = runMain {
+            FloatWindowOpener.open(options)?.also { wrapper ->
+                // 打开后应用与 refresh 相同的脚手架/背景等可选配置
+                applyViewConfig(wrapper, args, applyWindowLayout = false)
+            }
+        }
         val data = JsonObject().apply {
             addProperty("success", true)
             added?.let { addProperty("uniqueId", it.uniqueId) }
@@ -264,82 +289,98 @@ class FloatJsInterface(val webView: WebView) {
     private suspend fun refresh(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
         withContext(Dispatchers.Main) {
-            request.arguments?.let { args ->
-                val windowUseDp = isDpUnit(args.get("unit")?.asString)
-                // 脚手架默认 dp：未传或传 dp 时按 dp；仅显式传 px 时按 px
-                val scaffoldUnit = args.get("scaffoldUnit")?.takeIf { !it.isJsonNull }?.asString
-                val scaffoldUseDp = scaffoldUnit == null || isDpUnit(scaffoldUnit)
-
-                AssistsWindowLayoutWrapperBinding.bind(wrapper.view).apply {
-                    args.get("showTopOperationArea")?.takeIf { !it.isJsonNull }?.asBoolean?.let { flHeader.isVisible = it }
-                    args.get("showBottomOperationArea")?.takeIf { !it.isJsonNull }?.asBoolean?.let { llBottomBar.isVisible = it }
-                    args.get("showMove")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMove.isVisible = it }
-                    args.get("showClose")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivClose.isVisible = it }
-                    args.get("showTitle")?.takeIf { !it.isJsonNull }?.asBoolean?.let { tvTitle.isVisible = it }
-                    args.get("showScale")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivScale.isVisible = it }
-                    args.get("showMaximize")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMaximize.isVisible = it }
-                    args.get("showMinimize")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMinimize.isVisible = it }
-                    args.get("showWebBack")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebBack.isVisible = it }
-                    args.get("showWebForward")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebForward.isVisible = it }
-                    args.get("showWebRefresh")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebRefresh.isVisible = it }
-
-                    sizeArg(args.get("headerHeight"), scaffoldUseDp)?.let { applyBarHeightPx(flHeader, it) }
-                    sizeArg(args.get("bottomBarHeight"), scaffoldUseDp)?.let { applyBarHeightPx(llBottomBar, it) }
-                    sizeArg(args.get("moveSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMove, it) }
-                    sizeArg(args.get("closeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivClose, it) }
-                    sizeArg(args.get("scaleSize"), scaffoldUseDp)?.let { applyViewSizePx(ivScale, it) }
-                    sizeArg(args.get("maximizeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMaximize, it) }
-                    sizeArg(args.get("minimizeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMinimize, it) }
-                    sizeArg(args.get("webBackSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebBack, it) }
-                    sizeArg(args.get("webForwardSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebForward, it) }
-                    sizeArg(args.get("webRefreshSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebRefresh, it) }
-                }
-
-                args.get("showBackground")?.takeIf { !it.isJsonNull }?.asBoolean?.let { show ->
-                    if (show) {
-                        wrapper.view.setBackgroundResource(BaseR.drawable.bg_1)
-                    } else {
-                        wrapper.view.background = null
-                    }
-                    wrapper.assistsWindowWrapper?.showBackground = show
-                }
-
-                args.get("backgroundColor")?.takeIf { !it.isJsonNull }?.let { arg ->
-                    when {
-                        arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> {
-                            val s = arg.asString
-                            if (s == "default") {
-                                wrapper.view.setBackgroundResource(BaseR.drawable.bg_1)
-                            } else if (!s.isNullOrBlank()) {
-                                try {
-                                    wrapper.view.setBackgroundColor(s.toColorInt())
-                                } catch (_: Exception) {
-                                }
-                            }
-                        }
-                        arg.isJsonPrimitive && arg.asJsonPrimitive.isNumber -> {
-                            wrapper.view.setBackgroundColor(arg.asInt)
-                        }
-                        else -> {
-                        }
-                    }
-                }
-
-                sizeArg(args.get("width"), windowUseDp)?.let { wrapper.layoutParams.width = it }
-                sizeArg(args.get("height"), windowUseDp)?.let { wrapper.layoutParams.height = it }
-                sizeArg(args.get("x"), windowUseDp)?.let { wrapper.layoutParams.x = it }
-                sizeArg(args.get("y"), windowUseDp)?.let { wrapper.layoutParams.y = it }
-
-                wrapper.assistsWindowWrapper?.let { aw ->
-                    sizeArg(args.get("minWidth"), windowUseDp)?.let { aw.minWidth = it }
-                    sizeArg(args.get("minHeight"), windowUseDp)?.let { aw.minHeight = it }
-                    sizeArg(args.get("maxWidth"), windowUseDp)?.let { aw.maxWidth = it }
-                    sizeArg(args.get("maxHeight"), windowUseDp)?.let { aw.maxHeight = it }
-                }
-            }
+            applyViewConfig(wrapper, request.arguments, applyWindowLayout = true)
             AssistsWindowManager.updateViewLayout(wrapper.view, wrapper.layoutParams)
         }
         return request.createResponse(0, data = true)
+    }
+
+    /**
+     * 应用脚手架显隐/尺寸、背景及可选的窗口布局。
+     * @param applyWindowLayout 为 true 时同时应用 x/y/width/height/min/max（refresh）；open 时为 false
+     */
+    private fun applyViewConfig(
+        wrapper: ViewWrapper,
+        args: JsonObject?,
+        applyWindowLayout: Boolean,
+    ) {
+        args ?: return
+        val windowUseDp = isDpUnit(args.get("unit")?.asString)
+        val scaffoldUnit = args.get("scaffoldUnit")?.takeIf { !it.isJsonNull }?.asString
+        val scaffoldUseDp = scaffoldUnit == null || isDpUnit(scaffoldUnit)
+
+        AssistsWindowLayoutWrapperBinding.bind(wrapper.view).apply {
+            args.get("showTopOperationArea")?.takeIf { !it.isJsonNull }?.asBoolean?.let { flHeader.isVisible = it }
+            args.get("showBottomOperationArea")?.takeIf { !it.isJsonNull }?.asBoolean?.let { llBottomBar.isVisible = it }
+            args.get("showMove")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMove.isVisible = it }
+            args.get("showClose")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivClose.isVisible = it }
+            args.get("showTitle")?.takeIf { !it.isJsonNull }?.asBoolean?.let { tvTitle.isVisible = it }
+            args.get("showScale")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivScale.isVisible = it }
+            args.get("showMaximize")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMaximize.isVisible = it }
+            args.get("showMinimize")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMinimize.isVisible = it }
+            args.get("showWebBack")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebBack.isVisible = it }
+            args.get("showWebForward")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebForward.isVisible = it }
+            args.get("showWebRefresh")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebRefresh.isVisible = it }
+
+            args.get("titleTextSize")?.takeIf { !it.isJsonNull }?.asFloat?.let {
+                tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, it)
+            }
+
+            sizeArg(args.get("headerHeight"), scaffoldUseDp)?.let { applyBarHeightPx(flHeader, it) }
+            sizeArg(args.get("bottomBarHeight"), scaffoldUseDp)?.let { applyBarHeightPx(llBottomBar, it) }
+            sizeArg(args.get("moveSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMove, it) }
+            sizeArg(args.get("closeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivClose, it) }
+            sizeArg(args.get("scaleSize"), scaffoldUseDp)?.let { applyViewSizePx(ivScale, it) }
+            sizeArg(args.get("maximizeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMaximize, it) }
+            sizeArg(args.get("minimizeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMinimize, it) }
+            sizeArg(args.get("webBackSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebBack, it) }
+            sizeArg(args.get("webForwardSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebForward, it) }
+            sizeArg(args.get("webRefreshSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebRefresh, it) }
+        }
+
+        args.get("showBackground")?.takeIf { !it.isJsonNull }?.asBoolean?.let { show ->
+            if (show) {
+                wrapper.view.setBackgroundResource(BaseR.drawable.bg_1)
+            } else {
+                wrapper.view.background = null
+            }
+            wrapper.assistsWindowWrapper?.showBackground = show
+        }
+
+        args.get("backgroundColor")?.takeIf { !it.isJsonNull }?.let { arg ->
+            when {
+                arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> {
+                    val s = arg.asString
+                    if (s == "default") {
+                        wrapper.view.setBackgroundResource(BaseR.drawable.bg_1)
+                    } else if (!s.isNullOrBlank()) {
+                        try {
+                            wrapper.view.setBackgroundColor(s.toColorInt())
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+                arg.isJsonPrimitive && arg.asJsonPrimitive.isNumber -> {
+                    wrapper.view.setBackgroundColor(arg.asInt)
+                }
+                else -> {
+                }
+            }
+        }
+
+        if (applyWindowLayout) {
+            sizeArg(args.get("width"), windowUseDp)?.let { wrapper.layoutParams.width = it }
+            sizeArg(args.get("height"), windowUseDp)?.let { wrapper.layoutParams.height = it }
+            sizeArg(args.get("x"), windowUseDp)?.let { wrapper.layoutParams.x = it }
+            sizeArg(args.get("y"), windowUseDp)?.let { wrapper.layoutParams.y = it }
+
+            wrapper.assistsWindowWrapper?.let { aw ->
+                sizeArg(args.get("minWidth"), windowUseDp)?.let { aw.minWidth = it }
+                sizeArg(args.get("minHeight"), windowUseDp)?.let { aw.minHeight = it }
+                sizeArg(args.get("maxWidth"), windowUseDp)?.let { aw.maxWidth = it }
+                sizeArg(args.get("maxHeight"), windowUseDp)?.let { aw.maxHeight = it }
+            }
+        }
     }
 
     /** 对应 [AssistsWindowManager.hideAll] */

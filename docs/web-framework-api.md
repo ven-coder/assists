@@ -263,7 +263,7 @@
 
 | 方法 | 说明 |
 |------|------|
-| `open` | 打开浮窗；参数含 url、initialWidth/Height、initialX/Y、minWidth/Height、initialCenter、keepScreenOn、showTopOperationArea、showBottomOperationArea、backgroundColor 等；返回含 `uniqueId` |
+| `open` | 打开浮窗；参数含 url、initialWidth/Height、initialX/Y、minWidth/Height、initialCenter / initialCenterHorizontal / initialCenterVertical、keepScreenOn、showTopOperationArea、showBottomOperationArea、backgroundColor 等；返回含 `uniqueId` |
 | `close` | 关闭当前 Web 所在浮窗并销毁 WebView |
 | `setFlags` | 设置浮窗 flags |
 | `toast` | 浮窗 Toast |

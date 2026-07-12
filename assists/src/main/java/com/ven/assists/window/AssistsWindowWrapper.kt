@@ -86,8 +86,14 @@ class AssistsWindowWrapper(
     /** Y轴偏移量 */
     var initialYOffset = 0
 
-    /** 是否初始居中显示 */
+    /** 是否初始居中显示（同时左右+上下居中，等价于两者都为 true） */
     var initialCenter = false
+
+    /** 是否初始左右（水平）居中；为 true 时忽略 initialX */
+    var initialCenterHorizontal = false
+
+    /** 是否初始上下（垂直）居中；为 true 时忽略 initialY */
+    var initialCenterVertical = false
 
     /** 是否显示操作按钮（移动、缩放、关闭） */
     var showOption: Boolean = true
@@ -235,16 +241,20 @@ class AssistsWindowWrapper(
                 override fun onGlobalLayout() {
                     if (root.measuredWidth > 0) {
                         root.isInvisible = false
-                        if (initialCenter) {
-                            val measuredWidth = root.measuredWidth
-                            val measuredHeight = root.measuredHeight
-                            val initialX = ScreenUtils.getScreenWidth() / 2 - measuredWidth / 2
-                            val initialY = ScreenUtils.getScreenHeight() / 2 - measuredHeight / 2
-                            wmlp.x = initialX
-                            wmlp.y = initialY
+                        val measuredWidth = root.measuredWidth
+                        val measuredHeight = root.measuredHeight
+                        // initialCenter 为 true 时同时左右+上下居中；也可单独配置水平/垂直居中
+                        val centerH = initialCenter || initialCenterHorizontal
+                        val centerV = initialCenter || initialCenterVertical
+                        wmlp.x = if (centerH) {
+                            ScreenUtils.getScreenWidth() / 2 - measuredWidth / 2
                         } else {
-                            wmlp.x = initialX
-                            wmlp.y = initialY
+                            initialX
+                        }
+                        wmlp.y = if (centerV) {
+                            ScreenUtils.getScreenHeight() / 2 - measuredHeight / 2
+                        } else {
+                            initialY
                         }
                         saveRestoreBounds()
                         updateMaximizeButton()

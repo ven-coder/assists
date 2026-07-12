@@ -30,7 +30,12 @@ data class FloatWindowOpenOptions(
     val minHeight: Int = (ScreenUtils.getScreenHeight() * 0.5).toInt(),
     val maxWidth: Int = -1,
     val maxHeight: Int = -1,
+    /** 同时左右+上下居中（屏幕居中），为 true 时等价于水平与垂直均居中 */
     val initialCenter: Boolean = true,
+    /** 左右（水平）居中；可与 initialCenterVertical 独立组合 */
+    val initialCenterHorizontal: Boolean = false,
+    /** 上下（垂直）居中；可与 initialCenterHorizontal 独立组合 */
+    val initialCenterVertical: Boolean = false,
     val keepScreenOn: Boolean = false,
     val showTopOperationArea: Boolean = true,
     val showBottomOperationArea: Boolean = false,
@@ -126,6 +131,8 @@ object FloatWindowOpener {
                 maxWidth = options.maxWidth
                 maxHeight = options.maxHeight
                 initialCenter = options.initialCenter
+                initialCenterHorizontal = options.initialCenterHorizontal
+                initialCenterVertical = options.initialCenterVertical
                 initialX = options.initialX
                 initialY = options.initialY
                 if (options.keepScreenOn) AssistsCore.keepScreenOn()
