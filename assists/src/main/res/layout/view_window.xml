@@ -87,7 +87,7 @@
                 android:paddingStart="5.5dp"
                 android:paddingTop="2.5dp"
                 android:paddingEnd="5.5dp"
-                android:src="@drawable/window_min" />
+                android:src="@drawable/window_restore" />
 
         </LinearLayout>
     </LinearLayout>

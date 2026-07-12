@@ -79,7 +79,7 @@
             android:layout_marginStart="5dp"
             android:paddingTop="1.5dp"
             android:paddingHorizontal="8.5dp"
-            android:src="@drawable/window_min" />
+            android:src="@drawable/window_minimize" />
 
         <View
             android:layout_width="0dp"
