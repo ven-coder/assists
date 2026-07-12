@@ -1,7 +1,6 @@
 package com.ven.assists.window
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -9,7 +8,6 @@ import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.WindowManager
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
-import com.blankj.utilcode.util.BarUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.ven.assists.base.databinding.AssistsWindowLayoutWrapperBinding
 import com.ven.assists.utils.CoroutineWrapper
@@ -34,11 +32,17 @@ class AssistsWindowWrapper(
     /** 当前布局宽度 */
     private var layoutWidth: Int = 0
 
-    /** 触摸事件按下时的原始X坐标 */
+    /** 触摸事件按下时的屏幕原始X坐标 */
     private var eventDownRawX = 0
 
-    /** 触摸事件按下时的原始Y坐标 */
+    /** 触摸事件按下时的屏幕原始Y坐标 */
     private var eventDownRawY = 0
+
+    /** 触摸按下时窗口的X坐标，用于按增量更新避免跳变 */
+    private var downWindowX = 0
+
+    /** 触摸按下时窗口的Y坐标，用于按增量更新避免跳变 */
+    private var downWindowY = 0
 
     /** 最小高度限制，-1表示无限制 */
     var minHeight = -1
@@ -78,57 +82,69 @@ class AssistsWindowWrapper(
 
     /**
      * 缩放触摸事件监听器
-     * 处理浮窗的缩放操作
+     * 处理浮窗的缩放操作：以按下时窗口尺寸与位置为基准，按手指位移增量更新，避免跳变
      */
     private val onTouchScaleListener = object : View.OnTouchListener {
         override fun onTouch(v: View?, event: MotionEvent): Boolean {
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                layoutHeight = viewBinding.root.measuredHeight
-                layoutWidth = viewBinding.root.measuredWidth
-                eventDownRawX = event.rawX.toInt()
-                eventDownRawY = event.rawY.toInt()
-                return true
-            }
-            if (event.action == MotionEvent.ACTION_MOVE) {
-                val width = layoutWidth + (eventDownRawX - event.rawX.toInt())
-                if (width > 0) {
-                    if ((minWidth == -1 || width >= minWidth) && (maxWidth == -1 || width <= maxWidth)) {
-                        wmlp.width = width
-                        wmlp.x = event.rawX.toInt()
-                    }
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    layoutHeight = viewBinding.root.measuredHeight
+                    layoutWidth = viewBinding.root.measuredWidth
+                    eventDownRawX = event.rawX.toInt()
+                    eventDownRawY = event.rawY.toInt()
+                    downWindowX = wmlp.x
+                    downWindowY = wmlp.y
+                    return true
                 }
 
-                val height = layoutHeight - (eventDownRawY - event.rawY.toInt())
-
-                if (height > 0) {
-                    if ((minHeight == -1 || height >= minHeight) && (maxHeight == -1 || height <= maxHeight)) {
-                        wmlp.height = height
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX.toInt() - eventDownRawX
+                    val dy = event.rawY.toInt() - eventDownRawY
+                    // 左下角缩放：向左拖增大宽度并左移，向下拖增大高度
+                    val width = layoutWidth - dx
+                    if (width > 0) {
+                        if ((minWidth == -1 || width >= minWidth) && (maxWidth == -1 || width <= maxWidth)) {
+                            wmlp.width = width
+                            wmlp.x = downWindowX + dx
+                        }
                     }
-                }
-                CoroutineWrapper.launch { AssistsWindowManager.updateViewLayout(viewBinding.root, wmlp) }
-                return true
-            }
 
+                    val height = layoutHeight + dy
+                    if (height > 0) {
+                        if ((minHeight == -1 || height >= minHeight) && (maxHeight == -1 || height <= maxHeight)) {
+                            wmlp.height = height
+                        }
+                    }
+                    CoroutineWrapper.launch { AssistsWindowManager.updateViewLayout(viewBinding.root, wmlp) }
+                    return true
+                }
+            }
             return false
         }
     }
 
     /**
      * 移动触摸事件监听器
-     * 处理浮窗的拖动移动操作
+     * 处理浮窗的拖动移动：以按下时窗口位置为基准，按手指位移增量更新，避免跳变
      */
     private val onTouchMoveListener = object : View.OnTouchListener {
         override fun onTouch(v: View?, event: MotionEvent): Boolean {
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                return true
-            }
-            if (event.action == MotionEvent.ACTION_MOVE) {
-                wmlp.x = event.rawX.toInt()
-                wmlp.y = event.rawY.toInt() - BarUtils.getStatusBarHeight()
-                CoroutineWrapper.launch { AssistsWindowManager.updateViewLayout(viewBinding.root, wmlp) }
-                return true
-            }
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    eventDownRawX = event.rawX.toInt()
+                    eventDownRawY = event.rawY.toInt()
+                    downWindowX = wmlp.x
+                    downWindowY = wmlp.y
+                    return true
+                }
 
+                MotionEvent.ACTION_MOVE -> {
+                    wmlp.x = downWindowX + (event.rawX.toInt() - eventDownRawX)
+                    wmlp.y = downWindowY + (event.rawY.toInt() - eventDownRawY)
+                    CoroutineWrapper.launch { AssistsWindowManager.updateViewLayout(viewBinding.root, wmlp) }
+                    return true
+                }
+            }
             return false
         }
     }

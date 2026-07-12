@@ -11,6 +11,7 @@
 - **新增**：网页内可使用 MMKV 进行键值读写，支持按存储名称区分与常见数据类型
 - **新增**：宿主应用可改写 MMKV 的保存目录，便于 AssistsX 等宿主实现插件隔离
 - **调整**：`loadWebViewOverlay` / `closeOverlay` 已标记过期，请改用 `assistsxFloat` 的 `open` / `close`
+- **修复**：浮窗拖动与缩放时窗口位置会相对手指跳偏的问题
 
 ---
 
