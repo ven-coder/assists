@@ -19,7 +19,7 @@ import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.ViewWrapper
 import com.ven.assists.window.AssistsWindowWrapper
 
-/** 打开 Web 浮窗的参数 */
+/** 打开 Web 浮窗的参数（宽高与位置均为 px，由调用方完成 dp 转换） */
 data class FloatWindowOpenOptions(
     val url: String = "",
     val initialWidth: Int = (ScreenUtils.getScreenWidth() * 0.8).toInt(),
@@ -28,6 +28,8 @@ data class FloatWindowOpenOptions(
     val initialY: Int = 0,
     val minWidth: Int = (ScreenUtils.getScreenWidth() * 0.5).toInt(),
     val minHeight: Int = (ScreenUtils.getScreenHeight() * 0.5).toInt(),
+    val maxWidth: Int = -1,
+    val maxHeight: Int = -1,
     val initialCenter: Boolean = true,
     val keepScreenOn: Boolean = false,
     val showTopOperationArea: Boolean = true,
@@ -121,6 +123,8 @@ object FloatWindowOpener {
                 (contentWebView as? ASWebView)?.onReceivedTitle = { viewBinding.tvTitle.text = it }
                 minWidth = options.minWidth
                 minHeight = options.minHeight
+                maxWidth = options.maxWidth
+                maxHeight = options.maxHeight
                 initialCenter = options.initialCenter
                 initialX = options.initialX
                 initialY = options.initialY

@@ -5,32 +5,30 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ScreenUtils
+import com.blankj.utilcode.util.SizeUtils
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.ven.assists.AssistsCore
 import com.ven.assists.base.R as BaseR
+import com.ven.assists.base.databinding.AssistsWindowLayoutWrapperBinding
+import com.ven.assists.utils.CoroutineWrapper
+import com.ven.assists.utils.runMain
 import com.ven.assists.web.CallInterceptResult
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallResponse
-import com.ven.assists.web.JavascriptInterfaceContext
 import com.ven.assists.web.R
 import com.ven.assists.web.createResponse
-import com.ven.assists.web.floating.FloatWindowOpenOptions
-import com.ven.assists.web.floating.FloatWindowOpener
-import com.ven.assists.utils.CoroutineWrapper
-import com.ven.assists.utils.runMain
 import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.ViewWrapper
 import com.ven.assists.window.AssistsWindowManager.nonTouchableByWrapper
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowManager.touchableByWrapper
-import com.ven.assists.window.AssistsWindowWrapper
-import com.ven.assists.base.databinding.AssistsWindowLayoutWrapperBinding
-import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,6 +39,10 @@ import java.nio.charset.StandardCharsets
  * 浮窗独立 JsInterface，与 ASJavascriptInterfaceAsync 平级
  * 通过 assistsxFloat.call(json) 调用，回调 assistsxFloatCallback。
  * 封装 [AssistsWindowManager] 的全局能力与当前 Web 浮窗（[R.id.web_view]）相关操作。
+ *
+ * 单位约定：
+ * - 窗口位置/尺寸（open / move / refresh 的 x,y,width,height,min/max，getBounds）：默认 px，可通过 unit=dp|px 切换
+ * - 脚手架组件尺寸（headerHeight、*Size 等）：默认 dp，可通过 scaffoldUnit=dp|px 切换
  */
 class FloatJsInterface(val webView: WebView) {
     var callIntercept: ((json: String) -> CallInterceptResult)? = null
@@ -94,6 +96,7 @@ class FloatJsInterface(val webView: WebView) {
                 FloatCallMethod.toast -> toast(request)
                 FloatCallMethod.move -> move(request)
                 FloatCallMethod.refresh -> refresh(request)
+                FloatCallMethod.getBounds -> getBounds(request)
                 FloatCallMethod.hideAll -> hideAll(request)
                 FloatCallMethod.hideTop -> hideTop(request)
                 FloatCallMethod.showAll -> showAll(request)
@@ -116,6 +119,39 @@ class FloatJsInterface(val webView: WebView) {
         }
     }
 
+    /** 是否按 dp 解析；仅当显式传 "dp" 时为 true */
+    private fun isDpUnit(unit: String?): Boolean =
+        unit?.equals("dp", ignoreCase = true) == true
+
+    /**
+     * 解析尺寸参数为 px。
+     * @param useDp true 时将数值视为 dp 并转换；false 时直接作为 px
+     */
+    private fun sizeArg(el: JsonElement?, useDp: Boolean): Int? {
+        if (el == null || el.isJsonNull) return null
+        val value = el.asFloat
+        return if (useDp) SizeUtils.dp2px(value) else value.toInt()
+    }
+
+    /** 将内部 px 转为输出单位 */
+    private fun fromPx(px: Int, useDp: Boolean): Int =
+        if (useDp) SizeUtils.px2dp(px.toFloat()) else px
+
+    /** 设置方形按钮边长（已转换为 px） */
+    private fun applyViewSizePx(view: View, sizePx: Int) {
+        val lp = view.layoutParams ?: ViewGroup.LayoutParams(sizePx, sizePx)
+        lp.width = sizePx
+        lp.height = sizePx
+        view.layoutParams = lp
+    }
+
+    /** 设置栏高度（已转换为 px），宽度保持原样 */
+    private fun applyBarHeightPx(view: View, heightPx: Int) {
+        val lp = view.layoutParams ?: ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, heightPx)
+        lp.height = heightPx
+        view.layoutParams = lp
+    }
+
     /** 解析当前 JS 所在 Web 浮窗的 [ViewWrapper] */
     private fun findWrapperForWebView(): ViewWrapper? =
         AssistsWindowManager.viewList.values.find { it.view.findViewById<View>(R.id.web_view) == webView }
@@ -136,17 +172,20 @@ class FloatJsInterface(val webView: WebView) {
         return request.createResponse(0, data = false)
     }
 
-    /** 加载浮窗 */
+    /** 加载浮窗；窗口尺寸/位置默认 px，传 unit=dp 时按 dp 转换 */
     private suspend fun open(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val args = request.arguments
+        val useDp = isDpUnit(args?.get("unit")?.asString)
         val options = FloatWindowOpenOptions(
             url = args?.get("url")?.asString ?: "",
-            initialWidth = args?.get("initialWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.8).toInt(),
-            initialHeight = args?.get("initialHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
-            initialX = args?.get("initialX")?.asInt ?: 0,
-            initialY = args?.get("initialY")?.asInt ?: 0,
-            minWidth = args?.get("minWidth")?.asInt ?: (ScreenUtils.getScreenWidth() * 0.5).toInt(),
-            minHeight = args?.get("minHeight")?.asInt ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
+            initialWidth = sizeArg(args?.get("initialWidth"), useDp) ?: (ScreenUtils.getScreenWidth() * 0.8).toInt(),
+            initialHeight = sizeArg(args?.get("initialHeight"), useDp) ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
+            initialX = sizeArg(args?.get("initialX"), useDp) ?: 0,
+            initialY = sizeArg(args?.get("initialY"), useDp) ?: 0,
+            minWidth = sizeArg(args?.get("minWidth"), useDp) ?: (ScreenUtils.getScreenWidth() * 0.5).toInt(),
+            minHeight = sizeArg(args?.get("minHeight"), useDp) ?: (ScreenUtils.getScreenHeight() * 0.5).toInt(),
+            maxWidth = sizeArg(args?.get("maxWidth"), useDp) ?: -1,
+            maxHeight = sizeArg(args?.get("maxHeight"), useDp) ?: -1,
             initialCenter = args?.get("initialCenter")?.asBoolean ?: true,
             keepScreenOn = args?.get("keepScreenOn")?.asBoolean ?: false,
             showTopOperationArea = args?.get("showTopOperationArea")?.asBoolean ?: true,
@@ -180,10 +219,14 @@ class FloatJsInterface(val webView: WebView) {
         return request.createResponse(0, data = true)
     }
 
-    /** 移动浮窗：传入 x/y 为移动距离，在当前位置基础上偏移后更新 layoutParams */
+    /** 移动浮窗：相对位移，默认 px，传 unit=dp 时按 dp 转换 */
     private suspend fun move(request: CallRequest<JsonObject>): CallResponse<Any?> {
-        val dx = request.arguments?.get("x")?.asInt ?: return request.createResponse(-1, message = "x 不能为空")
-        val dy = request.arguments?.get("y")?.asInt ?: return request.createResponse(-1, message = "y 不能为空")
+        val args = request.arguments
+        val xEl = args?.get("x") ?: return request.createResponse(-1, message = "x 不能为空")
+        val yEl = args?.get("y") ?: return request.createResponse(-1, message = "y 不能为空")
+        val useDp = isDpUnit(args.get("unit")?.asString)
+        val dx = sizeArg(xEl, useDp) ?: return request.createResponse(-1, message = "x 不能为空")
+        val dy = sizeArg(yEl, useDp) ?: return request.createResponse(-1, message = "y 不能为空")
         val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
         withContext(Dispatchers.Main) {
             wrapper.layoutParams.x += dx
@@ -193,15 +236,74 @@ class FloatJsInterface(val webView: WebView) {
         return request.createResponse(0, data = true)
     }
 
-    /** 刷新浮窗 view 配置：接受 showTopOperationArea、showBottomOperationArea、backgroundColor、width、height、x、y，参数为空则不赋值 */
+    /** 获取当前浮窗位置与尺寸；默认返回 px，传 unit=dp 时返回 dp */
+    private suspend fun getBounds(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
+        val useDp = isDpUnit(request.arguments?.get("unit")?.asString)
+        val data = withContext(Dispatchers.Main) {
+            val aw = wrapper.assistsWindowWrapper
+            JsonObject().apply {
+                addProperty("x", fromPx(wrapper.layoutParams.x, useDp))
+                addProperty("y", fromPx(wrapper.layoutParams.y, useDp))
+                addProperty("width", fromPx(wrapper.layoutParams.width, useDp))
+                addProperty("height", fromPx(wrapper.layoutParams.height, useDp))
+                addProperty("minWidth", if (aw == null || aw.minWidth < 0) -1 else fromPx(aw.minWidth, useDp))
+                addProperty("minHeight", if (aw == null || aw.minHeight < 0) -1 else fromPx(aw.minHeight, useDp))
+                addProperty("maxWidth", if (aw == null || aw.maxWidth < 0) -1 else fromPx(aw.maxWidth, useDp))
+                addProperty("maxHeight", if (aw == null || aw.maxHeight < 0) -1 else fromPx(aw.maxHeight, useDp))
+                addProperty("unit", if (useDp) "dp" else "px")
+            }
+        }
+        return request.createResponse(0, data = data)
+    }
+
+    /**
+     * 刷新浮窗配置。
+     * 窗口位置/尺寸默认 px（unit=dp|px）；脚手架组件尺寸默认 dp（scaffoldUnit=dp|px）；省略字段则不变。
+     */
     private suspend fun refresh(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val wrapper = findWrapperForWebView() ?: return request.createResponse(-1, message = "未找到对应浮窗")
         withContext(Dispatchers.Main) {
             request.arguments?.let { args ->
+                val windowUseDp = isDpUnit(args.get("unit")?.asString)
+                // 脚手架默认 dp：未传或传 dp 时按 dp；仅显式传 px 时按 px
+                val scaffoldUnit = args.get("scaffoldUnit")?.takeIf { !it.isJsonNull }?.asString
+                val scaffoldUseDp = scaffoldUnit == null || isDpUnit(scaffoldUnit)
+
                 AssistsWindowLayoutWrapperBinding.bind(wrapper.view).apply {
                     args.get("showTopOperationArea")?.takeIf { !it.isJsonNull }?.asBoolean?.let { flHeader.isVisible = it }
                     args.get("showBottomOperationArea")?.takeIf { !it.isJsonNull }?.asBoolean?.let { llBottomBar.isVisible = it }
+                    args.get("showMove")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMove.isVisible = it }
+                    args.get("showClose")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivClose.isVisible = it }
+                    args.get("showTitle")?.takeIf { !it.isJsonNull }?.asBoolean?.let { tvTitle.isVisible = it }
+                    args.get("showScale")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivScale.isVisible = it }
+                    args.get("showMaximize")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMaximize.isVisible = it }
+                    args.get("showMinimize")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivMinimize.isVisible = it }
+                    args.get("showWebBack")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebBack.isVisible = it }
+                    args.get("showWebForward")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebForward.isVisible = it }
+                    args.get("showWebRefresh")?.takeIf { !it.isJsonNull }?.asBoolean?.let { ivWebRefresh.isVisible = it }
+
+                    sizeArg(args.get("headerHeight"), scaffoldUseDp)?.let { applyBarHeightPx(flHeader, it) }
+                    sizeArg(args.get("bottomBarHeight"), scaffoldUseDp)?.let { applyBarHeightPx(llBottomBar, it) }
+                    sizeArg(args.get("moveSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMove, it) }
+                    sizeArg(args.get("closeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivClose, it) }
+                    sizeArg(args.get("scaleSize"), scaffoldUseDp)?.let { applyViewSizePx(ivScale, it) }
+                    sizeArg(args.get("maximizeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMaximize, it) }
+                    sizeArg(args.get("minimizeSize"), scaffoldUseDp)?.let { applyViewSizePx(ivMinimize, it) }
+                    sizeArg(args.get("webBackSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebBack, it) }
+                    sizeArg(args.get("webForwardSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebForward, it) }
+                    sizeArg(args.get("webRefreshSize"), scaffoldUseDp)?.let { applyViewSizePx(ivWebRefresh, it) }
                 }
+
+                args.get("showBackground")?.takeIf { !it.isJsonNull }?.asBoolean?.let { show ->
+                    if (show) {
+                        wrapper.view.setBackgroundResource(BaseR.drawable.bg_1)
+                    } else {
+                        wrapper.view.background = null
+                    }
+                    wrapper.assistsWindowWrapper?.showBackground = show
+                }
+
                 args.get("backgroundColor")?.takeIf { !it.isJsonNull }?.let { arg ->
                     when {
                         arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> {
@@ -211,19 +313,29 @@ class FloatJsInterface(val webView: WebView) {
                             } else if (!s.isNullOrBlank()) {
                                 try {
                                     wrapper.view.setBackgroundColor(s.toColorInt())
-                                } catch (_: Exception) { }
+                                } catch (_: Exception) {
+                                }
                             }
                         }
                         arg.isJsonPrimitive && arg.asJsonPrimitive.isNumber -> {
                             wrapper.view.setBackgroundColor(arg.asInt)
                         }
-                        else -> { }
+                        else -> {
+                        }
                     }
                 }
-                args.get("width")?.takeIf { !it.isJsonNull }?.asInt?.let { wrapper.layoutParams.width = it }
-                args.get("height")?.takeIf { !it.isJsonNull }?.asInt?.let { wrapper.layoutParams.height = it }
-                args.get("x")?.takeIf { !it.isJsonNull }?.asInt?.let { wrapper.layoutParams.x = it }
-                args.get("y")?.takeIf { !it.isJsonNull }?.asInt?.let { wrapper.layoutParams.y = it }
+
+                sizeArg(args.get("width"), windowUseDp)?.let { wrapper.layoutParams.width = it }
+                sizeArg(args.get("height"), windowUseDp)?.let { wrapper.layoutParams.height = it }
+                sizeArg(args.get("x"), windowUseDp)?.let { wrapper.layoutParams.x = it }
+                sizeArg(args.get("y"), windowUseDp)?.let { wrapper.layoutParams.y = it }
+
+                wrapper.assistsWindowWrapper?.let { aw ->
+                    sizeArg(args.get("minWidth"), windowUseDp)?.let { aw.minWidth = it }
+                    sizeArg(args.get("minHeight"), windowUseDp)?.let { aw.minHeight = it }
+                    sizeArg(args.get("maxWidth"), windowUseDp)?.let { aw.maxWidth = it }
+                    sizeArg(args.get("maxHeight"), windowUseDp)?.let { aw.maxHeight = it }
+                }
             }
             AssistsWindowManager.updateViewLayout(wrapper.view, wrapper.layoutParams)
         }

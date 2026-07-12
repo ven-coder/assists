@@ -310,7 +310,9 @@ object AssistsWindowManager {
      */
     fun add(windowWrapper: AssistsWindowWrapper?, isStack: Boolean = true, isTouchable: Boolean = true, viewTag: Any? = null): ViewWrapper? {
         windowWrapper ?: return null
-        return add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable, viewTag = viewTag)
+        return add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable, viewTag = viewTag)?.also {
+            it.assistsWindowWrapper = windowWrapper
+        }
     }
 
     /**
@@ -662,6 +664,13 @@ object AssistsWindowManager {
      * 浮窗视图包装类
      * @param view 浮窗视图
      * @param layoutParams 布局参数
+     * @param uniqueId 唯一标识
+     * @param assistsWindowWrapper 关联的脚手架包装器（通过 [add] 传入 AssistsWindowWrapper 时写入）
      */
-    class ViewWrapper(val view: View, val layoutParams: WindowManager.LayoutParams, val uniqueId: String = UUID.randomUUID().toString())
+    class ViewWrapper(
+        val view: View,
+        val layoutParams: WindowManager.LayoutParams,
+        val uniqueId: String = UUID.randomUUID().toString(),
+        var assistsWindowWrapper: AssistsWindowWrapper? = null,
+    )
 }

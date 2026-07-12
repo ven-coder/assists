@@ -16,6 +16,8 @@ object FloatCallMethod {
     const val move = "move"
     /** 刷新浮窗 view 配置 */
     const val refresh = "refresh"
+    /** 获取当前浮窗位置与尺寸（dp） */
+    const val getBounds = "getBounds"
 
     /** 隐藏全部浮窗 */
     const val hideAll = "hideAll"
