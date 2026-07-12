@@ -10,6 +10,7 @@
 - **优化**：日志追加时的分隔与截断逻辑更统一，减少重复读取文件
 - **新增**：网页内可使用 MMKV 进行键值读写，支持按存储名称区分与常见数据类型
 - **新增**：宿主应用可改写 MMKV 的保存目录，便于 AssistsX 等宿主实现插件隔离
+- **调整**：`loadWebViewOverlay` / `closeOverlay` 已标记过期，请改用 `assistsxFloat` 的 `open` / `close`
 
 ---
 
