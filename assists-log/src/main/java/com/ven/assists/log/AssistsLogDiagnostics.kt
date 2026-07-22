@@ -76,15 +76,17 @@ object AssistsLogDiagnostics {
     ): File? {
         val ext = extensionForFormat(format)
         val outFile = file ?: AssistsLogPaths.screenshotFile(ext)
-        AssistsWindowManager.temporarilyHideDisplayedTopWindow()
+        AssistsWindowManager.temporarilyHideAll()
         delay(overlayHiddenDelayMillis)
-        val saved = if (targetNode == null) {
-            AssistsCore.takeScreenshotSave(file = outFile, format = format)
-        } else {
-            targetNode.takeScreenshotSave(file = outFile, format = format)
+        return try {
+            if (targetNode == null) {
+                AssistsCore.takeScreenshotSave(file = outFile, format = format)
+            } else {
+                targetNode.takeScreenshotSave(file = outFile, format = format)
+            }
+        } finally {
+            AssistsWindowManager.restoreTemporaryHideMarkedWindows()
         }
-        AssistsWindowManager.restoreTemporarilyHiddenTopWindow()
-        return saved
     }
 
     /**

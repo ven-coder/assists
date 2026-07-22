@@ -109,7 +109,7 @@ object OverlayPro : AssistsServiceListener {
                             return@setOnClickListener
                         }
                         CoroutineWrapper.launch {
-                            AssistsWindowManager.hideAll()
+                            AssistsWindowManager.temporarilyHideAll()
                             try {
                                 delay(250L)
                                 val file = AssistsCore.takeScreenshotSave()
@@ -124,7 +124,7 @@ object OverlayPro : AssistsServiceListener {
                                     "无障碍截屏失败，请确认服务已开启且配置含 canTakeScreenshot".overlayToast()
                                 }
                             } finally {
-                                AssistsWindowManager.showAll()
+                                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
                             }
                         }
                     }
@@ -139,7 +139,7 @@ object OverlayPro : AssistsServiceListener {
                         OverlayLog.show()
                         CoroutineWrapper.launch {
                             "开始识别当前屏幕文字位置…".logAppend()
-                            AssistsWindowManager.hideAll()
+                            AssistsWindowManager.temporarilyHideAll()
                             try {
                                 delay(250L)
                                 val result = MlkitScreenTextUtils.getScreenTextPositions()
@@ -161,7 +161,7 @@ object OverlayPro : AssistsServiceListener {
                                     }
                                 )
                             } finally {
-                                AssistsWindowManager.showAll()
+                                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
                             }
                         }
                     }
@@ -174,7 +174,7 @@ object OverlayPro : AssistsServiceListener {
                         CoroutineWrapper.launch {
                             val phrase = "web支持"
                             "词组识别并手势点击（首个匹配）：$phrase".logAppend()
-                            AssistsWindowManager.hideAll()
+                            AssistsWindowManager.temporarilyHideAll()
                             try {
                                 delay(250L)
                                 val clicked = runCatching {
@@ -192,7 +192,7 @@ object OverlayPro : AssistsServiceListener {
                                     "未找到匹配或手势点击失败。".logAppend()
                                 }
                             } finally {
-                                AssistsWindowManager.showAll()
+                                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
                             }
                         }
                     }
@@ -233,10 +233,10 @@ object OverlayPro : AssistsServiceListener {
                         CoroutineWrapper.launch {
                             val phrase = "web支持"
                             "MP 录屏截图：词组识别并手势点击（首个匹配）：$phrase".logAppend()
-                            // 截图阶段不恢复浮窗，识别并点击结束后再 showAll
+                            // 截图阶段不恢复浮窗，识别并点击结束后再 restoreTemporaryHideMarkedWindows
                             val bitmap = captureScreenWithMp(restoreOverlaysAfterCapture = false)
                             if (bitmap == null) {
-                                AssistsWindowManager.showAll()
+                                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
                                 return@launch
                             }
                             try {
@@ -267,7 +267,7 @@ object OverlayPro : AssistsServiceListener {
                                 if (!bitmap.isRecycled) {
                                     bitmap.recycle()
                                 }
-                                AssistsWindowManager.showAll()
+                                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
                             }
                         }
                     }
@@ -280,7 +280,7 @@ object OverlayPro : AssistsServiceListener {
     /**
      * 确保已授予录屏权限后截取一帧屏幕；失败时打日志并 toast。
      *
-     * @param restoreOverlaysAfterCapture 为 true 时在截图流程结束时恢复浮窗；为 false 时由调用方在后续逻辑结束后再 [AssistsWindowManager.showAll]。
+     * @param restoreOverlaysAfterCapture 为 true 时在截图流程结束时恢复浮窗；为 false 时由调用方在后续逻辑结束后再 [AssistsWindowManager.restoreTemporaryHideMarkedWindows]。
      */
     private suspend fun captureScreenWithMp(restoreOverlaysAfterCapture: Boolean = true): Bitmap? {
         if (!MPManager.isEnable) {
@@ -291,7 +291,7 @@ object OverlayPro : AssistsServiceListener {
                 return null
             }
         }
-        AssistsWindowManager.hideAll()
+        AssistsWindowManager.temporarilyHideAll()
         return try {
             delay(250L)
             runCatching { MPManager.takeScreenshot2Bitmap() }.getOrElse { e ->
@@ -305,38 +305,39 @@ object OverlayPro : AssistsServiceListener {
             }
         } finally {
             if (restoreOverlaysAfterCapture) {
-                AssistsWindowManager.showAll()
+                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
             }
         }
     }
 
     private fun takeScreenshotAllImage() {
         CoroutineWrapper.launch(isMain = true) {
-            runCatching {
-                AssistsWindowManager.hideAll()
-                delay(250)
-                val screenshot = MPManager.takeScreenshot2Bitmap()
-                screenshot ?: return@runCatching
-                val list: ArrayList<String> = arrayListOf()
-                AssistsCore.getAllNodes().forEach {
-                    if (it.isImageView()) {
-                        val file = it.takeScreenshot2File(screenshot)
-                        file?.let { list.add(file.path) }
+            AssistsWindowManager.temporarilyHideAll()
+            try {
+                runCatching {
+                    delay(250)
+                    val screenshot = MPManager.takeScreenshot2Bitmap()
+                    screenshot ?: return@runCatching
+                    val list: ArrayList<String> = arrayListOf()
+                    AssistsCore.getAllNodes().forEach {
+                        if (it.isImageView()) {
+                            val file = it.takeScreenshot2File(screenshot)
+                            file?.let { list.add(file.path) }
+                        }
                     }
+
+                    AssistsCore.launchApp(Intent(AssistsService.getOrNull(), ImageGalleryActivity::class.java).apply {
+                        putStringArrayListExtra("extra_image_paths", list)
+                    })
+
+                    // 显示提示
+                    "已捕获 ${list.size} 张图片".overlayToast()
+                }.onFailure {
+                    LogUtils.d(it)
+                    "截图失败，尝试请求授予屏幕录制后重试".overlayToast()
                 }
-                AssistsWindowManager.showAll()
-
-                AssistsCore.launchApp(Intent(AssistsService.getOrNull(), ImageGalleryActivity::class.java).apply {
-                    putStringArrayListExtra("extra_image_paths", list)
-                })
-
-                // 显示提示
-                "已捕获 ${list.size} 张图片".overlayToast()
-            }.onFailure {
-                LogUtils.d(it)
-                "截图失败，尝试请求授予屏幕录制后重试".overlayToast()
-                AssistsWindowManager.showAll()
-
+            } finally {
+                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
             }
         }
 

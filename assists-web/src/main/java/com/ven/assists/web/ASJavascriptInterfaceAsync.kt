@@ -371,20 +371,23 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         }
 
         if (restoreOverlay) {
-            AssistsWindowManager.hideAll()
+            AssistsWindowManager.temporarilyHideAll()
         }
-        delay(overlayHiddenDelay)
-        val recognitionResult = runCatching {
-            TextRecognitionChineseLocator.findWordPositionsInScreenshotRegion(
-                region = regionRect,
-                targetText = targetText,
-                rotationDegrees = rotationDegrees
-            )
-        }.onFailure {
-            LogUtils.e(it)
-        }
-        if (restoreOverlay) {
-            AssistsWindowManager.showTop()
+        val recognitionResult = try {
+            delay(overlayHiddenDelay)
+            runCatching {
+                TextRecognitionChineseLocator.findWordPositionsInScreenshotRegion(
+                    region = regionRect,
+                    targetText = targetText,
+                    rotationDegrees = rotationDegrees
+                )
+            }.onFailure {
+                LogUtils.e(it)
+            }
+        } finally {
+            if (restoreOverlay) {
+                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
+            }
         }
 
         return recognitionResult.fold(
@@ -563,19 +566,21 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
             else -> "png"
         }
 
-        AssistsWindowManager.hideAll()
+        AssistsWindowManager.temporarilyHideAll()
         delay(overlayHiddenScreenshotDelayMillis)
 
         val file =
             filePath?.let { File(it) } ?: File(PathUtils.getInternalAppFilesPath() + "/${System.currentTimeMillis()}.$fileExtension")
 
-        val savedFile = if (request.node?.nodeId.isNullOrEmpty()) {
-            AssistsCore.takeScreenshotSave(file = file, format = format)
-        } else {
-            NodeCacheManager.get(request.node?.nodeId ?: "")?.takeScreenshotSave(file = file, format = format)
+        val savedFile = try {
+            if (request.node?.nodeId.isNullOrEmpty()) {
+                AssistsCore.takeScreenshotSave(file = file, format = format)
+            } else {
+                NodeCacheManager.get(request.node?.nodeId ?: "")?.takeScreenshotSave(file = file, format = format)
+            }
+        } finally {
+            AssistsWindowManager.restoreTemporaryHideMarkedWindows()
         }
-
-        AssistsWindowManager.showTop()
 
         return request.createResponse(
             if (savedFile == null) -1 else 0,
@@ -605,69 +610,30 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
             else -> "png"
         }
 
-        AssistsWindowManager.hideAll()
+        AssistsWindowManager.temporarilyHideAll()
         delay(overlayHiddenScreenshotDelayMillis)
 
         val filePaths = arrayListOf<String>()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val screenshot = AssistsCore.takeScreenshot()
-            AssistsWindowManager.showTop()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val screenshot = AssistsCore.takeScreenshot()
 
-            if (request.nodes.isNullOrEmpty()) {
-                val file = baseFilePath?.let { File(it) }
-                    ?: File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}.$fileExtension")
-                file.parentFile?.mkdirs()
-                screenshot?.let {
-                    val success = ImageUtils.save(it, file, format)
-                    if (success) {
-                        filePaths.add(file.absolutePath)
-                    }
-                    it.recycle()
-                }
-            } else {
-                request.nodes?.forEachIndexed { index, nodeRequest ->
-                    val bitmap = NodeCacheManager.get(nodeRequest.nodeId)?.takeScreenshot(screenshot = screenshot)
-                    bitmap?.let {
-                        val file = if (baseFilePath != null && request.nodes?.size == 1) {
-                            File(baseFilePath)
-                        } else {
-                            if (baseFilePath != null) {
-                                val baseFile = File(baseFilePath)
-                                val nameWithoutExt = baseFile.nameWithoutExtension
-                                val parent = baseFile.parent ?: PathUtils.getInternalAppFilesPath()
-                                File(parent, "${nameWithoutExt}_${index}.$fileExtension")
-                            } else {
-                                File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}_${index}.$fileExtension")
-                            }
-                        }
-                        file.parentFile?.mkdirs()
+                if (request.nodes.isNullOrEmpty()) {
+                    val file = baseFilePath?.let { File(it) }
+                        ?: File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}.$fileExtension")
+                    file.parentFile?.mkdirs()
+                    screenshot?.let {
                         val success = ImageUtils.save(it, file, format)
                         if (success) {
                             filePaths.add(file.absolutePath)
                         }
                         it.recycle()
                     }
-                }
-                screenshot?.recycle()
-            }
-        } else {
-            val takeScreenshot2Bitmap = MPManager.takeScreenshot2Bitmap()
-            AssistsWindowManager.showTop()
-
-            takeScreenshot2Bitmap?.let {
-                if (request.nodes.isNullOrEmpty()) {
-                    val file = baseFilePath?.let { File(it) }
-                        ?: File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}.$fileExtension")
-                    file.parentFile?.mkdirs()
-                    val success = ImageUtils.save(it, file, format)
-                    if (success) {
-                        filePaths.add(file.absolutePath)
-                    }
                 } else {
                     request.nodes?.forEachIndexed { index, nodeRequest ->
-                        val bitmap = NodeCacheManager.get(nodeRequest.nodeId)?.getBitmap(screenshot = it)
-                        bitmap?.let { nodeBitmap ->
+                        val bitmap = NodeCacheManager.get(nodeRequest.nodeId)?.takeScreenshot(screenshot = screenshot)
+                        bitmap?.let {
                             val file = if (baseFilePath != null && request.nodes?.size == 1) {
                                 File(baseFilePath)
                             } else {
@@ -681,16 +647,57 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
                                 }
                             }
                             file.parentFile?.mkdirs()
-                            val success = ImageUtils.save(nodeBitmap, file, format)
+                            val success = ImageUtils.save(it, file, format)
                             if (success) {
                                 filePaths.add(file.absolutePath)
                             }
-                            nodeBitmap.recycle()
+                            it.recycle()
                         }
                     }
+                    screenshot?.recycle()
                 }
-                it.recycle()
+            } else {
+                val takeScreenshot2Bitmap = MPManager.takeScreenshot2Bitmap()
+
+                takeScreenshot2Bitmap?.let {
+                    if (request.nodes.isNullOrEmpty()) {
+                        val file = baseFilePath?.let { File(it) }
+                            ?: File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}.$fileExtension")
+                        file.parentFile?.mkdirs()
+                        val success = ImageUtils.save(it, file, format)
+                        if (success) {
+                            filePaths.add(file.absolutePath)
+                        }
+                    } else {
+                        request.nodes?.forEachIndexed { index, nodeRequest ->
+                            val bitmap = NodeCacheManager.get(nodeRequest.nodeId)?.getBitmap(screenshot = it)
+                            bitmap?.let { nodeBitmap ->
+                                val file = if (baseFilePath != null && request.nodes?.size == 1) {
+                                    File(baseFilePath)
+                                } else {
+                                    if (baseFilePath != null) {
+                                        val baseFile = File(baseFilePath)
+                                        val nameWithoutExt = baseFile.nameWithoutExtension
+                                        val parent = baseFile.parent ?: PathUtils.getInternalAppFilesPath()
+                                        File(parent, "${nameWithoutExt}_${index}.$fileExtension")
+                                    } else {
+                                        File(PathUtils.getInternalAppFilesPath() + "/screenshot_${System.currentTimeMillis()}_${index}.$fileExtension")
+                                    }
+                                }
+                                file.parentFile?.mkdirs()
+                                val success = ImageUtils.save(nodeBitmap, file, format)
+                                if (success) {
+                                    filePaths.add(file.absolutePath)
+                                }
+                                nodeBitmap.recycle()
+                            }
+                        }
+                    }
+                    it.recycle()
+                }
             }
+        } finally {
+            AssistsWindowManager.restoreTemporaryHideMarkedWindows()
         }
 
         return request.createResponse(

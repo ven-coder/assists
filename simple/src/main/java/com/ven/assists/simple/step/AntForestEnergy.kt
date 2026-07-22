@@ -20,9 +20,7 @@ import com.ven.assists.stepper.StepManager
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.mp.MPManager
 import com.ven.assists.opcv.OpencvWrapper
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import org.opencv.core.Mat
 import org.opencv.core.Rect
 import org.opencv.core.Scalar
@@ -112,17 +110,16 @@ class AntForestEnergy : StepImpl(), AssistsServiceListener {
         }.next(StepTag.STEP_4, isRunCoroutineIO = true) {
             overLog("开始识别能量球...")
             delay(500)
-            withContext(Dispatchers.Main) {
-                AssistsWindowManager.hideAll()
-            }
+            AssistsWindowManager.temporarilyHideAll()
             delay(500)
-            val screenMat = OpencvWrapper.getScreenMat()
+            val screenMat = try {
+                OpencvWrapper.getScreenMat()
+            } finally {
+                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
+            }
             if (screenMat == null) {
                 overLog("识别失败，无法获取屏幕图像")
                 return@next Step.none
-            }
-            runMain {
-                AssistsWindowManager.showAll()
             }
             val capBeginY = (screenMat.height() * 0.2).toInt()
             val capEndY = screenMat.height() * 0.18

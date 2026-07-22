@@ -106,14 +106,14 @@ class MlkitJavascriptInterface(val webView: WebView) {
         val restoreOverlay = request.arguments?.get("restoreOverlay")?.asBoolean ?: true
         val delayMillis = request.arguments?.get("overlayHiddenScreenshotDelayMillis")?.asLong ?: 250L
         if (restoreOverlay) {
-            AssistsWindowManager.hideAll()
+            AssistsWindowManager.temporarilyHideAll()
         }
         delay(delayMillis)
         return try {
             block()
         } finally {
             if (restoreOverlay) {
-                AssistsWindowManager.showTop()
+                AssistsWindowManager.restoreTemporaryHideMarkedWindows()
             }
         }
     }

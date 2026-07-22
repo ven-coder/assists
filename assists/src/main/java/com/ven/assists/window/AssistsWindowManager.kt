@@ -48,7 +48,7 @@ object AssistsWindowManager {
 
     private fun View.isOverlayToastWindow(): Boolean = tag === OverlayToastViewTag
 
-    /** 临时隐藏会话中待恢复的窗口 uniqueId；非 null 表示已做过快照且当前处于临时隐藏流程 */
+    /** 临时隐藏全部浮窗会话中待恢复的窗口 uniqueId；非 null 表示已做过快照且当前处于临时隐藏流程 */
     private var temporaryHideRestoreIds: MutableSet<String>? = null
 
     /** 临时隐藏全部浮窗的恢复任务，重复调用会取消上一轮未完成的延迟与恢复 */
@@ -241,7 +241,29 @@ object AssistsWindowManager {
     }
 
     /**
-     * 临时隐藏所有浮窗，在 [durationMs] 后仅恢复本次隐藏**前处于可见状态**的窗口；默认隐藏时长 500ms。
+     * 临时隐藏所有当前可见浮窗并记录 uniqueId；需配对调用 [restoreTemporaryHideMarkedWindows]。
+     * 与 [hideAll] 使用相同的过滤规则（含 overlayToast）。
+     * 若上一轮尚未恢复又再次调用，会先恢复再重新快照，避免快照丢失。
+     *
+     * @param isTouchable 隐藏后是否可触摸，与 [hideAll] 一致
+     * @param filterViews 不参与隐藏的视图列表，与 [hideAll] 一致
+     */
+    suspend fun temporarilyHideAll(
+        isTouchable: Boolean = true,
+        filterViews: List<View> = emptyList(),
+    ) {
+        temporaryHideAllJob?.cancel()
+        temporaryHideAllJob = null
+        withContext(Dispatchers.Main) {
+            if (temporaryHideRestoreIds != null) {
+                restoreTemporaryHideMarkedWindows(isTouchable)
+            }
+            beginTemporaryHideAllSession(isTouchable, filterViews)
+        }
+    }
+
+    /**
+     * 临时隐藏所有浮窗，在 [durationMs] 后仅恢复本次隐藏**前处于可见状态**的窗口。
      * 隐藏前会对符合条件的可见窗口记录 uniqueId 标记，恢复时只对这些窗口执行显示（不调用 [showAll]）。
      * 与 [hideAll] 使用相同的过滤规则（含 overlayToast）。
      * 若在延迟结束前再次调用：若当前仍处于同一次临时隐藏会话，则仅重新计时，不重复快照与隐藏。
@@ -251,7 +273,7 @@ object AssistsWindowManager {
      * @param filterViews 不参与隐藏的视图列表，与 [hideAll] 一致
      */
     fun temporarilyHideAll(
-        durationMs: Long = 500,
+        durationMs: Long,
         isTouchable: Boolean = true,
         filterViews: List<View> = emptyList(),
     ) {
@@ -259,18 +281,7 @@ object AssistsWindowManager {
         temporaryHideAllJob = CoroutineWrapper.launch {
             withContext(Dispatchers.Main) {
                 if (temporaryHideRestoreIds == null) {
-                    val ids = mutableSetOf<String>()
-                    viewList.values.forEach { wrapper ->
-                        val v = wrapper.view
-                        if (filterViews.contains(v) || v.isOverlayToastWindow()) {
-                            return@forEach
-                        }
-                        if (v.isVisible) {
-                            ids.add(wrapper.uniqueId)
-                        }
-                    }
-                    temporaryHideRestoreIds = ids
-                    hideAll(isTouchable, filterViews)
+                    beginTemporaryHideAllSession(isTouchable, filterViews)
                 }
             }
             delay(durationMs)
@@ -279,9 +290,33 @@ object AssistsWindowManager {
     }
 
     /**
-     * 按 [temporaryHideRestoreIds] 仅恢复被标记的窗口，并结束本次临时隐藏会话。
+     * 记录当前可见浮窗并执行 [hideAll]；调用方需保证当前不在临时隐藏会话中。
      */
-    private suspend fun restoreTemporaryHideMarkedWindows(isTouchable: Boolean) {
+    private suspend fun beginTemporaryHideAllSession(
+        isTouchable: Boolean,
+        filterViews: List<View>,
+    ) {
+        val ids = mutableSetOf<String>()
+        viewList.values.forEach { wrapper ->
+            val v = wrapper.view
+            if (filterViews.contains(v) || v.isOverlayToastWindow()) {
+                return@forEach
+            }
+            if (v.isVisible) {
+                ids.add(wrapper.uniqueId)
+            }
+        }
+        temporaryHideRestoreIds = ids
+        hideAll(isTouchable, filterViews)
+    }
+
+    /**
+     * 按 [temporaryHideRestoreIds] 仅恢复被标记的窗口，并结束本次临时隐藏会话。
+     * 与 [temporarilyHideAll] 配对使用。
+     *
+     * @param isTouchable 显示后是否可触摸，与 [showAll] 一致
+     */
+    suspend fun restoreTemporaryHideMarkedWindows(isTouchable: Boolean = true) {
         withContext(Dispatchers.Main) {
             val ids = temporaryHideRestoreIds ?: return@withContext
             temporaryHideRestoreIds = null

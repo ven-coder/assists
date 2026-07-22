@@ -21,12 +21,12 @@ object ScreenshotCaptureHelper {
         overlayHiddenScreenshotDelayMillis: Long = 250L,
         block: suspend () -> T,
     ): T {
-        AssistsWindowManager.hideAll()
+        AssistsWindowManager.temporarilyHideAll()
         delay(overlayHiddenScreenshotDelayMillis)
         return try {
             block()
         } finally {
-            AssistsWindowManager.showTop()
+            AssistsWindowManager.restoreTemporaryHideMarkedWindows()
         }
     }
 
