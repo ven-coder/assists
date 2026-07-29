@@ -12,7 +12,7 @@
 [![][forks-shield]][forks-link]
 [![][issues-shield]][issues-link]
 
-[📱 下载Demo][demo-download] · [🤖 Assists MCP][assists-mcp-link] · [🏗️ 架构设计](docs/architecture.md) · [📜 更新日志](CHANGELOG.md) · [📘 开发文档][docs-link] · [🐛 反馈问题][issues-link] · [💬 交流反馈](#交流反馈) · [💰 赞助支持](#-赞助支持) · [💁 付费社群](#-付费社群) · [⭐ Star支持][stars-link]
+[📱 下载Demo][demo-download] · [🤖 Assists MCP][assists-mcp-link] · [🏗️ 架构设计](docs/architecture.md) · [📜 更新日志](CHANGELOG.md) · [📘 开发文档][docs-link] · [🐛 反馈问题][issues-link] · [💬 交流反馈](#交流反馈) · [💰 赞助支持](#-赞助支持) · [⭐ Star支持][stars-link]
 
 </div>
 
@@ -35,7 +35,6 @@
 - [💝 支持开源](#-支持开源)
   - [⭐ Star支持](#-star支持)
   - [💰 赞助支持](#-赞助支持)
-  - [💁 付费社群](#-付费社群)
 - [Star History](#star-history)
 - [License](#license)
 
@@ -187,30 +186,7 @@ dependencies {
 
 <img src="https://github.com/user-attachments/assets/3862a40c-631c-4ab0-b1e7-00ec3e3e00ad" width="150" />
 
-### 💁 付费社群
-
-加入付费社群可享受以下权益：
-
-- 开发指导
-- VIP 交流群
-- VIP 外包接单
-- 详细开发文档
-- 经验总结分享
-- 高级示例源码
-- 群友互助资源对接
-- 新 API 优先提供对接
-- 日志上报分析系统
-<img src="https://github.com/ven-coder/assists/blob/master/images/log-server.png" width="300" />
-
-**加入方式与说明**：[在线查看](https://my.feishu.cn/wiki/CXIDwLKlYidE6TkD79gcAvI6nBg) · 或扫码查看：
-
-<img src="https://github.com/user-attachments/assets/2ab13741-a30a-4f12-9906-f558547d0760" width="180" alt="付费社群加入方式与说明二维码" />
-
-**定制开发可联系作者微信: x39598**
-
 **感谢所有的支持者，得到你们的支持我将会更加完善开源库的能力！** 🚀
-
-
 
 ## Star History
 
@@ -279,5 +255,3 @@ Copyright © 2025 [ven-coder][profile-link]
 [image-wechat-group]: https://github.com/user-attachments/assets/a31109fe-3106-4922-8abd-5cdc9c6a22e4
 [image-wechat-personal]: https://github.com/user-attachments/assets/49378ec3-71a2-4a5e-8510-bec4ec8d915e
 [image-wechat-reward]: https://github.com/user-attachments/assets/3862a40c-631c-4ab0-b1e7-00ec3e3e00ad
-[image-paid-community]: https://github.com/user-attachments/assets/7607a4e6-4845-474e-a9c6-e685cc306523
-[image-paid-qrcode]: https://github.com/ven-coder/Assists/assets/27257149/7ae8e825-f489-46e3-96f0-ed03d12db9e8
