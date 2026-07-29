@@ -12,7 +12,7 @@
 [![][forks-shield]][forks-link]
 [![][issues-shield]][issues-link]
 
-[📱 下载Demo][demo-download] · [🏗️ 架构设计](docs/architecture.md) · [📜 更新日志](CHANGELOG.md) · [📘 开发文档][docs-link] · [🐛 反馈问题][issues-link] · [💬 交流反馈](#交流反馈) · [💰 赞助支持](#-赞助支持) · [💁 付费社群](#-付费社群) · [⭐ Star支持][stars-link]
+[📱 下载Demo][demo-download] · [🤖 Assists MCP][assists-mcp-link] · [🏗️ 架构设计](docs/architecture.md) · [📜 更新日志](CHANGELOG.md) · [📘 开发文档][docs-link] · [🐛 反馈问题][issues-link] · [💬 交流反馈](#交流反馈) · [💰 赞助支持](#-赞助支持) · [💁 付费社群](#-付费社群) · [⭐ Star支持][stars-link]
 
 </div>
 
@@ -27,6 +27,7 @@
 - [🎯 适用场景](#-适用场景)
 - [💡 为什么选 Assists](#-为什么选-assists)
 - [🌟 基于 Assists 的开发生态](#-基于-assists-的开发生态)
+- [🤖 Assists MCP · AI Agent 协作](#-assists-mcp--ai-agent-协作)
 - [📋 核心能力](#-核心能力)
 - [🎬 功能示例](#-功能示例)
 - [开发文档](#开发文档)
@@ -74,10 +75,30 @@ Assists 是整条生态的**基础库**：基于 Android 无障碍服务封装�
 | **🌐 Web 桥接** | **assists-web** | **Web 自动化支持**：WebView 原生↔JS 通道，让 Web 端直接调用 Assists 能力。 |
 | **📱 运行平台** | [**AssistsX**][assistsx-link] | **Web 自动化运行平台**及**节点分析工具**：安装即用，支持插件本地/局域网/在线加载，开启节点分析后可在局域网用浏览器分析页面节点。 |
 | **📜 JS 库** | [**assistsx-js**][assistsx-js-link] | **Web 自动化 JS 库**：节点查找、手势、步骤器……用前端技术栈轻松编写与维护自动化。 |
+| **🤖 AI 协作** | [**Assists MCP**][assists-mcp-link] | **MCP 商业产品**：凡基于无障碍服务的自动化均可协作；与 AssistsX 搭配可发挥全部潜能（插件创建、逻辑编写、节点分析、Bug 排查）。 |
 | **📂 示例仓库** | [**assists-examples**][assists-examples-link] | **Assists 相关示例项目**：包含**原生自动化**与 **Web 端自动化**示例，即拿即跑。 |
 | **📊 日志节点分析** | **日志节点上报分析系统** | 测试人员可提交**运行日志**与**页面节点信息**，开发基于上报数据分析页面结构、精准定位多设备/多界面 Bug，解决「无日志、无节点难以复现」的痛点。 |
 
-**推荐路径**：使用 [assistsx-js][assistsx-js-link] 在 Web 端开发自动化 → 在手机安装 [AssistsX][assistsx-link] 运行插件 → 参考 [assists-examples][assists-examples-link] 学习与扩展。
+**推荐路径**：使用 [assistsx-js][assistsx-js-link] 在 Web 端开发自动化 → 在手机安装 [AssistsX][assistsx-link] 运行插件 → 接入 [Assists MCP][assists-mcp-link] 让 AI Agent 协作开发与排障 → 参考 [assists-examples][assists-examples-link] 学习与扩展。
+
+## 🤖 Assists MCP · AI Agent 协作
+
+> **新增 MCP 支持，全面增强 AI Agent 与无障碍自动化的协作能力。**  
+> 通过 MCP，AI Agent 从辅助工具提升为自动化开发流程中的核心协作者。
+
+接入 **Cursor、Claude Code、Codex、OpenCode** 等支持 MCP 的 AI 编程助手后，Agent 可全程参与开发与调试：不只是「遥控手机」，而是覆盖**基于无障碍服务的自动化**——读节点、写逻辑、查 Bug，让 AI Agent 真正进入自动化落地全流程。
+
+与 [AssistsX][assistsx-link] 协作时，可进一步发挥 MCP 的全部潜能：覆盖插件创建、实现与排障，显著提升效率。
+
+| 能力 | 说明 |
+|------|------|
+| **多端 MCP 接入** | 支持 Cursor、Claude Code、Codex、OpenCode 等 MCP 客户端 |
+| **无障碍自动化协作** | 凡基于 Android 无障碍服务的自动化，均可读节点、写逻辑、查 Bug |
+| **AssistsX 全潜能** | 与 AssistsX 搭配时，支持插件创建、逻辑编写、调试与异常排查 |
+| **节点读取与分析** | 原生无障碍服务节点读取与逻辑分析 |
+| **异常与 Bug 排查** | 运行异常分析与问题定位 |
+
+**详细介绍及配置教程** → [https://assists.cn/mcp][assists-mcp-link]
 
 ## 📋 核心能力
 
@@ -227,6 +248,7 @@ Copyright © 2025 [ven-coder][profile-link]
 [docs-link]: https://ahcirffybg.feishu.cn/wiki/space/7561797853589553156?ccm_open_type=lark_wiki_spaceLink&open_tab_from=wiki_home
 [assistsx-js-link]: https://github.com/ven-coder/assistsx-js
 [assistsx-link]: https://github.com/ven-coder/assistsx
+[assists-mcp-link]: https://assists.cn/mcp
 [assists-examples-link]: https://github.com/ven-coder/assists-examples
 [api-reference]: https://github.com/ven-coder/assists/blob/master/API_REFERENCE.md
 [changelog]: CHANGELOG.md
