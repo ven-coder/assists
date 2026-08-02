@@ -12,7 +12,7 @@
 [![][forks-shield]][forks-link]
 [![][issues-shield]][issues-link]
 
-[📱 下载Demo][demo-download] · [🤖 Assists MCP][assists-mcp-link] · [🏗️ 架构设计](docs/architecture.md) · [📜 更新日志](CHANGELOG.md) · [📘 开发文档][docs-link] · [🐛 反馈问题][issues-link] · [💬 交流反馈](#交流反馈) · [💰 赞助支持](#-赞助支持) · [⭐ Star支持][stars-link]
+[📱 下载Demo][demo-download] · [🤖 Assists MCP][assists-mcp-link] · [📜 更新日志](CHANGELOG.md) · [📘 开发文档][docs-link] · [🐛 反馈问题][issues-link] · [💬 交流反馈](#交流反馈) · [💰 赞助支持](#-赞助支持) · [⭐ Star支持][stars-link]
 
 </div>
 
@@ -107,13 +107,13 @@ Assists 是整条生态的**基础库**：基于 Android 无障碍服务封装�
 | **无障碍 API** | 节点查找、点击、输入、滚动等，接口简洁易用 |
 | **浮窗管理** | 浮窗的添加/删除/显示/隐藏/缩放/移动，快速实现悬浮控制 |
 | **步骤器** | 可复用、易维护的自动化步骤框架与编排 |
-| **屏幕与截图** | 整屏截图、指定节点区域截图（[assists-mp](docs/architecture.md)） |
-| **图像识别** | 结合 OpenCV 的模板匹配等，辅助屏幕内容识别（[assists-opcv](docs/architecture.md)） |
+| **屏幕与截图** | 整屏截图、指定节点区域截图（assists-mp） |
+| **图像识别** | 结合 OpenCV 的模板匹配等，辅助屏幕内容识别（assists-opcv） |
 | **Web 自动化** | WebView 桥接，HTML + JS/Vue 开发脚本，对应 [assistsx-js][assistsx-js-link] |
 
 ## 🎬 功能示例
 
-Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、接听电话等）、**截图与浮窗**等，完整示例 GIF 与截图见 **[功能示例图集](docs/demo-gallery.md)**。
+Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、接听电话等）、**截图与浮窗**等。
 
 [📱 直接下载 Demo][demo-download]
 
@@ -151,7 +151,7 @@ dependencies {
 | assists-ime | `assists-ime` |
 | assists-opcv | `assists-opcv` |
 
-> **迁移说明**：3.5.3 起官方仓库为 Maven Central（`io.github.ven-coder`）。旧版 JitPack 坐标 `com.github.ven-coder.assists:*` 仍可用于历史版本，新项目请使用上表坐标。模块说明见 [架构设计](docs/architecture.md)。
+> **迁移说明**：3.5.3 起官方仓库为 Maven Central（`io.github.ven-coder`）。旧版 JitPack 坐标 `com.github.ven-coder.assists:*` 仍可用于历史版本，新项目请使用上表坐标。模块说明见 [开发文档][docs-link]。
 
 各版本新增与变更见仓库根目录 **[更新日志](CHANGELOG.md)**。
 
