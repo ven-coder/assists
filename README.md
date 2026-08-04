@@ -75,9 +75,9 @@ Assists 是整条生态的**基础库**：基于 Android 无障碍服务封装�
 | **🌐 Web 桥接** | **assists-web** | **Web 自动化支持**：WebView 原生↔JS 通道，让 Web 端直接调用 Assists 能力。 |
 | **📱 运行平台** | [**AssistsX**][assistsx-link] | **Web 自动化运行平台**及**节点分析工具**：安装即用，支持插件本地/局域网/在线加载，开启节点分析后可在局域网用浏览器分析页面节点。 |
 | **📜 JS 库** | [**assistsx-js**][assistsx-js-link] | **Web 自动化 JS 库**：节点查找、手势、步骤器……用前端技术栈轻松编写与维护自动化。 |
-| **🤖 AI 协作** | [**Assists MCP**][assists-mcp-link] | **MCP 商业产品**：凡基于无障碍服务的自动化均可协作；与 AssistsX 搭配可发挥全部潜能（插件创建、逻辑编写、节点分析、Bug 排查）。 |
 | **📂 示例仓库** | [**assists-examples**][assists-examples-link] | **Assists 相关示例项目**：包含**原生自动化**与 **Web 端自动化**示例，即拿即跑。 |
 | **📊 日志节点分析** | **日志节点上报分析系统** | 测试人员可提交**运行日志**与**页面节点信息**，开发基于上报数据分析页面结构、精准定位多设备/多界面 Bug，解决「无日志、无节点难以复现」的痛点。 |
+| **🤖 AI 协作** | [**Assists MCP**][assists-mcp-link] | 凡基于无障碍服务的自动化均可协作；与 AssistsX 搭配可发挥全部潜能（插件创建、逻辑编写、节点分析、Bug 排查）。 |
 
 **推荐路径**：使用 [assistsx-js][assistsx-js-link] 在 Web 端开发自动化 → 在手机安装 [AssistsX][assistsx-link] 运行插件 → 接入 [Assists MCP][assists-mcp-link] 让 AI Agent 协作开发与排障 → 参考 [assists-examples][assists-examples-link] 学习与扩展。
 
@@ -86,13 +86,14 @@ Assists 是整条生态的**基础库**：基于 Android 无障碍服务封装�
 > **新增 MCP 支持，全面增强 AI Agent 与无障碍自动化的协作能力。**  
 > 通过 MCP，AI Agent 从辅助工具提升为自动化开发流程中的核心协作者。
 
-接入 **Cursor、Claude Code、Codex、OpenCode** 等支持 MCP 的 AI 编程助手后，Agent 可全程参与开发与调试：不只是「遥控手机」，而是覆盖**基于无障碍服务的自动化**——读节点、写逻辑、查 Bug，让 AI Agent 真正进入自动化落地全流程。
+接入 **Cursor、Claude Code、Codex、OpenCode** 等支持 MCP 的 AI 编程助手后，Agent 可全程参与开发与调试：不只是「遥控手机」，而是覆盖**基于无障碍服务的自动化**——读节点、查文档、写逻辑、查 Bug，让 AI Agent 真正进入自动化落地全流程。
 
 与 [AssistsX][assistsx-link] 协作时，可进一步发挥 MCP 的全部潜能：覆盖插件创建、实现与排障，显著提升效率。
 
 | 能力 | 说明 |
 |------|------|
 | **多端 MCP 接入** | 支持 Cursor、Claude Code、Codex、OpenCode 等 MCP 客户端 |
+| **内置开发文档** | 已内置完整 Assists 原生 API 与 assistsx-js 文档；可直接与 AI 对话检索、查阅，边问边写 |
 | **无障碍自动化协作** | 凡基于 Android 无障碍服务的自动化，均可读节点、写逻辑、查 Bug |
 | **AssistsX 全潜能** | 与 AssistsX 搭配时，支持插件创建、逻辑编写、调试与异常排查 |
 | **节点读取与分析** | 原生无障碍服务节点读取与逻辑分析 |
@@ -120,6 +121,11 @@ Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、�
 
 
 ## 开发文档
+
+> **强烈建议**：通过 [Assists MCP](https://assists.cn/mcp) 在 Cursor、Claude Code 等 AI 助手中直接对话查阅开发文档。  
+> MCP 已内置完整开发文档（含 Assists 原生 API 与 assistsx-js），检索与阅读比翻网页更高效，也更利于边问边写代码。
+
+在线文档（飞书）：[打开文档][docs-link]
 
 ### 依赖集成（Maven Central）
 
