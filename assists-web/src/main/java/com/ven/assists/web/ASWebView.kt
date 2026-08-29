@@ -19,6 +19,7 @@ import com.ven.assists.service.AssistsService
 import com.ven.assists.service.AssistsServiceListener
 import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.runMain
+import com.ven.assists.web.CallRequestParser
 import com.ven.assists.web.barutils.BarUtilsJavascriptInterface
 import com.ven.assists.web.db.DbJavascriptInterface
 import com.ven.assists.web.filesystem.PathJavascriptInterface
@@ -105,7 +106,8 @@ open class ASWebView @JvmOverloads constructor(
             }
         }
 
-        val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
+        // 解析失败（结构非法/字段类型不符）时不再抛异常炸掉调用链，按未拦截处理
+        val request = CallRequestParser.parse(requestJson) ?: return@intercept CallInterceptResult(false, requestJson)
         var callInterceptResult = CallInterceptResult(false, requestJson)
         when (request.method) {
             CallMethod.setAccessibilityEventFilters -> {

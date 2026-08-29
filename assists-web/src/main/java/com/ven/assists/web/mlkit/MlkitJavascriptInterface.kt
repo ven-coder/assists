@@ -7,8 +7,8 @@ import android.webkit.WebView
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
 import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import com.ven.assists.web.CallRequest
+import com.ven.assists.web.CallRequestParser
 import com.ven.assists.web.CallResponse
 import com.ven.assists.web.createResponse
 import com.ven.assists.window.AssistsWindowManager
@@ -61,10 +61,10 @@ class MlkitJavascriptInterface(val webView: WebView) {
      * 处理调用请求
      */
     private suspend fun processCall(originJson: String) {
-        val request = GsonUtils.fromJson<CallRequest<JsonObject>>(
-            originJson,
-            object : TypeToken<CallRequest<JsonObject>>() {}.type
-        )
+        val request = CallRequestParser.parse(originJson) ?: run {
+            callbackResponse(CallResponse<Any>(code = -1, message = "请求解析失败", data = null))
+            return
+        }
         runCatching {
             val response = when (request.method) {
                 MlkitCallMethod.findPhrasePositions -> {

@@ -7,10 +7,10 @@ import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import com.ven.assists.web.ASWebView
 import com.ven.assists.web.CallInterceptResult
 import com.ven.assists.web.CallRequest
+import com.ven.assists.web.CallRequestParser
 import com.ven.assists.web.CallResponse
 import com.ven.assists.web.createResponse
 import kotlinx.coroutines.CoroutineScope
@@ -75,10 +75,10 @@ class DbJavascriptInterface(val webView: WebView) {
         }.onFailure { LogUtils.e(it) }
         if (intercepted.getOrNull() == true) return
 
-        val request = GsonUtils.fromJson<CallRequest<JsonObject>>(
-            requestJson,
-            object : TypeToken<CallRequest<JsonObject>>() {}.type,
-        )
+        val request = CallRequestParser.parse(requestJson) ?: run {
+            callbackResponse(CallResponse<Any>(code = -1, message = "请求解析失败", data = null))
+            return
+        }
         runCatching {
             val response = when (request.method) {
                 DbCallMethod.exec -> handleExec(request)

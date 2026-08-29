@@ -127,7 +127,11 @@ class ASJavascriptInterfaceAsync(val webView: WebView) {
         }.onFailure { LogUtils.e(it) }
         if (callIntercept.getOrNull() == true) return
 
-        val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
+        // 解析请求；字段归一化 + 失败防护统一在 CallRequestParser 内处理，异常不再炸协程
+        val request = CallRequestParser.parse(requestJson) ?: run {
+            callbackResponse(CallResponse<Any>(code = -1, data = "", message = "请求解析失败"))
+            return
+        }
         runCatching {
             val response = when (request.method) {
                 CallMethod.audioStop -> handleAudioStop(request)

@@ -7,6 +7,8 @@
 > 当前最新已发布标签：**v3.5.6**。以下为下一版本计划，正式发布前请勿当作已上线版本。
 
 - **修复**：网页侧多级调用改写按顺序执行时，后一级可能回退前一级的改写结果，导致部分调用未生效（如浮窗打开地址未补全为完整地址）——改为按顺序链式传递改写结果
+- **修复**：`ASJavascriptInterfaceAsync.processCall` 中 `CallRequest` 反序列化在 `runCatching` 之外，JS 侧把数组传给 `node` 字段（如 `findById` 返回的 `Node[]` 直接传给 `click`）时 Gson 抛 `JsonSyntaxException` 导致进程崩溃——改为解析前置 `JsonParser` 归一化（`node` 为数组取首元素、`nodes` 为对象包装为数组），解析失败返回错误响应不再崩溃
+- **修复**：同类反序列化崩溃隐患全量排查——新增 `CallRequestParser` 统一安全解析入口，13 个 Bridge 接口（`ASJavascriptInterface` 同步 / `ASJavascriptInterfaceAsync` / `FloatJsInterface` / BarUtils / IME / Screenshot / MMKV / Db / Gallery / Http / FileIO / FileUtils / Path / ImageUtils / Mlkit）及 `ASWebView.javascriptCallIntercept` 事件过滤拦截器全部改为经归一化 + 异常防护解析，任一接口收到结构非法或字段类型不符的请求均返回错误响应，不再炸掉协程导致进程崩溃
 
 ---
 

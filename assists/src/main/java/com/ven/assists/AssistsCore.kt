@@ -81,10 +81,14 @@ object AssistsCore {
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isFrameLayout（与 AssistsNodeClassNames 配套）",
-        replaceWith = ReplaceWith("isFrameLayout()", imports = ["com.ven.assists.utils.isFrameLayout"]),
+        replaceWith = ReplaceWith(
+            "isFrameLayout()",
+            imports = ["com.ven.assists.utils.isFrameLayout"]
+        ),
         level = DeprecationLevel.WARNING,
     )
-    fun AccessibilityNodeInfo.isFrameLayout(): Boolean = className == AssistsNodeClassNames.FrameLayout
+    fun AccessibilityNodeInfo.isFrameLayout(): Boolean =
+        className == AssistsNodeClassNames.FrameLayout
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isViewGroup",
@@ -116,17 +120,25 @@ object AssistsCore {
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isLinearLayout",
-        replaceWith = ReplaceWith("isLinearLayout()", imports = ["com.ven.assists.utils.isLinearLayout"]),
+        replaceWith = ReplaceWith(
+            "isLinearLayout()",
+            imports = ["com.ven.assists.utils.isLinearLayout"]
+        ),
         level = DeprecationLevel.WARNING,
     )
-    fun AccessibilityNodeInfo.isLinearLayout(): Boolean = className == AssistsNodeClassNames.LinearLayout
+    fun AccessibilityNodeInfo.isLinearLayout(): Boolean =
+        className == AssistsNodeClassNames.LinearLayout
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isRelativeLayout",
-        replaceWith = ReplaceWith("isRelativeLayout()", imports = ["com.ven.assists.utils.isRelativeLayout"]),
+        replaceWith = ReplaceWith(
+            "isRelativeLayout()",
+            imports = ["com.ven.assists.utils.isRelativeLayout"]
+        ),
         level = DeprecationLevel.WARNING,
     )
-    fun AccessibilityNodeInfo.isRelativeLayout(): Boolean = className == AssistsNodeClassNames.RelativeLayout
+    fun AccessibilityNodeInfo.isRelativeLayout(): Boolean =
+        className == AssistsNodeClassNames.RelativeLayout
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isButton",
@@ -137,10 +149,14 @@ object AssistsCore {
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isImageButton",
-        replaceWith = ReplaceWith("isImageButton()", imports = ["com.ven.assists.utils.isImageButton"]),
+        replaceWith = ReplaceWith(
+            "isImageButton()",
+            imports = ["com.ven.assists.utils.isImageButton"]
+        ),
         level = DeprecationLevel.WARNING,
     )
-    fun AccessibilityNodeInfo.isImageButton(): Boolean = className == AssistsNodeClassNames.ImageButton
+    fun AccessibilityNodeInfo.isImageButton(): Boolean =
+        className == AssistsNodeClassNames.ImageButton
 
     @Deprecated(
         message = "请改用 com.ven.assists.utils.isEditText",
@@ -265,11 +281,13 @@ object AssistsCore {
         val pkg = context.packageName
         val classNames = linkedSetOf<String>()
         runCatching {
-            val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-            manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK).forEach { info ->
-                val si = info.resolveInfo.serviceInfo
-                if (si.packageName == pkg) classNames.add(si.name)
-            }
+            val manager =
+                context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+                .forEach { info ->
+                    val si = info.resolveInfo.serviceInfo
+                    if (si.packageName == pkg) classNames.add(si.name)
+                }
         }.onFailure { LogUtils.e(it) }
         val enabledSecure = Settings.Secure.getString(
             context.contentResolver,
@@ -290,7 +308,11 @@ object AssistsCore {
     /** 无障碍功能总开关是否打开 */
     private fun isAccessibilityMasterSwitchOn(context: Context): Boolean {
         return runCatching {
-            Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+            Settings.Secure.getInt(
+                context.contentResolver,
+                Settings.Secure.ACCESSIBILITY_ENABLED,
+                0
+            ) == 1
         }.getOrElse {
             LogUtils.e(it)
             false
@@ -321,7 +343,8 @@ object AssistsCore {
     @JvmOverloads
     fun getPackageName(scope: NodeLookupScope = NodeLookupScope.ActiveWindow): String {
         if (scope == NodeLookupScope.ActiveWindow) {
-            return getAccessibilityRootNodes(NodeLookupScope.ActiveWindow).firstOrNull()?.packageName?.toString() ?: ""
+            return getAccessibilityRootNodes(NodeLookupScope.ActiveWindow).firstOrNull()?.packageName?.toString()
+                ?: ""
         }
         val service = AssistsService.getOrNull() ?: return ""
         val windows = service.windows
@@ -339,7 +362,8 @@ object AssistsCore {
         }
         val fallbackActive = getPackageName(NodeLookupScope.ActiveWindow)
         if (fallbackActive.isNotEmpty()) return fallbackActive
-        return getAccessibilityRootNodes(NodeLookupScope.AllWindows).firstOrNull()?.packageName?.toString() ?: ""
+        return getAccessibilityRootNodes(NodeLookupScope.AllWindows).firstOrNull()?.packageName?.toString()
+            ?: ""
     }
 
     /**
@@ -393,7 +417,12 @@ object AssistsCore {
         getAccessibilityRootNodes(scope).forEach { root ->
             nodes.addAll(root.findById(id))
         }
-        return filterNodes(nodes, filterText = filterText, filterDes = filterDes, filterClass = filterClass)
+        return filterNodes(
+            nodes,
+            filterText = filterText,
+            filterDes = filterDes,
+            filterClass = filterClass
+        )
     }
 
     /**
@@ -411,7 +440,12 @@ object AssistsCore {
         filterClass: String? = null
     ): List<AccessibilityNodeInfo> {
         val nodes = this?.findAccessibilityNodeInfosByViewId(id) ?: arrayListOf()
-        val filterNodes = filterNodes(nodes, filterText = filterText, filterDes = filterDes, filterClass = filterClass)
+        val filterNodes = filterNodes(
+            nodes,
+            filterText = filterText,
+            filterDes = filterDes,
+            filterClass = filterClass
+        )
         return filterNodes
     }
 
@@ -436,7 +470,12 @@ object AssistsCore {
         getAccessibilityRootNodes(scope).forEach { root ->
             nodes.addAll(root.findByText(text))
         }
-        return filterNodes(nodes, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass)
+        return filterNodes(
+            nodes,
+            filterViewId = filterViewId,
+            filterDes = filterDes,
+            filterClass = filterClass
+        )
     }
 
     /**
@@ -479,7 +518,12 @@ object AssistsCore {
 
         val nodes = this?.findAccessibilityNodeInfosByText(text) ?: arrayListOf()
 
-        val filterNodes = filterNodes(nodes, filterViewId = filterViewId, filterDes = filterDes, filterClass = filterClass)
+        val filterNodes = filterNodes(
+            nodes,
+            filterViewId = filterViewId,
+            filterDes = filterDes,
+            filterClass = filterClass
+        )
         return filterNodes
     }
 
@@ -502,9 +546,9 @@ object AssistsCore {
         // 各条件非空时同时生效（AND），避免原先仅第一个非空条件生效与其它 API 语义冲突
         return nodes.filter { node ->
             (filterViewId.isNullOrEmpty() || node.viewIdResourceName == filterViewId) &&
-                (filterText.isNullOrEmpty() || node.text?.toString() == filterText) &&
-                (filterDes.isNullOrEmpty() || node.contentDescription?.toString() == filterDes) &&
-                (filterClass.isNullOrEmpty() || node.className?.toString() == filterClass)
+                    (filterText.isNullOrEmpty() || node.text?.toString() == filterText) &&
+                    (filterDes.isNullOrEmpty() || node.contentDescription?.toString() == filterDes) &&
+                    (filterClass.isNullOrEmpty() || node.className?.toString() == filterClass)
         }
     }
 
@@ -624,7 +668,10 @@ object AssistsCore {
      * @param className 要查找的父元素类名
      * @param container 用于存储查找结果的列表
      */
-    fun AccessibilityNodeInfo.findFirstParentByTags(className: String, container: ArrayList<AccessibilityNodeInfo>) {
+    fun AccessibilityNodeInfo.findFirstParentByTags(
+        className: String,
+        container: ArrayList<AccessibilityNodeInfo>
+    ) {
         getParent()?.let {
             if (TextUtils.equals(className, it.className)) {
                 container.add(it)
@@ -807,19 +854,23 @@ object AssistsCore {
                 val svc = AssistsService.getOrNull()
                 LogUtils.i(
                     "[GestureDiag] gesture(path) dispatch service=${svc != null} " +
-                        "startTime=$startTime duration=$duration",
+                            "startTime=$startTime duration=$duration",
                 )
-                return@runMain svc?.dispatchGesture(gestureDescription, object : AccessibilityService.GestureResultCallback() {
-                    override fun onCompleted(gestureDescription: GestureDescription) {
-                        LogUtils.i("[GestureDiag] gesture(path) onCompleted")
-                        deferred.complete(true)
-                    }
+                return@runMain svc?.dispatchGesture(
+                    gestureDescription,
+                    object : AccessibilityService.GestureResultCallback() {
+                        override fun onCompleted(gestureDescription: GestureDescription) {
+                            LogUtils.i("[GestureDiag] gesture(path) onCompleted")
+                            deferred.complete(true)
+                        }
 
-                    override fun onCancelled(gestureDescription: GestureDescription) {
-                        LogUtils.w("[GestureDiag] gesture(path) onCancelled")
-                        deferred.complete(false)
-                    }
-                }, null) ?: let {
+                        override fun onCancelled(gestureDescription: GestureDescription) {
+                            LogUtils.w("[GestureDiag] gesture(path) onCancelled")
+                            deferred.complete(false)
+                        }
+                    },
+                    null
+                ) ?: let {
                     LogUtils.e("[GestureDiag] gesture(path) dispatch skipped: AssistsService is null")
                     return@runMain false
                 }
@@ -1013,7 +1064,8 @@ object AssistsCore {
      * @return 返回操作是否成功
      */
     fun back(): Boolean {
-        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) ?: false
+        return AssistsService.getOrNull()
+            ?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) ?: false
     }
 
     /**
@@ -1021,7 +1073,8 @@ object AssistsCore {
      * @return 返回主屏幕操作是否成功
      */
     fun home(): Boolean {
-        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME) ?: false
+        return AssistsService.getOrNull()
+            ?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME) ?: false
     }
 
     /**
@@ -1029,7 +1082,8 @@ object AssistsCore {
      * @return 打开通知栏操作是否成功
      */
     fun notifications(): Boolean {
-        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS) ?: false
+        return AssistsService.getOrNull()
+            ?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS) ?: false
     }
 
     /**
@@ -1037,7 +1091,8 @@ object AssistsCore {
      * @return 显示最近任务操作是否成功
      */
     fun recentApps(): Boolean {
-        return AssistsService.getOrNull()?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS) ?: false
+        return AssistsService.getOrNull()
+            ?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS) ?: false
     }
 
     /**
@@ -1151,7 +1206,10 @@ object AssistsCore {
      */
     fun AccessibilityNodeInfo.selectionText(selectionStart: Int, selectionEnd: Int): Boolean {
         val selectionArgs = Bundle()
-        selectionArgs.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, selectionStart)
+        selectionArgs.putInt(
+            AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT,
+            selectionStart
+        )
         selectionArgs.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, selectionEnd)
         return performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, selectionArgs)
     }
@@ -1286,7 +1344,10 @@ object AssistsCore {
         runMain { AssistsWindowManager.add(view) }
         CoroutineWrapper.launch {
             delay(250)
-            gestureClick(ScreenUtils.getScreenWidth() / 2.toFloat(), ScreenUtils.getScreenHeight() / 2.toFloat())
+            gestureClick(
+                ScreenUtils.getScreenWidth() / 2.toFloat(),
+                ScreenUtils.getScreenHeight() / 2.toFloat()
+            )
             delay(250)
             runMain { AssistsWindowManager.removeView(view) }
         }
@@ -1318,7 +1379,8 @@ object AssistsCore {
         val view = View(service).apply {
             setOnClickListener {
                 runCatching {
-                    val fallbackIntent = service.packageManager.getLaunchIntentForPackage(packageName)
+                    val fallbackIntent =
+                        service.packageManager.getLaunchIntentForPackage(packageName)
                     fallbackIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     service.startActivity(fallbackIntent)
                     completableDeferred.complete(true)
@@ -1327,10 +1389,17 @@ object AssistsCore {
                 }
             }
         }
-        runMain { AssistsWindowManager.add(view) }
+        runMain {
+            runCatching { AssistsWindowManager.add(view) }.onFailure {
+                LogUtils.e(it)
+            }
+        }
         CoroutineWrapper.launch {
             delay(250)
-            gestureClick(ScreenUtils.getScreenWidth() / 2.toFloat(), ScreenUtils.getScreenHeight() / 2.toFloat())
+            gestureClick(
+                ScreenUtils.getScreenWidth() / 2.toFloat(),
+                ScreenUtils.getScreenHeight() / 2.toFloat()
+            )
             delay(250)
             runMain { AssistsWindowManager.removeView(view) }
         }
@@ -1412,13 +1481,25 @@ object AssistsCore {
 
             val bitmap = screenshot?.let {
                 return@let getBoundsInScreen().let { nodeBounds ->
-                    val bitmap = Bitmap.createBitmap(it, nodeBounds.left, nodeBounds.top, nodeBounds.width(), nodeBounds.height())
+                    val bitmap = Bitmap.createBitmap(
+                        it,
+                        nodeBounds.left,
+                        nodeBounds.top,
+                        nodeBounds.width(),
+                        nodeBounds.height()
+                    )
                     return@let bitmap
                 }
             } ?: let {
                 return@let AssistsCore.takeScreenshot()?.let {
                     return@let getBoundsInScreen().let { nodeBounds ->
-                        val bitmap = Bitmap.createBitmap(it, nodeBounds.left, nodeBounds.top, nodeBounds.width(), nodeBounds.height())
+                        val bitmap = Bitmap.createBitmap(
+                            it,
+                            nodeBounds.left,
+                            nodeBounds.top,
+                            nodeBounds.width(),
+                            nodeBounds.height()
+                        )
                         return@let bitmap
                     }
                 }
@@ -1435,32 +1516,35 @@ object AssistsCore {
     @RequiresApi(Build.VERSION_CODES.R)
     suspend fun takeScreenshot(): Bitmap? {
         val completableDeferred = CompletableDeferred<Bitmap?>()
-        AssistsService.getOrNull()?.takeScreenshot(Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), object : TakeScreenshotCallback {
-            override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
-                try {
-                    Bitmap.wrapHardwareBuffer(
-                        screenshot.hardwareBuffer,
-                        screenshot.colorSpace
-                    )?.let {
+        AssistsService.getOrNull()?.takeScreenshot(
+            Display.DEFAULT_DISPLAY,
+            Executors.newSingleThreadExecutor(),
+            object : TakeScreenshotCallback {
+                override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
+                    try {
+                        Bitmap.wrapHardwareBuffer(
+                            screenshot.hardwareBuffer,
+                            screenshot.colorSpace
+                        )?.let {
 
-                        // 转成软件 bitmap，调试器能查看
-                        val bitmap = it.copy(Bitmap.Config.ARGB_8888, false)
+                            // 转成软件 bitmap，调试器能查看
+                            val bitmap = it.copy(Bitmap.Config.ARGB_8888, false)
 
-                        completableDeferred.complete(bitmap)
-                    } ?: let {
-                        Log.e("AssistsCore", "takeScreenshot: wrapHardwareBuffer returned null")
-                        completableDeferred.complete(null)
+                            completableDeferred.complete(bitmap)
+                        } ?: let {
+                            Log.e("AssistsCore", "takeScreenshot: wrapHardwareBuffer returned null")
+                            completableDeferred.complete(null)
+                        }
+                    } finally {
+                        screenshot.hardwareBuffer.close()
                     }
-                } finally {
-                    screenshot.hardwareBuffer.close()
                 }
-            }
 
-            override fun onFailure(errorCode: Int) {
-                Log.e("AssistsCore", "takeScreenshot failed, errorCode=$errorCode")
-                completableDeferred.complete(null)
-            }
-        })
+                override fun onFailure(errorCode: Int) {
+                    Log.e("AssistsCore", "takeScreenshot failed, errorCode=$errorCode")
+                    completableDeferred.complete(null)
+                }
+            })
         return completableDeferred.await()
     }
 
@@ -1628,7 +1712,8 @@ object AssistsCore {
             isClickable = isClickable,
             isEnabled = isEnabled,
             boundsInScreen = toNodeBounds(),
-            hintText = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) hintText?.toString() ?: "" else "",
+            hintText = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) hintText?.toString()
+                ?: "" else "",
             isCheckable = isCheckable,
             isChecked = isChecked,
             isFocusable = isFocusable,
@@ -1694,6 +1779,7 @@ object AssistsCore {
             NodeLookupScope.ActiveWindow -> {
                 getAccessibilityRootNodes(NodeLookupScope.ActiveWindow).firstOrNull()?.toNodeTree()
             }
+
             NodeLookupScope.AllWindows -> {
                 val roots = getAccessibilityRootNodes(NodeLookupScope.AllWindows)
                 when (roots.size) {

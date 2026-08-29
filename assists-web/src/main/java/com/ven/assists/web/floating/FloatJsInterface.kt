@@ -14,7 +14,6 @@ import com.blankj.utilcode.util.ScreenUtils
 import com.blankj.utilcode.util.SizeUtils
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import com.ven.assists.AssistsCore
 import com.ven.assists.base.R as BaseR
 import com.ven.assists.base.databinding.AssistsWindowLayoutWrapperBinding
@@ -22,6 +21,7 @@ import com.ven.assists.utils.CoroutineWrapper
 import com.ven.assists.utils.runMain
 import com.ven.assists.web.CallInterceptResult
 import com.ven.assists.web.CallRequest
+import com.ven.assists.web.CallRequestParser
 import com.ven.assists.web.CallResponse
 import com.ven.assists.web.R
 import com.ven.assists.web.createResponse
@@ -89,7 +89,10 @@ class FloatJsInterface(val webView: WebView) {
         }.onFailure { LogUtils.e(it) }
         if (intercepted.getOrNull() == true) return
 
-        val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
+        val request = CallRequestParser.parse(requestJson) ?: run {
+            callbackResponse(CallResponse<Any>(code = -1, message = "请求解析失败", data = null))
+            return
+        }
         runCatching {
             val response = when (request.method) {
                 FloatCallMethod.open -> open(request)

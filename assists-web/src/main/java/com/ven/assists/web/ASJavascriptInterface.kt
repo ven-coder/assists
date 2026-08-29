@@ -24,10 +24,10 @@ import com.blankj.utilcode.util.NetworkUtils
 import com.blankj.utilcode.util.ScreenUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import com.journeyapps.barcodescanner.ScanOptions
 import com.ven.assists.AssistsCore
 import com.ven.assists.AssistsCore.click
+import com.ven.assists.web.CallRequestParser
 import com.ven.assists.AssistsCore.containsText
 import com.ven.assists.AssistsCore.findById
 import com.ven.assists.AssistsCore.findByTags
@@ -111,9 +111,9 @@ class ASJavascriptInterface(val webView: WebView) {
             }
         }.onFailure { LogUtils.e(it) }
 
-        var result = GsonUtils.toJson(CallResponse<Any>(code = -1))
+        var result = GsonUtils.toJson(CallResponse<Any>(code = -1, data = null, message = "请求解析失败"))
         runCatching {
-            val request = GsonUtils.fromJson<CallRequest<JsonObject>>(requestJson, object : TypeToken<CallRequest<JsonObject>>() {}.type)
+            val request = CallRequestParser.parse(requestJson) ?: return result
             when (request.method) {
                 CallMethod.keepScreenOn -> {
                     val tip = request.arguments?.get("tip")?.asString ?: ""
