@@ -111,7 +111,132 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
                 }
 
             }
+            btnMedia.setOnClickListener {
+                // 按系统版本申请对应的媒体读取权限，授权后遍历相册输出真实路径
+                val permissions = when {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> arrayOf(
+                        Manifest.permission.READ_MEDIA_IMAGES,
+                        Manifest.permission.READ_MEDIA_VIDEO
+                    )
+
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> arrayOf(
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    )
+
+                    else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+                }
+                PermissionUtils.permission(*permissions)
+                    .callback(object : SimpleCallback {
+                        override fun onGranted() {
+                            "开始读取相册媒体".overlayToast()
+                            MediaStoreDemo.readAllMedia(this@MainActivity)
+                        }
+
+                        override fun onDenied() {
+                            "未授予媒体读取权限，无法读取相册".overlayToast()
+                        }
+                    }).request()
+            }
+            btnMediaSortTest.setOnClickListener {
+                MediaStoreDemo.topFifthMedia(this@MainActivity).let(::handleTopResult)
+            }
+            btnMediaCopyTop.setOnClickListener {
+                // 复制置顶：先提示处理中，全流程在后台协程执行，完成后提示结果
+                "正在复制置顶...".overlayToast()
+                CoroutineWrapper.launch {
+                    val result = MediaStoreDemo.copyTopFifthMedia(this@MainActivity)
+                    runOnUiThread { handleCopyTopResult(result) }
+                }
+            }
         }
+    }
+
+    /** 处理置顶操作结果（含 Android 10+ 其他应用媒体的授权流程） */
+    private fun handleTopResult(result: MediaStoreDemo.TopResult) {
+        when (result) {
+            is MediaStoreDemo.TopResult.Success -> {
+                "已置顶: ${result.name}".overlayToast()
+                // 置顶后重新输出验证顺序
+                MediaStoreDemo.readAllMedia(this)
+            }
+
+            is MediaStoreDemo.TopResult.NeedGrant -> {
+                // 弹系统授权框，用户确认后重试
+                startIntentSenderForResult(
+                    result.grantIntentSender,
+                    REQUEST_MEDIA_WRITE_GRANT,
+                    null, 0, 0, 0
+                )
+            }
+
+            is MediaStoreDemo.TopResult.TooFew -> {
+                "相册混排数量不足 5 条（当前 ${result.size} 条）".overlayToast()
+            }
+
+            is MediaStoreDemo.TopResult.Error -> {
+                "修改失败: ${result.reason}".overlayToast()
+            }
+        }
+    }
+
+    /** 处理复制置顶结果（含读取源媒体的授权流程） */
+    private fun handleCopyTopResult(result: MediaStoreDemo.TopResult) {
+        when (result) {
+            is MediaStoreDemo.TopResult.Success -> {
+                "已复制置顶: ${result.name}".overlayToast()
+                // 输出新的混排顺序验证新条目排最前
+                MediaStoreDemo.readAllMedia(this)
+            }
+
+            is MediaStoreDemo.TopResult.NeedGrant -> {
+                // 读取源媒体需要授权，弹系统框，确认后重试复制
+                startIntentSenderForResult(
+                    result.grantIntentSender,
+                    REQUEST_MEDIA_COPY_GRANT,
+                    null, 0, 0, 0
+                )
+            }
+
+            is MediaStoreDemo.TopResult.TooFew -> {
+                "相册混排数量不足 5 条（当前 ${result.size} 条）".overlayToast()
+            }
+
+            is MediaStoreDemo.TopResult.Error -> {
+                "复制失败: ${result.reason}".overlayToast()
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            REQUEST_MEDIA_WRITE_GRANT -> {
+                if (resultCode == RESULT_OK) {
+                    // 授权成功，重试置顶
+                    handleTopResult(MediaStoreDemo.retryTopAfterGrant(this))
+                } else {
+                    MediaStoreDemo.clearPending()
+                    "用户拒绝授权，无法修改".overlayToast()
+                }
+            }
+
+            REQUEST_MEDIA_COPY_GRANT -> {
+                if (resultCode == RESULT_OK) {
+                    CoroutineWrapper.launch {
+                        val result = MediaStoreDemo.retryCopyAfterGrant(this@MainActivity)
+                        runOnUiThread { handleCopyTopResult(result) }
+                    }
+                } else {
+                    MediaStoreDemo.clearPending()
+                    "用户拒绝授权，无法复制".overlayToast()
+                }
+            }
+        }
+    }
+
+    companion object {
+        private const val REQUEST_MEDIA_WRITE_GRANT = 10001
+        private const val REQUEST_MEDIA_COPY_GRANT = 10002
     }
     private val foregroundServiceIntent: Intent by lazy {
         Intent(this, ForegroundService::class.java)
@@ -157,7 +282,14 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
     override fun onServiceConnected(service: AssistsService) {
         checkServiceEnable()
         if (AssistsCore.getPackageName() != AppUtils.getAppPackageName()) {
-            CoroutineWrapper.launch { AssistsCore.launchApp(AppUtils.getAppPackageName()) }
+            CoroutineWrapper.launch {
+                runCatching {
+                    val launchApp = AssistsCore .launchApp(AppUtils.getAppPackageName())
+                    LogUtils.d(launchApp)
+                }.onFailure {
+                    LogUtils.e(it)
+                }
+            }
         }
     }
 
@@ -183,19 +315,21 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
     }
 
     private fun checkPermission() {
-        val areNotificationsEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled();
+        val areNotificationsEnabled =
+            NotificationManagerCompat.from(this).areNotificationsEnabled();
         if (!areNotificationsEnabled) {
             // 通知权限未开启，提示用户去设置
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                PermissionUtils.permission(Manifest.permission.POST_NOTIFICATIONS).callback(object : SimpleCallback {
-                    override fun onGranted() {
+                PermissionUtils.permission(Manifest.permission.POST_NOTIFICATIONS)
+                    .callback(object : SimpleCallback {
+                        override fun onGranted() {
 
-                    }
+                        }
 
-                    override fun onDenied() {
-                        showNotificationPermissionOpenDialog()
-                    }
-                }).request()
+                        override fun onDenied() {
+                            showNotificationPermissionOpenDialog()
+                        }
+                    }).request()
             } else {
                 showNotificationPermissionOpenDialog()
             }
@@ -203,19 +337,20 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
     }
 
     private fun showNotificationPermissionOpenDialog() {
-        XPopup.Builder(this).asConfirm("提示", "未开启通知权限，开启通知权限以获得完整测试相关通知提示") {
-            val intent = Intent()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Android 8.0及以上版本，跳转到应用的通知设置页面
-                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-            } else {
-                // Android 8.0以下版本，跳转到应用详情页面
-                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                intent.setData(Uri.parse("package:" + getPackageName()))
-            }
-            startActivity(intent)
-        }.show()
+        XPopup.Builder(this)
+            .asConfirm("提示", "未开启通知权限，开启通知权限以获得完整测试相关通知提示") {
+                val intent = Intent()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // Android 8.0及以上版本，跳转到应用的通知设置页面
+                    intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                } else {
+                    // Android 8.0以下版本，跳转到应用详情页面
+                    intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.setData(Uri.parse("package:" + getPackageName()))
+                }
+                startActivity(intent)
+            }.show()
 
     }
 

@@ -61,6 +61,30 @@
             android:text="测试"
             android:textAllCaps="false" />
 
+        <Button
+            android:id="@+id/btn_media"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="相册"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btn_media_sort_test"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="排序测试"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btn_media_copy_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorAccent"
+            android:text="复制置顶"
+            android:textAllCaps="false" />
+
     </com.google.android.flexbox.FlexboxLayout>
 
     <LinearLayout
