@@ -60,7 +60,13 @@ object MPManager {
     /** 图像读取器实例 */
     private var imageReader: ImageReader? = null
 
-    var mediaProjectionCallback:MediaProjection.Callback?=null
+    /** MediaProjection 实例（屏幕录制的授权句柄；WebRTC 远程控制推流经它建第二路 VirtualDisplay） */
+    private var mediaProjection: MediaProjection? = null
+
+    /** 供 WebRTC 远程控制等模块获取当前 MediaProjection 授权实例（可为 null：未授权或已停止） */
+    fun getMediaProjection(): MediaProjection? = mediaProjection
+
+    var mediaProjectionCallback: MediaProjection.Callback? = null
 
     /** 屏幕录制是否已启用 */
     var isEnable = false
@@ -149,10 +155,12 @@ object MPManager {
             } else {
                 intent.getParcelableExtra<Intent>(REQUEST_DATA)
             }
-            val mediaProjection = mediaProjectionManager.getMediaProjection(requestCode, requestData!!)
-            mediaProjection?.registerCallback(object : MediaProjection.Callback() {
+            val localProjection = mediaProjectionManager.getMediaProjection(requestCode, requestData!!)
+            this@MPManager.mediaProjection = localProjection
+            localProjection?.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
                     mediaProjectionCallback?.onStop()
+                    this@MPManager.mediaProjection = null
                 }
 
                 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -165,7 +173,7 @@ object MPManager {
                     mediaProjectionCallback?.onCapturedContentVisibilityChanged(isVisible)
                 }
             }, Handler(Looper.getMainLooper()))
-            mediaProjection?.createVirtualDisplay(
+            localProjection?.createVirtualDisplay(
                 "assists_mp",
                 screenWidth,
                 screenHeight,
