@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
+import android.hardware.display.VirtualDisplay
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
@@ -60,11 +61,39 @@ object MPManager {
     /** 图像读取器实例 */
     private var imageReader: ImageReader? = null
 
-    /** MediaProjection 实例（屏幕录制的授权句柄；WebRTC 远程控制推流经它建第二路 VirtualDisplay） */
+    /** MediaProjection 实例（屏幕录制的授权句柄） */
     private var mediaProjection: MediaProjection? = null
+
+    /** MediaProjection 创建的 VirtualDisplay（Android 14+ 同一投影只允许建一个，推流采取 surface 切换而非新建 VD） */
+    private var virtualDisplay: VirtualDisplay? = null
 
     /** 供 WebRTC 远程控制等模块获取当前 MediaProjection 授权实例（可为 null：未授权或已停止） */
     fun getMediaProjection(): MediaProjection? = mediaProjection
+
+    /**
+     * 推流接管：把现有 VirtualDisplay 的输出面切到 [surface]（WebRTC 采集面）。
+     * Android 14+ 禁止同一投影实例二次 createVirtualDisplay，故用 setSurface 换面；
+     * 期间 [takeScreenshot2Bitmap] 不可用（API 30+ 截图走无障碍，不受影响）。
+     */
+    fun takeOverVirtualDisplaySurface(surface: android.view.Surface): Boolean {
+        val vd = virtualDisplay ?: return false
+        return runCatching {
+            vd.setSurface(surface)
+            LogUtils.d("takeOverVirtualDisplaySurface for webrtc streaming")
+            true
+        }.getOrDefault(false)
+    }
+
+    /** 推流结束：把 VirtualDisplay 输出面切回 ImageReader（恢复 MP 截图能力） */
+    fun restoreVirtualDisplaySurface(): Boolean {
+        val vd = virtualDisplay ?: return false
+        val reader = imageReader ?: return false
+        return runCatching {
+            vd.setSurface(reader.surface)
+            LogUtils.d("restoreVirtualDisplaySurface to imageReader")
+            true
+        }.getOrDefault(false)
+    }
 
     var mediaProjectionCallback: MediaProjection.Callback? = null
 
@@ -160,6 +189,8 @@ object MPManager {
             localProjection?.registerCallback(object : MediaProjection.Callback() {
                 override fun onStop() {
                     mediaProjectionCallback?.onStop()
+                    runCatching { this@MPManager.virtualDisplay?.release() }
+                    this@MPManager.virtualDisplay = null
                     this@MPManager.mediaProjection = null
                 }
 
@@ -173,7 +204,7 @@ object MPManager {
                     mediaProjectionCallback?.onCapturedContentVisibilityChanged(isVisible)
                 }
             }, Handler(Looper.getMainLooper()))
-            localProjection?.createVirtualDisplay(
+            val vd = localProjection?.createVirtualDisplay(
                 "assists_mp",
                 screenWidth,
                 screenHeight,
@@ -183,6 +214,7 @@ object MPManager {
                 null,
                 null
             )
+            this@MPManager.virtualDisplay = vd
         }
     }
 
