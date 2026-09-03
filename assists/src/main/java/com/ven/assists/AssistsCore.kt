@@ -1407,7 +1407,16 @@ object AssistsCore {
             val st = ptr ?: return
             val hasMoved = st.moved
             val elapsed = System.currentTimeMillis() - st.startTs
-            ptr = null
+            // ⚠️ 这里不能提前置空 ptr：
+            // dragWorker 冲刷剩余点时依赖 `st = ptr`（st.last 作为最后一笔轨迹的起点），
+            // 且 releasePending 的冲刷收尾（completeReleaseLatch）只发生在 worker 循环内。
+            // 若 release 到达时恰有 dispatch 尚未完成（例如日志中第 2 笔 dur=83ms 正在派发、
+            // 队列还积压 478→386→327→298 四个点），worker 派发完回到循环顶部
+            // `val st = ptr ?: return` 时 ptr 已被置空，会直接退出：
+            //   ① 积压的尾部 move 全部丢失 —— 抬手前手指没走到真实位置，滑动尾巴凭空消失；
+            //   ② releaseLatch 永不被 complete —— release 干等 1.5s 超时才强制抬笔，
+            //      表现为手势卡住约 1.5s、且抬笔位置停留在旧 stroke 终点。
+            // 因此 ptr 必须等冲刷完成、worker 退出之后再置空（见 ③）。
             // ① 通知 worker：冲刷剩余点（不新增 event 只消费队列）
             if (workerRunning) {
                 releasePending = true
@@ -1423,9 +1432,11 @@ object AssistsCore {
                     releaseLatch = null
                 }
             }
-            // ② 清空残留采样（极端情况兜底）
+            // ② 冲刷完成（worker 已把剩余 move 合成最后一笔派发完并退出），此时才结束触摸会话
+            ptr = null
+            // ③ 清空残留采样（极端情况兜底）
             drainMoveChannel()
-            // ③ 抬笔（若按住）：willContinue=false 结束，指针抬起
+            // ④ 抬笔（若按住）：willContinue=false 结束，指针抬起
             if (prevStroke != null) {
                 val prev = prevStroke
                 prevStroke = null
