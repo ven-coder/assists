@@ -782,13 +782,13 @@ object AssistsCore {
 
             val gestureResultCallback = object : AccessibilityService.GestureResultCallback() {
                 override fun onCompleted(gestureDescription: GestureDescription?) {
-                    LogUtils.i("[GestureDiag] dispatchGesture onCompleted service=${AssistsService.getOrNull() != null}")
+                    Log.i(LOG_TAG, "[GestureDiag] dispatchGesture onCompleted service=${AssistsService.getOrNull() != null}")
                     CoroutineWrapper.launch { AssistsWindowManager.touchableByAll() }
                     completableDeferred.complete(true)
                 }
 
                 override fun onCancelled(gestureDescription: GestureDescription?) {
-                    LogUtils.w("[GestureDiag] dispatchGesture onCancelled service=${AssistsService.getOrNull() != null}")
+                    Log.w(LOG_TAG, "[GestureDiag] dispatchGesture onCancelled service=${AssistsService.getOrNull() != null}")
                     CoroutineWrapper.launch { AssistsWindowManager.touchableByAll() }
                     completableDeferred.complete(false)
                 }
@@ -796,14 +796,14 @@ object AssistsCore {
             val runResult = AssistsService.getOrNull()?.let {
                 AssistsWindowManager.nonTouchableByAll()
                 delay(nonTouchableWindowDelay)
-                LogUtils.i("[GestureDiag] dispatchGesture call")
+                Log.i(LOG_TAG, "[GestureDiag] dispatchGesture call")
                 runMain { it.dispatchGesture(gesture, gestureResultCallback, null) }
             } ?: let {
-                LogUtils.e("[GestureDiag] dispatchGesture skipped: AssistsService is null")
+                Log.e(LOG_TAG, "[GestureDiag] dispatchGesture skipped: AssistsService is null")
                 return false
             }
             if (!runResult) {
-                LogUtils.w("[GestureDiag] dispatchGesture returned false (not accepted)")
+                Log.w(LOG_TAG, "[GestureDiag] dispatchGesture returned false (not accepted)")
                 return false
             }
             return@runCatching completableDeferred.await()
@@ -854,7 +854,8 @@ object AssistsCore {
             val deferred = CompletableDeferred<Boolean>()
             val runResult = runMain {
                 val svc = AssistsService.getOrNull()
-                LogUtils.i(
+                Log.i(
+                    LOG_TAG,
                     "[GestureDiag] gesture(path) dispatch service=${svc != null} " +
                             "startTime=$startTime duration=$duration",
                 )
@@ -862,23 +863,23 @@ object AssistsCore {
                     gestureDescription,
                     object : AccessibilityService.GestureResultCallback() {
                         override fun onCompleted(gestureDescription: GestureDescription) {
-                            LogUtils.i("[GestureDiag] gesture(path) onCompleted")
+                            Log.i(LOG_TAG, "[GestureDiag] gesture(path) onCompleted")
                             deferred.complete(true)
                         }
 
                         override fun onCancelled(gestureDescription: GestureDescription) {
-                            LogUtils.w("[GestureDiag] gesture(path) onCancelled")
+                            Log.w(LOG_TAG, "[GestureDiag] gesture(path) onCancelled")
                             deferred.complete(false)
                         }
                     },
                     null
                 ) ?: let {
-                    LogUtils.e("[GestureDiag] gesture(path) dispatch skipped: AssistsService is null")
+                    Log.e(LOG_TAG, "[GestureDiag] gesture(path) dispatch skipped: AssistsService is null")
                     return@runMain false
                 }
             }
             if (!runResult) {
-                LogUtils.w("[GestureDiag] gesture(path) dispatch returned false (not accepted)")
+                Log.w(LOG_TAG, "[GestureDiag] gesture(path) dispatch returned false (not accepted)")
                 return false
             }
             deferred.await()
@@ -906,7 +907,8 @@ object AssistsCore {
             val deferred = CompletableDeferred<Boolean>()
             val runResult = runMain {
                 val svc = AssistsService.getOrNull() ?: return@runMain false
-                LogUtils.i(
+                Log.i(
+                    LOG_TAG,
                     "[GestureDiag] gestureContinue dispatch willContinue=$willContinue " +
                             "duration=$duration prev=${prevStroke != null}",
                 )
@@ -914,12 +916,12 @@ object AssistsCore {
                     gestureDescription,
                     object : AccessibilityService.GestureResultCallback() {
                         override fun onCompleted(gestureDescription: GestureDescription) {
-                            LogUtils.i("[GestureDiag] gestureContinue onCompleted")
+                            Log.i(LOG_TAG, "[GestureDiag] gestureContinue onCompleted")
                             deferred.complete(true)
                         }
 
                         override fun onCancelled(gestureDescription: GestureDescription) {
-                            LogUtils.w("[GestureDiag] gestureContinue onCancelled")
+                            Log.w(LOG_TAG, "[GestureDiag] gestureContinue onCancelled")
                             deferred.complete(false)
                         }
                     },
@@ -927,7 +929,7 @@ object AssistsCore {
                 )
             }
             if (!runResult) {
-                LogUtils.w("[GestureDiag] gestureContinue dispatch returned false (not accepted)")
+                Log.w(LOG_TAG, "[GestureDiag] gestureContinue dispatch returned false (not accepted)")
                 return null
             }
             if (deferred.await()) stroke else null
@@ -1051,7 +1053,7 @@ object AssistsCore {
         var clickMaxDurationMs: Long = 160
 
         /** 拖动聚合窗口：该窗口内到达的 move 点聚成一条连续轨迹（一笔画），一次 dispatch 内手指不抬起 */
-        var dragBatchWindowMs: Long = 60
+        var dragBatchWindowMs: Long = 30
 
         /** 拖动轨迹每点折算时长兜底（ms）；实际按到达节奏 velocityDuration 计算，更跟手 */
         var dragMsPerPoint: Long = 20
@@ -1139,10 +1141,10 @@ object AssistsCore {
                 CoroutineWrapper.launch {
                     try {
                         val liftPath = Path().apply { moveTo(end.x, end.y) }
-                        LogUtils.i("[ContinuousTouch] stop lift at (${end.x}, ${end.y})")
+                        Log.i(LOG_TAG, "[ContinuousTouch] stop lift at (${end.x}, ${end.y})")
                         gestureContinue(held, liftPath, 20L, false)
                     } catch (e: Exception) {
-                        LogUtils.w("[ContinuousTouch] stop lift failed: ${e.message}")
+                        Log.w(LOG_TAG, "[ContinuousTouch] stop lift failed: ${e.message}")
                     }
                 }
             }
@@ -1173,10 +1175,10 @@ object AssistsCore {
         fun onTouchPress(x: Float, y: Float) {
             ensureStarted()
             if (!started) {
-                LogUtils.e("[ContinuousTouch] onTouchPress ignored: not started (${x}, ${y})")
+                Log.e(LOG_TAG, "[ContinuousTouch] onTouchPress ignored: not started (${x}, ${y})")
                 return
             }
-            LogUtils.i("[ContinuousTouch] onTouchPress x=$x y=$y")
+            Log.i(LOG_TAG, "[ContinuousTouch] onTouchPress x=$x y=$y")
             channel.trySend(TouchEvent.Press(x, y))
         }
 
@@ -1185,7 +1187,7 @@ object AssistsCore {
         fun onTouchMove(x: Float, y: Float) {
             ensureStarted()
             if (!started) {
-                LogUtils.e("[ContinuousTouch] onTouchMove ignored: not started (${x}, ${y})")
+                Log.e(LOG_TAG, "[ContinuousTouch] onTouchMove ignored: not started (${x}, ${y})")
                 return
             }
             channel.trySend(TouchEvent.Move(x, y))
@@ -1196,10 +1198,10 @@ object AssistsCore {
         fun onTouchRelease() {
             ensureStarted()
             if (!started) {
-                LogUtils.e("[ContinuousTouch] onTouchRelease ignored: not started")
+                Log.e(LOG_TAG, "[ContinuousTouch] onTouchRelease ignored: not started")
                 return
             }
-            LogUtils.i("[ContinuousTouch] onTouchRelease")
+            Log.i(LOG_TAG, "[ContinuousTouch] onTouchRelease")
             channel.trySend(TouchEvent.Release)
         }
 
@@ -1207,7 +1209,7 @@ object AssistsCore {
         @Synchronized
         private fun ensureStarted() {
             if (!started) {
-                LogUtils.w("[ContinuousTouch] lazy start on first event")
+                Log.w(LOG_TAG, "[ContinuousTouch] lazy start on first event")
                 start()
             }
         }
@@ -1264,7 +1266,8 @@ object AssistsCore {
                             }
                         }
                     }
-                    // 排空到最新（丢弃积压中间点，避免倒流/抖动）；release 冲刷时也丢弃中途只剩最新
+                    // 非 release：积压点时全部并入本笔（轨迹完整；超长才截断到最新）
+                    // release 冲刷：保留全部剩余点（最后一笔完整推到终点，不截断快速滑动）
                     while (true) {
                         val next = try {
                             moveChannel.tryReceive().getOrNull()
@@ -1273,7 +1276,7 @@ object AssistsCore {
                         }
                         if (next == null) break
                         batch.add(next)
-                        if (batch.size > 64) {
+                        if (batch.size > 128) {
                             val latest = batch.last()
                             batch.clear()
                             batch.add(latest)
@@ -1304,7 +1307,8 @@ object AssistsCore {
                     } else {
                         dragMinDurationMs
                     }
-                    LogUtils.i(
+                    Log.i(
+                        LOG_TAG,
                         "[ContinuousTouch] drag stroke pts=${batch.size} span=${spanMs}ms dur=${dur}ms " +
                             "from=(${from.x},${from.y}) to=(${lastPt.x},${lastPt.y})",
                     )
@@ -1340,7 +1344,7 @@ object AssistsCore {
             sessionGen++
             val p = DragPoint(event.x, event.y)
             ptr = PointerState(anchor = p, last = p, startTs = System.currentTimeMillis())
-            LogUtils.i("[ContinuousTouch] press (${event.x}, ${event.y}) gen=$sessionGen")
+            Log.i(LOG_TAG, "[ContinuousTouch] press (${event.x}, ${event.y}) gen=$sessionGen")
 
             // 立即真实按下：零长度 willContinue=true，按下并保持不抬起
             val pressPath = Path().apply { moveTo(p.x, p.y) }
@@ -1348,9 +1352,9 @@ object AssistsCore {
             if (stroke != null) {
                 prevStroke = stroke
                 lastEndPoint = p
-                LogUtils.i("[ContinuousTouch] press stroke dispatched (hold) at (${p.x}, ${p.y})")
+                Log.i(LOG_TAG, "[ContinuousTouch] press stroke dispatched (hold) at (${p.x}, ${p.y})")
             } else {
-                LogUtils.w("[ContinuousTouch] press stroke dispatch failed")
+                Log.w(LOG_TAG, "[ContinuousTouch] press stroke dispatch failed")
             }
         }
 
@@ -1366,7 +1370,7 @@ object AssistsCore {
             if (moved > moveDistToBeDrag) {
                 st.moved = true
                 st.dragging = true
-                LogUtils.i("[ContinuousTouch] drag entered (${pt.x}, ${pt.y})")
+                Log.i(LOG_TAG, "[ContinuousTouch] drag entered (${pt.x}, ${pt.y})")
             }
             if (!st.dragging) {
                 return
@@ -1411,7 +1415,7 @@ object AssistsCore {
                 releaseLatch = latch
                 val ok = withTimeoutOrNull(1500) { latch.await() }
                 if (ok == null) {
-                    LogUtils.w("[ContinuousTouch] release: worker flush timeout, force lift")
+                    Log.w(LOG_TAG, "[ContinuousTouch] release: worker flush timeout, force lift")
                 }
                 releasePending = false
                 // 超时或正常后都清理 latch 引用（worker 已 complete 的无需再清）
@@ -1428,15 +1432,16 @@ object AssistsCore {
                 val end = lastEndPoint ?: st.last
                 try {
                     val liftPath = Path().apply { moveTo(end.x, end.y) }
-                    LogUtils.i("[ContinuousTouch] release lift at (${end.x}, ${end.y})")
+                    Log.i(LOG_TAG, "[ContinuousTouch] release lift at (${end.x}, ${end.y})")
                     gestureContinue(prev, liftPath, 20L, false)
                 } catch (e: Exception) {
-                    LogUtils.w("[ContinuousTouch] release lift failed: ${e.message}")
+                    Log.w(LOG_TAG, "[ContinuousTouch] release lift failed: ${e.message}")
                 }
             }
             cancelDragWorker()
             sessionGen++
-            LogUtils.i(
+            Log.i(
+                LOG_TAG,
                 "[ContinuousTouch] release gen=$sessionGen moved=$hasMoved elapsed=$elapsed",
             )
         }
@@ -1926,7 +1931,7 @@ object AssistsCore {
         while (System.currentTimeMillis() < deadline) {
             val active = getPackageName(NodeLookupScope.ActiveWindow)
             val all = getPackageName(NodeLookupScope.AllWindows)
-            LogUtils.d("GestureDiag waitForForeground pkg=$packageName active=$active all=$all")
+            Log.d(LOG_TAG, "GestureDiag waitForForeground pkg=$packageName active=$active all=$all")
             if (active == packageName || all == packageName) {
                 return true
             }
