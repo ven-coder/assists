@@ -1051,13 +1051,16 @@ object AssistsCore {
         var clickMaxDurationMs: Long = 160
 
         /** 拖动聚合窗口：该窗口内到达的 move 点聚成一条连续轨迹（一笔画），一次 dispatch 内手指不抬起 */
-        var dragBatchWindowMs: Long = 80
+        var dragBatchWindowMs: Long = 60
 
-        /** 拖动轨迹每点折算时长（ms） */
+        /** 拖动轨迹每点折算时长兜底（ms）；实际按到达节奏 velocityDuration 计算，更跟手 */
         var dragMsPerPoint: Long = 20
 
         /** 拖动轨迹最小时长（ms） */
-        var dragMinDurationMs: Long = 60
+        var dragMinDurationMs: Long = 40
+
+        /** 拖动轨迹最大时长（ms），防止长时隙段过慢 */
+        var dragMaxDurationMs: Long = 150
 
         /** 位移超此值（屏幕像素）视为拖动（区分点击/长按） */
         var moveDistToBeDrag: Float = 20f
@@ -1072,7 +1075,7 @@ object AssistsCore {
         /** 当前触摸会话（null = 空闲） */
         private var ptr: PointerState? = null
 
-        private data class DragPoint(val x: Float, val y: Float)
+        private data class DragPoint(val x: Float, val y: Float, val ts: Long = 0L)
 
         private class PointerState(
             val anchor: DragPoint,
@@ -1084,10 +1087,17 @@ object AssistsCore {
             var dragging = false       // 是否进入拖动模式
         }
 
-        /** 拖动采样点（攒批 worker 消费；NaN 坐标为抬笔信号） */
+        /** 拖动采样点（攒批 worker 消费） */
         private val moveChannel = Channel<DragPoint>(Channel.UNLIMITED)
         private var workerRunning = false
         private var workerJob: Job? = null
+
+        /** release 冲刷请求（worker 收到后把剩余点全部合成最后一笔派发完再退） */
+        @Volatile
+        private var releasePending = false
+
+        /** 冲刷完成信号：release 等它（worker 收尾后 complete） */
+        private var releaseLatch: CompletableDeferred<Boolean>? = null
 
         /** 当前续笔链（上一笔 StrokeDescription，供 continueStroke 接续；worker 单消费者维护） */
         private var prevStroke: GestureDescription.StrokeDescription? = null
@@ -1232,9 +1242,10 @@ object AssistsCore {
                         return
                     }
                     val st = ptr ?: return
-                    // 攒一窗口（最多 N 点）作为一笔
+                    // 攒一窗口（最多 N 点）作为一笔；releasePending 时立即取空队列不再等待
                     val batch = ArrayList<DragPoint>()
-                    val windowEnd = System.currentTimeMillis() + dragBatchWindowMs
+                    val windowEnd =
+                        if (releasePending) 0L else System.currentTimeMillis() + dragBatchWindowMs
                     while (System.currentTimeMillis() < windowEnd && batch.size < 32) {
                         val p = try {
                             moveChannel.tryReceive().getOrNull()
@@ -1243,19 +1254,17 @@ object AssistsCore {
                         }
                         if (p != null) {
                             batch.add(p)
-                        } else if (batch.isEmpty()) {
-                            // 空窗口：挂起等下一个点（避免忙等）
-                            try {
-                                val first = moveChannel.receive()
-                                batch.add(first)
-                            } catch (e: Exception) {
-                                return
-                            }
+                        } else if (releasePending) {
+                            break // release：队列已空，立即收尾
                         } else {
-                            break // 攒够了立即执行
+                            // 空队列：短超时等待下一个点（每 30ms 醒来检查 releasePending/windowEnd）
+                            val first = withTimeoutOrNull(30) { moveChannel.receive() }
+                            if (first != null) {
+                                batch.add(first)
+                            }
                         }
                     }
-                    // 排空到最新（丢弃积压中间点，避免倒流/抖动）
+                    // 排空到最新（丢弃积压中间点，避免倒流/抖动）；release 冲刷时也丢弃中途只剩最新
                     while (true) {
                         val next = try {
                             moveChannel.tryReceive().getOrNull()
@@ -1271,6 +1280,10 @@ object AssistsCore {
                         }
                     }
                     if (batch.isEmpty()) {
+                        if (releasePending) {
+                            completeReleaseLatch()
+                            return // 队列已空且要 release：收尾（release 负责抬笔）
+                        }
                         continue
                     }
                     // 合成一笔 path：起点=上一笔终点（锚点/最后派发点），点到点 lineTo
@@ -1282,9 +1295,17 @@ object AssistsCore {
                         path.lineTo(pt.x, pt.y)
                         lastPt = pt
                     }
-                    val dur = ((batch.size) * dragMsPerPoint).coerceAtLeast(dragMinDurationMs)
+                    // 时长按“这批点实际到达节奏”折算：快滑 → 短时长 → 高速度（App 才能感知 fling 惯性）
+                    val firstTs = batch.first().ts
+                    val lastTs = batch.last().ts
+                    val spanMs = if (lastTs > firstTs) (lastTs - firstTs) else 0L
+                    val dur = if (spanMs > 0L) {
+                        spanMs.coerceIn(dragMinDurationMs, dragMaxDurationMs)
+                    } else {
+                        dragMinDurationMs
+                    }
                     LogUtils.i(
-                        "[ContinuousTouch] drag stroke pts=${batch.size} dur=${dur}ms " +
+                        "[ContinuousTouch] drag stroke pts=${batch.size} span=${spanMs}ms dur=${dur}ms " +
                             "from=(${from.x},${from.y}) to=(${lastPt.x},${lastPt.y})",
                     )
                     // 跨 dispatch 续笔：willContinue=true 保持按住，下一笔 continueStroke 接续
@@ -1293,6 +1314,11 @@ object AssistsCore {
                         prevStroke = ok
                         st.last = lastPt
                         lastEndPoint = lastPt
+                    }
+                    // release 冲刷完成：队列已空 → 收尾（由 release 负责抬笔）
+                    if (releasePending && moveChannel.isEmpty) {
+                        completeReleaseLatch()
+                        return
                     }
                 }
             } finally {
@@ -1333,7 +1359,7 @@ object AssistsCore {
          * 否则积压跳跃时 from 会指向最新点，导致手势倒流/零长度。 */
         private suspend fun handleMove(event: TouchEvent.Move) {
             val st = ptr ?: return
-            val pt = DragPoint(event.x, event.y)
+            val pt = DragPoint(event.x, event.y, System.currentTimeMillis())
 
             // 位移判定（相对锚点）
             val moved = kotlin.math.hypot(pt.x - st.anchor.x, pt.y - st.anchor.y)
@@ -1361,22 +1387,41 @@ object AssistsCore {
             }
         }
 
-        /** 抬起：真实抬笔结束按住（willContinue=false）。
-         * press 已真实按下、release 抬笔 → 系统自身判定本次交互是 click / longPress / drag。
-         *
-         * 顺序关键：**先停止 worker（不再发新 move），再直接 dispatch 抬笔**——
-         * 保证抬笔是最后一个手势，不会与 worker 的 move 并发打架；
-         * 也不依赖 worker 消费抬笔信号（worker 因 ptr=null 会提前退出，等它收笔必然卡死）。
+        /** worker 冲刷完成时通知 release（避免 release 过早抬笔截断最后一笔） */
+        private fun completeReleaseLatch() {
+            releaseLatch?.let {
+                releaseLatch = null
+                it.complete(true)
+            }
+        }
+
+        /** 抬起：真实抬笔结束按住。
+         * 关键：**先让 worker 把队列里剩余 move 全部冲刷成最后一笔派发完（不截断快速滑动）**，
+         * 再把队列置空、抬笔。这样快速滑动不会“手势提前结束”。
          */
         private suspend fun handleRelease() {
             val st = ptr ?: return
             val hasMoved = st.moved
             val elapsed = System.currentTimeMillis() - st.startTs
             ptr = null
-            // ① 先停 worker（不再发新 move）并清空未消费的采样
-            cancelDragWorker()
+            // ① 通知 worker：冲刷剩余点（不新增 event 只消费队列）
+            if (workerRunning) {
+                releasePending = true
+                val latch = CompletableDeferred<Boolean>()
+                releaseLatch = latch
+                val ok = withTimeoutOrNull(1500) { latch.await() }
+                if (ok == null) {
+                    LogUtils.w("[ContinuousTouch] release: worker flush timeout, force lift")
+                }
+                releasePending = false
+                // 超时或正常后都清理 latch 引用（worker 已 complete 的无需再清）
+                if (releaseLatch === latch) {
+                    releaseLatch = null
+                }
+            }
+            // ② 清空残留采样（极端情况兜底）
             drainMoveChannel()
-            // ② 再直接抬笔（若按住）：willContinue=false 结束，指针抬起
+            // ③ 抬笔（若按住）：willContinue=false 结束，指针抬起
             if (prevStroke != null) {
                 val prev = prevStroke
                 prevStroke = null
@@ -1389,6 +1434,7 @@ object AssistsCore {
                     LogUtils.w("[ContinuousTouch] release lift failed: ${e.message}")
                 }
             }
+            cancelDragWorker()
             sessionGen++
             LogUtils.i(
                 "[ContinuousTouch] release gen=$sessionGen moved=$hasMoved elapsed=$elapsed",
