@@ -46,7 +46,9 @@ import com.ven.assists.utils.runMain
 import com.ven.assists.window.AssistsWindowManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.concurrent.Executors
@@ -884,6 +886,55 @@ object AssistsCore {
     }
 
     /**
+     * 执行"可跨 dispatch 续笔"的手势(官方 willContinue 语义):
+     * - 首笔: [prevStroke] 传 null,stroke 带 willContinue=true,手势完成后指针**保持在屏幕不抬起**;
+     * - 续笔: [prevStroke] 传上一笔的 StrokeDescription,用 continueStroke 接续,指针持续不抬;
+     * - 结束: 传 willContinue=false,指针抬起。
+     *
+     * 返回新的 StrokeDescription(供下一笔 continueStroke 引用);失败返回 null。
+     */
+    suspend fun gestureContinue(
+        prevStroke: GestureDescription.StrokeDescription?,
+        path: Path,
+        duration: Long,
+        willContinue: Boolean,
+    ): GestureDescription.StrokeDescription? {
+        return runCatching {
+            val stroke = prevStroke?.continueStroke(path, 0L, duration, willContinue)
+                ?: GestureDescription.StrokeDescription(path, 0L, duration, willContinue)
+            val gestureDescription = GestureDescription.Builder().addStroke(stroke).build()
+            val deferred = CompletableDeferred<Boolean>()
+            val runResult = runMain {
+                val svc = AssistsService.getOrNull() ?: return@runMain false
+                LogUtils.i(
+                    "[GestureDiag] gestureContinue dispatch willContinue=$willContinue " +
+                            "duration=$duration prev=${prevStroke != null}",
+                )
+                svc.dispatchGesture(
+                    gestureDescription,
+                    object : AccessibilityService.GestureResultCallback() {
+                        override fun onCompleted(gestureDescription: GestureDescription) {
+                            LogUtils.i("[GestureDiag] gestureContinue onCompleted")
+                            deferred.complete(true)
+                        }
+
+                        override fun onCancelled(gestureDescription: GestureDescription) {
+                            LogUtils.w("[GestureDiag] gestureContinue onCancelled")
+                            deferred.complete(false)
+                        }
+                    },
+                    null
+                )
+            }
+            if (!runResult) {
+                LogUtils.w("[GestureDiag] gestureContinue dispatch returned false (not accepted)")
+                return null
+            }
+            if (deferred.await()) stroke else null
+        }.getOrNull()
+    }
+
+    /**
      * 获取元素在屏幕中的位置信息
      * @return 包含元素位置信息的Rect对象
      */
@@ -936,6 +987,413 @@ object AssistsCore {
             0,
             duration,
         )
+    }
+
+    // ==================== 远程连续手势：多段 path + 触摸会话状态机 ====================
+
+    /**
+     * 执行由多个并行/连续手势段构成的手势。
+     *
+     * @param segments 手势段列表。每段可为：
+     *   - 独立 stroke（多指并行）：[GestureSegment.continueFrom] == null，各段各自加入 builder（同 startTime 即并行）
+     *   - continueStroke 链（同一根手指不抬起接力）：前段 [GestureSegment.willContinue]=true，
+     *     后段 [GestureSegment.continueFrom] 指向前一 stroke，链上**只有链末段**需要 addStroke
+     *     （内部已通过 continueStroke 串联整条链）。
+     * @return 手势是否完整执行成功
+     */
+    suspend fun gesturePoints(
+        segments: List<GestureSegment>,
+    ): Boolean {
+        if (segments.isEmpty()) return false
+        return runCatching {
+            val builder = GestureDescription.Builder()
+            // continueStroke 链：只 add 没有 continueFrom 的链首（整条链由 continueStroke 串联，addStroke 链首即可）
+            // 简化实现：若某段 continueFrom != null，说明它属于链的一部分，链首（第一段）才 addStroke。
+            var lastStroke: GestureDescription.StrokeDescription? = null
+            for (i in segments.indices) {
+                val seg = segments[i]
+                if (seg.continueFrom == null) {
+                    // 独立 stroke（也是新链的链首）
+                    val stroke = seg.toStrokeDescription()
+                    builder.addStroke(stroke)
+                    lastStroke = stroke
+                } else {
+                    // 链的续段：continueFrom 指向上一段，只需更新 lastStroke（链内，不重复 add）
+                    lastStroke = seg.continueFrom
+                }
+            }
+            dispatchGesture(builder.build(), 100L)
+        }.getOrDefault(false)
+    }
+
+    /**
+     * 远程连续触摸状态机：press / move / release 原始事件流 → 设备端判定 click / longPress / drag。
+     *
+     * Android 无障碍 API 无法在 dispatch 过程中追加路径段，因此：
+     * - 点击 / 长按：由 press 保持时间判定（窗口定时器），不单独发指令；
+     * - 拖动：把时间窗口内到达的 move 点聚成**一条连续轨迹（一笔画，链内手指不抬起）**，
+     *   一次 dispatch 直接执行，无窗口切换延迟；串行 worker 保证轨迹顺序，批间才有一次抬落。
+     *
+     * 由 [onTouchPress] / [onTouchMove] / [onTouchRelease] 驱动，非挂起函数，任意线程可调。
+     * 坐标约定为设备屏幕像素。
+     */
+    object ContinuousTouch {
+        private sealed class TouchEvent {
+            data class Press(val x: Float, val y: Float) : TouchEvent()
+            data class Move(val x: Float, val y: Float) : TouchEvent()
+            data object Release : TouchEvent()
+        }
+
+        /** 长按判定窗口（press 后无位移保持超过该值 → 触发长按；fire-and-forget，可被后续拖动打断） */
+        var longPressDelayMs: Long = 600
+
+        /** 点击判定：抬起耗时低于该值且未移动 → 点击 */
+        var clickMaxDurationMs: Long = 160
+
+        /** 拖动聚合窗口：该窗口内到达的 move 点聚成一条连续轨迹（一笔画），一次 dispatch 内手指不抬起 */
+        var dragBatchWindowMs: Long = 80
+
+        /** 拖动轨迹每点折算时长（ms） */
+        var dragMsPerPoint: Long = 20
+
+        /** 拖动轨迹最小时长（ms） */
+        var dragMinDurationMs: Long = 60
+
+        /** 位移超此值（屏幕像素）视为拖动（区分点击/长按） */
+        var moveDistToBeDrag: Float = 20f
+
+        private var channel = Channel<TouchEvent>(Channel.UNLIMITED)
+        private var scopeJob: Job? = null
+        private var started = false
+
+        /** 会话代际：press/release 时递增，旧 worker 发现代际变化即停止（防交叉拖动手势） */
+        private var sessionGen = 0
+
+        /** 当前触摸会话（null = 空闲） */
+        private var ptr: PointerState? = null
+
+        private data class DragPoint(val x: Float, val y: Float)
+
+        private class PointerState(
+            val anchor: DragPoint,
+            var last: DragPoint,
+            val startTs: Long,
+        ) {
+            var moved = false          // 是否发生过位移
+            var longTriggered = false  // 长按是否已触发
+            var dragging = false       // 是否进入拖动模式
+        }
+
+        /** 拖动采样点（攒批 worker 消费；NaN 坐标为抬笔信号） */
+        private val moveChannel = Channel<DragPoint>(Channel.UNLIMITED)
+        private var workerRunning = false
+        private var workerJob: Job? = null
+
+        /** 当前续笔链（上一笔 StrokeDescription，供 continueStroke 接续；worker 单消费者维护） */
+        private var prevStroke: GestureDescription.StrokeDescription? = null
+
+        /** 最后一笔坐标终点（用于抬笔时定位;worker 维护） */
+        private var lastEndPoint: DragPoint? = null
+
+        @Synchronized
+        fun start() {
+            if (started) {
+                return
+            }
+            started = true
+            ptr = null
+            sessionGen = 0
+            workerRunning = false
+            channel = Channel<TouchEvent>(Channel.UNLIMITED)
+            scopeJob = CoroutineWrapper.launch {
+                consume()
+            }
+        }
+
+        @Synchronized
+        fun stop() {
+            if (!started) return
+            started = false
+            scopeJob?.cancel()
+            scopeJob = null
+            channel.close()
+            // 若正按住：先取消 worker（不再发新 move），再异步抬笔（willContinue=false）
+            val held = prevStroke
+            val end = lastEndPoint
+            cancelDragWorker()
+            prevStroke = null
+            drainMoveChannel()
+            ptr = null
+            sessionGen++
+            if (held != null && end != null) {
+                CoroutineWrapper.launch {
+                    try {
+                        val liftPath = Path().apply { moveTo(end.x, end.y) }
+                        LogUtils.i("[ContinuousTouch] stop lift at (${end.x}, ${end.y})")
+                        gestureContinue(held, liftPath, 20L, false)
+                    } catch (e: Exception) {
+                        LogUtils.w("[ContinuousTouch] stop lift failed: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        /** 清空 moveChannel 中残留的采样 */
+        @Synchronized
+        private fun drainMoveChannel() {
+            while (true) {
+                val n = try {
+                    moveChannel.tryReceive().getOrNull()
+                } catch (e: Exception) {
+                    break
+                }
+                if (n == null) break
+            }
+        }
+
+        @Synchronized
+        private fun cancelDragWorker() {
+            workerJob?.cancel()
+            workerJob = null
+            workerRunning = false
+        }
+
+        /** press（按下，x/y 为设备屏幕像素） */
+        @Synchronized
+        fun onTouchPress(x: Float, y: Float) {
+            ensureStarted()
+            if (!started) {
+                LogUtils.e("[ContinuousTouch] onTouchPress ignored: not started (${x}, ${y})")
+                return
+            }
+            LogUtils.i("[ContinuousTouch] onTouchPress x=$x y=$y")
+            channel.trySend(TouchEvent.Press(x, y))
+        }
+
+        /** move（手指移动，x/y 为设备屏幕像素） */
+        @Synchronized
+        fun onTouchMove(x: Float, y: Float) {
+            ensureStarted()
+            if (!started) {
+                LogUtils.e("[ContinuousTouch] onTouchMove ignored: not started (${x}, ${y})")
+                return
+            }
+            channel.trySend(TouchEvent.Move(x, y))
+        }
+
+        /** release（抬起） */
+        @Synchronized
+        fun onTouchRelease() {
+            ensureStarted()
+            if (!started) {
+                LogUtils.e("[ContinuousTouch] onTouchRelease ignored: not started")
+                return
+            }
+            LogUtils.i("[ContinuousTouch] onTouchRelease")
+            channel.trySend(TouchEvent.Release)
+        }
+
+        /** 懒启动：首次收到事件时自动启动（防止 admin 未显式调用 startContinuous） */
+        @Synchronized
+        private fun ensureStarted() {
+            if (!started) {
+                LogUtils.w("[ContinuousTouch] lazy start on first event")
+                start()
+            }
+        }
+
+        private suspend fun consume() {
+            while (true) {
+                val event = try {
+                    channel.receive()
+                } catch (e: Exception) {
+                    break // 通道关闭
+                }
+                when (event) {
+                    is TouchEvent.Press -> handlePress(event)
+                    is TouchEvent.Move -> handleMove(event)
+                    is TouchEvent.Release -> handleRelease()
+                }
+            }
+        }
+
+        /** 拖动攒批 worker：把 [dragBatchWindowMs] 窗口内到达的 move 点聚成**一笔**，
+         * 用 [gestureContinue] 以 **continueStroke 跨 dispatch 续笔**（官方 willContinue 语义）——
+         * 每笔 willContinue=true 手势完成后指针保持在屏幕不抬起，下一笔从上一笔终点继续。
+         *
+         * - 串行 worker 保证续笔顺序；不抬起→续笔→不抬起…，直到 release/stop 才 willContinue=false 抬手；
+         * - 会话代际变化（新 press/release/stop）立即停止。
+         */
+        private suspend fun dragWorker(myGen: Int) {
+            try {
+                while (true) {
+                    if (myGen != sessionGen) {
+                        // 会话已换代：由 release/press 负责抬笔，这里直接退出
+                        return
+                    }
+                    val st = ptr ?: return
+                    // 攒一窗口（最多 N 点）作为一笔
+                    val batch = ArrayList<DragPoint>()
+                    val windowEnd = System.currentTimeMillis() + dragBatchWindowMs
+                    while (System.currentTimeMillis() < windowEnd && batch.size < 32) {
+                        val p = try {
+                            moveChannel.tryReceive().getOrNull()
+                        } catch (e: Exception) {
+                            null
+                        }
+                        if (p != null) {
+                            batch.add(p)
+                        } else if (batch.isEmpty()) {
+                            // 空窗口：挂起等下一个点（避免忙等）
+                            try {
+                                val first = moveChannel.receive()
+                                batch.add(first)
+                            } catch (e: Exception) {
+                                return
+                            }
+                        } else {
+                            break // 攒够了立即执行
+                        }
+                    }
+                    // 排空到最新（丢弃积压中间点，避免倒流/抖动）
+                    while (true) {
+                        val next = try {
+                            moveChannel.tryReceive().getOrNull()
+                        } catch (e: Exception) {
+                            null
+                        }
+                        if (next == null) break
+                        batch.add(next)
+                        if (batch.size > 64) {
+                            val latest = batch.last()
+                            batch.clear()
+                            batch.add(latest)
+                        }
+                    }
+                    if (batch.isEmpty()) {
+                        continue
+                    }
+                    // 合成一笔 path：起点=上一笔终点（锚点/最后派发点），点到点 lineTo
+                    val path = Path()
+                    val from = st.last
+                    path.moveTo(from.x, from.y)
+                    var lastPt = from
+                    for (pt in batch) {
+                        path.lineTo(pt.x, pt.y)
+                        lastPt = pt
+                    }
+                    val dur = ((batch.size) * dragMsPerPoint).coerceAtLeast(dragMinDurationMs)
+                    LogUtils.i(
+                        "[ContinuousTouch] drag stroke pts=${batch.size} dur=${dur}ms " +
+                            "from=(${from.x},${from.y}) to=(${lastPt.x},${lastPt.y})",
+                    )
+                    // 跨 dispatch 续笔：willContinue=true 保持按住，下一笔 continueStroke 接续
+                    val ok = gestureContinue(prevStroke, path, dur, true)
+                    if (ok != null) {
+                        prevStroke = ok
+                        st.last = lastPt
+                        lastEndPoint = lastPt
+                    }
+                }
+            } finally {
+                workerRunning = false
+            }
+        }
+
+        /** press：建立触摸会话并**立即真实按下**（零长度 willContinue=true 保持按住）。
+         * - 按下即 dispatch 一笔"按住不抬"的手势，目标 App 自己响应长按（无需 600ms 定时器）；
+         * - 后续 move → 由 [dragWorker] 用 continueStroke 续笔移动；
+         * - release → 抬笔（willContinue=false）；
+         * - 兜底：上一手势遗留按住先抬笔再开新会话，保证不会永久卡屏。
+         */
+        private suspend fun handlePress(event: TouchEvent.Press) {
+            // 若上一个会话未结束时又来 press：视为 release 后再 press（handleRelease 负责抬笔）
+            ptr?.let { handleRelease() }
+            cancelDragWorker()
+            drainMoveChannel()
+            sessionGen++
+            val p = DragPoint(event.x, event.y)
+            ptr = PointerState(anchor = p, last = p, startTs = System.currentTimeMillis())
+            LogUtils.i("[ContinuousTouch] press (${event.x}, ${event.y}) gen=$sessionGen")
+
+            // 立即真实按下：零长度 willContinue=true，按下并保持不抬起
+            val pressPath = Path().apply { moveTo(p.x, p.y) }
+            val stroke = gestureContinue(null, pressPath, 20L, true)
+            if (stroke != null) {
+                prevStroke = stroke
+                lastEndPoint = p
+                LogUtils.i("[ContinuousTouch] press stroke dispatched (hold) at (${p.x}, ${p.y})")
+            } else {
+                LogUtils.w("[ContinuousTouch] press stroke dispatch failed")
+            }
+        }
+
+        /** 拖动核心：move 事件入攒批队列，worker 聚成连续轨迹一次一笔画 dispatch。
+         * 注意：这里不更新 st.last——它只由 [dragWorker] 在派发后更新（代表“最后已派发位置”），
+         * 否则积压跳跃时 from 会指向最新点，导致手势倒流/零长度。 */
+        private suspend fun handleMove(event: TouchEvent.Move) {
+            val st = ptr ?: return
+            val pt = DragPoint(event.x, event.y)
+
+            // 位移判定（相对锚点）
+            val moved = kotlin.math.hypot(pt.x - st.anchor.x, pt.y - st.anchor.y)
+            if (moved > moveDistToBeDrag) {
+                st.moved = true
+                st.dragging = true
+                LogUtils.i("[ContinuousTouch] drag entered (${pt.x}, ${pt.y})")
+            }
+            if (!st.dragging) {
+                return
+            }
+
+            moveChannel.trySend(pt)
+            ensureDragWorker()
+        }
+
+        /** 确保攒批 worker 已启动（单实例） */
+        @Synchronized
+        private fun ensureDragWorker() {
+            if (workerRunning) return
+            workerRunning = true
+            val gen = sessionGen
+            workerJob = CoroutineWrapper.launch {
+                dragWorker(gen)
+            }
+        }
+
+        /** 抬起：真实抬笔结束按住（willContinue=false）。
+         * press 已真实按下、release 抬笔 → 系统自身判定本次交互是 click / longPress / drag。
+         *
+         * 顺序关键：**先停止 worker（不再发新 move），再直接 dispatch 抬笔**——
+         * 保证抬笔是最后一个手势，不会与 worker 的 move 并发打架；
+         * 也不依赖 worker 消费抬笔信号（worker 因 ptr=null 会提前退出，等它收笔必然卡死）。
+         */
+        private suspend fun handleRelease() {
+            val st = ptr ?: return
+            val hasMoved = st.moved
+            val elapsed = System.currentTimeMillis() - st.startTs
+            ptr = null
+            // ① 先停 worker（不再发新 move）并清空未消费的采样
+            cancelDragWorker()
+            drainMoveChannel()
+            // ② 再直接抬笔（若按住）：willContinue=false 结束，指针抬起
+            if (prevStroke != null) {
+                val prev = prevStroke
+                prevStroke = null
+                val end = lastEndPoint ?: st.last
+                try {
+                    val liftPath = Path().apply { moveTo(end.x, end.y) }
+                    LogUtils.i("[ContinuousTouch] release lift at (${end.x}, ${end.y})")
+                    gestureContinue(prev, liftPath, 20L, false)
+                } catch (e: Exception) {
+                    LogUtils.w("[ContinuousTouch] release lift failed: ${e.message}")
+                }
+            }
+            sessionGen++
+            LogUtils.i(
+                "[ContinuousTouch] release gen=$sessionGen moved=$hasMoved elapsed=$elapsed",
+            )
+        }
     }
 
     /**
@@ -1894,6 +2352,47 @@ object AssistsCore {
         } catch (e: Exception) {
             LogUtils.e(LOG_TAG, "getClipboardText error: ${e.message}")
             null
+        }
+    }
+}
+
+/**
+ * 一个手势段描述：一条 Path 笔画 + 时长，可选 willContinue 接力到下一段（同一手指不抬起）。
+ *
+ * 用于 [AssistsCore.gesturePoints] 的多段手势：
+ * - 多指并指：构造多个 [GestureSegment]（各段默认独立 stroke）；
+ * - 连续 stroke 接力：把前段的 [willContinue] 置 true，并在后段用 [continueFrom] 指定
+ *   接续的 StrokeDescription（内部调用 `continueStroke(path, startTime, duration, willContinue)`）。
+ *
+ * 注意：continueStroke 的 startTime 相对手势全局起点，duration 为该段的时长。
+ */
+data class GestureSegment(
+    /** 路径点序列（像素坐标），至少 2 点 */
+    val points: List<FloatArray>,
+    /** 该段相对手势全局起点的起始时间（ms） */
+    val startTime: Long = 0,
+    /** 该段时长（ms） */
+    val duration: Long = 300,
+    /** 该段结束后手指是否不抬起（延续到下一段） */
+    val willContinue: Boolean = false,
+    /** 若是 continueStroke 接力，指定前一 finger 的 StrokeDescription；null 为独立 stroke */
+    val continueFrom: GestureDescription.StrokeDescription? = null,
+) {
+    init {
+        require(points.size >= 2) { "GestureSegment needs at least 2 points" }
+    }
+
+    /** 构建该段的 StrokeDescription */
+    fun toStrokeDescription(): GestureDescription.StrokeDescription {
+        val path = Path()
+        path.moveTo(points[0][0], points[0][1])
+        for (i in 1 until points.size) {
+            path.lineTo(points[i][0], points[i][1])
+        }
+        return if (continueFrom != null) {
+            continueFrom.continueStroke(path, startTime, duration, willContinue)
+        } else {
+            GestureDescription.StrokeDescription(path, startTime, duration, willContinue)
         }
     }
 }
