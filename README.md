@@ -73,6 +73,7 @@ Assists 是整条生态的**基础库**：基于 Android 无障碍服务封装�
 | **🖼️ 图像处理** | **assists-opcv** | **图像处理**：集成 OpenCV，模板匹配等能力增强屏幕识别。 |
 | **🌐 Web 桥接** | **assists-web** | **Web 自动化支持**：WebView 原生↔JS 通道，让 Web 端直接调用 Assists 能力。 |
 | **📱 运行平台** | [**AssistsX**][assistsx-link] | **Web 自动化运行平台**及**节点分析工具**：安装即用，支持插件本地/局域网/在线加载，开启节点分析后可在局域网用浏览器分析页面节点。 |
+| **🛰️ 远程控制** | [**AssistsX**][assistsx-link] | **远程控制**与**远程获取节点信息**：下载 [AssistsX][assistsx-link]，在 [https://admin.assists.cn](https://admin.assists.cn) 注册并登录相同账号即可**免费使用**，方便远程调试与获取远程设备节点信息适配自动化逻辑。 |
 | **📜 JS 库** | [**assistsx-js**][assistsx-js-link] | **Web 自动化 JS 库**：节点查找、手势、步骤器……用前端技术栈轻松编写与维护自动化。 |
 | **📂 示例仓库** | [**assists-examples**][assists-examples-link] | **Assists 相关示例项目**：包含**原生自动化**与 **Web 端自动化**示例，即拿即跑。 |
 | **📊 日志节点分析** | **日志节点上报分析系统** | 测试人员可提交**运行日志**与**页面节点信息**，开发基于上报数据分析页面结构、精准定位多设备/多界面 Bug，解决「无日志、无节点难以复现」的痛点。 |
