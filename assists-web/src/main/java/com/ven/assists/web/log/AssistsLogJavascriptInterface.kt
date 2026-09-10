@@ -142,8 +142,10 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 AssistsLogCallMethod.appendTimestampedEntry -> {
                     val message = request.arguments?.get("message")?.asString ?: ""
                     val prepend = request.arguments?.get("prepend")?.asBoolean ?: false
+                    val maxLength = request.arguments?.get("maxLength")?.asInt
+                        ?: AssistsLog.DEFAULT_MAX_FILE_LENGTH
                     withContext(Dispatchers.IO) {
-                        AssistsLog.appendTimestampedEntry(message, target, prepend)
+                        AssistsLog.appendTimestampedEntry(message, target, prepend, maxLength)
                     }
                     request.createResponse(code = 0, data = JsonObject())
                 }

@@ -59,13 +59,14 @@ object AssistsLog {
         message: CharSequence,
         target: AssistsLogTarget = AssistsLogTarget.DEFAULT,
         prepend: Boolean = false,
+        maxLength: Int = DEFAULT_MAX_FILE_LENGTH,
     ): String {
         val piece = buildString {
             append(TimeUtils.getNowString())
             append('\n')
             append(message)
         }
-        appendLine(piece, target = target, prepend = prepend)
+        appendLine(piece, maxLength = maxLength, target = target, prepend = prepend)
         return message.toString()
     }
 
