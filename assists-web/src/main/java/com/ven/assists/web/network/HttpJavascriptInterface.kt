@@ -5,6 +5,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
+import com.ven.assists.log.logAppend
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.ven.assists.web.CallRequest
@@ -33,6 +34,10 @@ import java.nio.charset.StandardCharsets
  */
 class HttpJavascriptInterface(val webView: WebView) {
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
+    private fun galleryTimeLog(message: String) {
+        message.logAppend()
+    }
 
     fun <T> callbackResponse(result: CallResponse<T>) {
         coroutineScope.launch {
@@ -339,6 +344,13 @@ class HttpJavascriptInterface(val webView: WebView) {
         val savePath = request.arguments?.get("savePath")?.asString ?: ""
         val headers = request.arguments?.get("headers")?.asJsonObject
         val saveToGallery = request.arguments?.get("saveToGallery")?.asBoolean ?: false
+        val displayName = request.arguments?.get("displayName")?.asString
+        val timestamp = request.arguments?.get("timestamp")?.takeUnless { it.isJsonNull }?.asLong
+        galleryTimeLog(
+            "[GalleryTime] JS httpDownload request, url=$url, savePath=$savePath, " +
+                "saveToGallery=$saveToGallery, displayName=$displayName, timestampMs=$timestamp, " +
+                "callbackId=${request.callbackId}"
+        )
 
         if (url.isEmpty()) {
             return request.createResponse(-1, message = "url参数不能为空", data = JsonObject())
@@ -381,12 +393,16 @@ class HttpJavascriptInterface(val webView: WebView) {
                     input.copyTo(output)
                 }
             }
+            galleryTimeLog(
+                "[GalleryTime] httpDownload file saved, path=${saveFile.absolutePath}, " +
+                    "size=${saveFile.length()}, timestampMs=$timestamp, saveToGallery=$saveToGallery"
+            )
 
             // 尝试保存到系统相册
             var galleryResult: com.ven.assists.web.gallery.GalleryResult? = null
             if (saveToGallery) {
                 galleryResult = try {
-                    saveFileToGallery(saveFile)
+                    saveFileToGallery(saveFile, displayName, timestamp)
                 } catch (e: Exception) {
                     LogUtils.e(e, "保存文件到相册失败")
                     null
@@ -423,16 +439,26 @@ class HttpJavascriptInterface(val webView: WebView) {
      * 保存文件到系统相册
      * 支持图片和视频文件
      * @param file 要保存的文件
+     * @param displayName 可选的相册显示名称
+     * @param timestamp 可选的媒体时间戳，单位为毫秒
      * @return GalleryResult 包含 uri、id、type 和 success
      */
-    private fun saveFileToGallery(file: File): com.ven.assists.web.gallery.GalleryResult? {
+    private fun saveFileToGallery(
+        file: File,
+        displayName: String?,
+        timestamp: Long?
+    ): com.ven.assists.web.gallery.GalleryResult? {
         val context = JavascriptInterfaceContext.getContext() ?: return null
         if (!file.exists() || !file.isFile) {
             return null
         }
 
-        val fileName = file.name
+        val fileName = displayName ?: file.name
         val fileExtension = file.extension.lowercase()
+        galleryTimeLog(
+            "[GalleryTime] saveFileToGallery, path=${file.absolutePath}, size=${file.length()}, " +
+                "extension=$fileExtension, displayName=$displayName, timestampMs=$timestamp"
+        )
         
         // 判断文件类型
         val isImage = GalleryUtils.isImageFile(fileExtension)
@@ -445,9 +471,9 @@ class HttpJavascriptInterface(val webView: WebView) {
 
         return try {
             if (isImage) {
-                GalleryUtils.addImageToGallery(context, file, fileName)
+                GalleryUtils.addImageToGallery(context, file, fileName, timestamp)
             } else {
-                GalleryUtils.addVideoToGallery(context, file, fileName)
+                GalleryUtils.addVideoToGallery(context, file, fileName, timestamp)
             }
         } catch (e: Exception) {
             LogUtils.e(e, "保存文件到相册异常")

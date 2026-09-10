@@ -7,4 +7,6 @@ object GalleryCallMethod {
     const val addImageToGallery = "addImageToGallery"
     const val addVideoToGallery = "addVideoToGallery"
     const val deleteFromGallery = "deleteFromGallery"
+    const val checkMediaPermissions = "checkMediaPermissions"
+    const val requestMediaPermissions = "requestMediaPermissions"
 }

@@ -1,13 +1,19 @@
 package com.ven.assists.web.gallery
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.PermissionUtils
+import com.ven.assists.log.logAppend
 import com.google.gson.JsonObject
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallRequestParser
@@ -17,8 +23,10 @@ import com.ven.assists.web.createResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.nio.charset.StandardCharsets
+import kotlin.coroutines.resume
 
 /**
  * 系统相册相关的 JavascriptInterface
@@ -26,6 +34,10 @@ import java.nio.charset.StandardCharsets
  */
 class GalleryJavascriptInterface(val webView: WebView) {
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
+    private fun galleryTimeLog(message: String) {
+        message.logAppend()
+    }
 
     fun <T> callbackResponse(result: CallResponse<T>) {
         coroutineScope.launch {
@@ -72,6 +84,14 @@ class GalleryJavascriptInterface(val webView: WebView) {
                     handleDeleteFromGallery(request)
                 }
 
+                GalleryCallMethod.checkMediaPermissions -> {
+                    handleCheckMediaPermissions(request)
+                }
+
+                GalleryCallMethod.requestMediaPermissions -> {
+                    handleRequestMediaPermissions(request)
+                }
+
                 else -> {
                     request.createResponse(-1, message = "方法未支持", data = JsonObject())
                 }
@@ -88,10 +108,16 @@ class GalleryJavascriptInterface(val webView: WebView) {
      * 参数：
      * - filePath: 图片文件路径（必需）
      * - displayName: 显示名称（可选，默认使用文件名）
+     * - timestamp: 媒体时间戳（可选，Unix epoch 毫秒；未传入则不更新）
      */
     private fun handleAddImageToGallery(request: CallRequest<JsonObject>): CallResponse<JsonObject> {
         val filePath = request.arguments?.get("filePath")?.asString ?: ""
         val displayName = request.arguments?.get("displayName")?.asString
+        val timestamp = request.arguments?.get("timestamp")?.takeUnless { it.isJsonNull }?.asLong
+        galleryTimeLog(
+            "[GalleryTime] JS addImage request, filePath=$filePath, displayName=$displayName, " +
+                "timestampMs=$timestamp, callbackId=${request.callbackId}"
+        )
 
         if (filePath.isEmpty()) {
             return request.createResponse(-1, message = "filePath参数不能为空", data = JsonObject())
@@ -116,7 +142,7 @@ class GalleryJavascriptInterface(val webView: WebView) {
         }
 
         return try {
-            val result = GalleryUtils.addImageToGallery(context, file, fileName)
+            val result = GalleryUtils.addImageToGallery(context, file, fileName, timestamp)
 
             val responseData = JsonObject().apply {
                 addProperty("success", result.success)
@@ -142,10 +168,16 @@ class GalleryJavascriptInterface(val webView: WebView) {
      * 参数：
      * - filePath: 视频文件路径（必需）
      * - displayName: 显示名称（可选，默认使用文件名）
+     * - timestamp: 媒体时间戳（可选，Unix epoch 毫秒；未传入则不更新）
      */
     private fun handleAddVideoToGallery(request: CallRequest<JsonObject>): CallResponse<JsonObject> {
         val filePath = request.arguments?.get("filePath")?.asString ?: ""
         val displayName = request.arguments?.get("displayName")?.asString
+        val timestamp = request.arguments?.get("timestamp")?.takeUnless { it.isJsonNull }?.asLong
+        galleryTimeLog(
+            "[GalleryTime] JS addVideo request, filePath=$filePath, displayName=$displayName, " +
+                "timestampMs=$timestamp, callbackId=${request.callbackId}"
+        )
 
         if (filePath.isEmpty()) {
             return request.createResponse(-1, message = "filePath参数不能为空", data = JsonObject())
@@ -170,7 +202,7 @@ class GalleryJavascriptInterface(val webView: WebView) {
         }
 
         return try {
-            val result = GalleryUtils.addVideoToGallery(context, file, fileName)
+            val result = GalleryUtils.addVideoToGallery(context, file, fileName, timestamp)
 
             val responseData = JsonObject().apply {
                 addProperty("success", result.success)
@@ -191,8 +223,139 @@ class GalleryJavascriptInterface(val webView: WebView) {
         }
     }
 
+    private data class MediaPermissionRequest(
+        val readImages: Boolean,
+        val readVideos: Boolean,
+        val write: Boolean
+    )
+
+    private fun parseMediaPermissionRequest(request: CallRequest<JsonObject>): MediaPermissionRequest {
+        val arguments = request.arguments
+        return MediaPermissionRequest(
+            readImages = arguments?.get("readImages")?.asBoolean ?: true,
+            readVideos = arguments?.get("readVideos")?.asBoolean ?: true,
+            write = arguments?.get("write")?.asBoolean ?: true
+        )
+    }
+
+    private fun mediaPermissionNames(
+        request: MediaPermissionRequest
+    ): List<String> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return emptyList()
+        return buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (request.readImages) add(Manifest.permission.READ_MEDIA_IMAGES)
+                if (request.readVideos) add(Manifest.permission.READ_MEDIA_VIDEO)
+                if ((request.readImages || request.readVideos)
+                    && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                ) {
+                    add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                }
+            } else if (request.readImages || request.readVideos) {
+                add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            if (request.write && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }.distinct()
+    }
+
+    private fun hasPermission(context: Context, permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun mediaPermissionStatus(
+        context: Context,
+        request: MediaPermissionRequest
+    ): JsonObject {
+        val selectedVisualPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+            && hasPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+        val readImages = when {
+            !request.readImages -> true
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
+                hasPermission(context, Manifest.permission.READ_MEDIA_IMAGES) || selectedVisualPermission
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ->
+                hasPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
+            else -> true
+        }
+        val readVideos = when {
+            !request.readVideos -> true
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
+                hasPermission(context, Manifest.permission.READ_MEDIA_VIDEO) || selectedVisualPermission
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ->
+                hasPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
+            else -> true
+        }
+        // Android 10+ 的 MediaStore 插入由应用自行创建的媒体不需要 WRITE_EXTERNAL_STORAGE。
+        val write = !request.write || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            hasPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
+        return JsonObject().apply {
+            addProperty("readImages", readImages)
+            addProperty("readVideos", readVideos)
+            addProperty("write", write)
+            addProperty("allGranted", readImages && readVideos && write)
+            addProperty("apiLevel", Build.VERSION.SDK_INT)
+        }
+    }
+
+    private fun handleCheckMediaPermissions(
+        request: CallRequest<JsonObject>
+    ): CallResponse<JsonObject> {
+        val context = JavascriptInterfaceContext.getContext()
+            ?: return request.createResponse(-1, message = "无法获取Context", data = JsonObject())
+        return request.createResponse(
+            0,
+            data = mediaPermissionStatus(context, parseMediaPermissionRequest(request))
+        )
+    }
+
+    private suspend fun handleRequestMediaPermissions(
+        request: CallRequest<JsonObject>
+    ): CallResponse<JsonObject> {
+        val context = JavascriptInterfaceContext.getContext()
+            ?: return request.createResponse(-1, message = "无法获取Context", data = JsonObject())
+        val permissionRequest = parseMediaPermissionRequest(request)
+        val permissions = mediaPermissionNames(permissionRequest)
+        if (permissions.isEmpty()) {
+            return request.createResponse(0, data = mediaPermissionStatus(context, permissionRequest))
+        }
+        val activity = JavascriptInterfaceContext.getActivity()
+            ?: return request.createResponse(-1, message = "无法获取Activity，请在前台页面中请求权限", data = JsonObject())
+
+        return suspendCancellableCoroutine { continuation ->
+            activity.runOnUiThread {
+                PermissionUtils.permission(*permissions.toTypedArray())
+                    .callback(object : PermissionUtils.SimpleCallback {
+                        override fun onGranted() {
+                            if (continuation.isActive) {
+                                continuation.resume(
+                                    request.createResponse(
+                                        0,
+                                        data = mediaPermissionStatus(context, permissionRequest)
+                                    )
+                                )
+                            }
+                        }
+
+                        override fun onDenied() {
+                            if (continuation.isActive) {
+                                continuation.resume(
+                                    request.createResponse(
+                                        -1,
+                                        message = "媒体权限未完全授予",
+                                        data = mediaPermissionStatus(context, permissionRequest)
+                                    )
+                                )
+                            }
+                        }
+                    }).request()
+            }
+        }
+    }
+
     /**
-     * 处理从相册删除的请求
      * 参数：
      * - uri: 媒体文件的URI（必需，格式如：content://media/external/images/media/123）
      * 或者
