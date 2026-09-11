@@ -129,7 +129,7 @@ Demo 覆盖**基础操作**、**高级自动化**（收能量、发朋友圈、�
 
 ### 依赖集成（Maven Central）
 
-当前推荐版本：**3.5.7**
+当前推荐版本：**3.5.9**
 
 ```gradle
 repositories {
@@ -138,13 +138,13 @@ repositories {
 
 dependencies {
     // 核心库（必选）
-    implementation "io.github.ven-coder:assists-base:3.5.7"
+    implementation "io.github.ven-coder:assists-base:3.5.9"
     // 按需引入，版本号与上相同
-    // implementation "io.github.ven-coder:assists-web:3.5.7"
-    // implementation "io.github.ven-coder:assists-mp:3.5.7"
-    // implementation "io.github.ven-coder:assists-log:3.5.7"
-    // implementation "io.github.ven-coder:assists-ime:3.5.7"
-    // implementation "io.github.ven-coder:assists-opcv:3.5.7"
+    // implementation "io.github.ven-coder:assists-web:3.5.9"
+    // implementation "io.github.ven-coder:assists-mp:3.5.9"
+    // implementation "io.github.ven-coder:assists-log:3.5.9"
+    // implementation "io.github.ven-coder:assists-ime:3.5.9"
+    // implementation "io.github.ven-coder:assists-opcv:3.5.9"
 }
 ```
 
