@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
@@ -227,9 +228,12 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
                 )
             )
             try {
-                AssistsLog.flowFor(target, logStream).collect { text ->
-                    emitUpdate(id, stream, text, callbackId, logFilePath)
-                }
+                // 订阅推送节流：debounce 1000ms，高频时合并推送，低频时静默后必推最后一次，不漏单条日志
+                AssistsLog.flowFor(target, logStream)
+                    .debounce(SUBSCRIBE_PUSH_DEBOUNCE_MS)
+                    .collect { text ->
+                        emitUpdate(id, stream, text, callbackId, logFilePath)
+                    }
             } catch (_: CancellationException) {
                 // 正常取消
             } finally {
@@ -373,5 +377,8 @@ class AssistsLogJavascriptInterface(private val webView: WebView) {
     companion object {
         private const val STREAM_LATEST_LINE = "latestLine"
         private const val STREAM_ENTIRE_LOG_TEXT = "entireLogText"
+
+        /** 订阅日志推送节流窗口：debounce 1000ms，低频不漏、高频合并 */
+        private const val SUBSCRIBE_PUSH_DEBOUNCE_MS = 1000L
     }
 }

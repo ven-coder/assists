@@ -45,6 +45,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import java.nio.charset.StandardCharsets
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -76,6 +78,9 @@ open class ASWebView @JvmOverloads constructor(
 
         private const val STREAM_LOG_LATEST_LINE = "latestLine"
         private const val STREAM_LOG_ENTIRE = "entireLogText"
+
+        /** 日志推送节流窗口：debounce 1000ms，高频时合并推送，低频时静默后必推最后一次 */
+        private const val LOG_PUSH_DEBOUNCE_MS = 1000L
     }
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -350,16 +355,22 @@ open class ASWebView @JvmOverloads constructor(
         addJavascriptInterface(mmkvJavascriptInterface, "assistsxMmkv")
         AssistsService.listeners.add(assistsServiceListener)
 
-        // 与 onAccessibilityEvent 相同风格：日志 Flow 每次发射即 evaluateJavascript，页面可选实现 onAssistsLogUpdate(base64)
+        // 日志推送：合并 latestLine + entireLogText 两路，debounce(1000) 节流——高频日志时合并推送（防洪峰），
+        // 低频日志时 1000ms 内无新写入必推最后一次（不漏单条），避免任务执行期间每行 evaluateJavascript 挤占主线程导致 ANR。
         assistsLogEventScope.launch {
-            AssistsLog.latestLine.collect { text ->
-                notifyOnAssistsLogUpdate(STREAM_LOG_LATEST_LINE, text)
-            }
-        }
-        assistsLogEventScope.launch {
-            AssistsLog.entireLogText.collect { text ->
-                notifyOnAssistsLogUpdate(STREAM_LOG_ENTIRE, text)
-            }
+            combine(
+                AssistsLog.latestLine,
+                AssistsLog.entireLogText,
+            ) { latest, entire -> latest to entire }
+                .debounce(LOG_PUSH_DEBOUNCE_MS)
+                .collect { (latest, entire) ->
+                    if (latest.isNotEmpty()) {
+                        notifyOnAssistsLogUpdate(STREAM_LOG_LATEST_LINE, latest)
+                    }
+                    if (entire.isNotEmpty()) {
+                        notifyOnAssistsLogUpdate(STREAM_LOG_ENTIRE, entire)
+                    }
+                }
         }
         bridgeConfigurator?.invoke(this)
     }
