@@ -40,6 +40,8 @@ data class FloatWindowOpenOptions(
     val showTopOperationArea: Boolean = true,
     val showBottomOperationArea: Boolean = true,
     val backgroundColor: Int? = null,
+    /** 指定浮窗唯一标识；为空时由 AssistsWindowManager 自动生成 */
+    val uniqueId: String? = null,
 )
 
 /**
@@ -137,6 +139,7 @@ object FloatWindowOpener {
                 initialY = options.initialY
                 if (options.keepScreenOn) AssistsCore.keepScreenOn()
             },
+            uniqueId = options.uniqueId,
         )
     }
 }

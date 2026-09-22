@@ -45,4 +45,6 @@ object FloatCallMethod {
     const val isCurrentVisible = "isCurrentVisible"
     /** 当前 Web 浮窗是否已在管理器中 */
     const val containsCurrent = "containsCurrent"
+    /** 指定 uniqueId 浮窗是否已在管理器中 */
+    const val containsByUniqueId = "containsByUniqueId"
 }

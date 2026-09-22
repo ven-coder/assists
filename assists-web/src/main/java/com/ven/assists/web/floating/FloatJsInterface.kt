@@ -115,6 +115,7 @@ class FloatJsInterface(val webView: WebView) {
                 FloatCallMethod.showCurrent -> showCurrent(request)
                 FloatCallMethod.isCurrentVisible -> isCurrentVisible(request)
                 FloatCallMethod.containsCurrent -> containsCurrent(request)
+                FloatCallMethod.containsByUniqueId -> containsByUniqueId(request)
                 else -> request.createResponse(-1, message = "方法未支持")
             }
             callbackResponse(response)
@@ -182,15 +183,36 @@ class FloatJsInterface(val webView: WebView) {
     private fun findWrapperForWebView(): ViewWrapper? =
         AssistsWindowManager.viewList.values.find { it.view.findViewById<View>(R.id.web_view) == webView }
 
-    /** 关闭当前浮窗 */
+    /** 按 uniqueId 查找浮窗 [ViewWrapper] */
+    private fun findWrapperByUniqueId(uniqueId: String): ViewWrapper? =
+        AssistsWindowManager.viewList[uniqueId]
+
+    /** 销毁 Web 浮窗内容 WebView 并移除窗口（供 close 复用） */
+    private fun destroyWebFloatingWindow(wrapper: ViewWrapper) {
+        wrapper.view.findViewById<WebView>(R.id.web_view)?.let { wv ->
+            FloatWindowOpener.destroyContentWebView(wv)
+            AssistsCore.clearKeepScreenOn()
+        }
+        AssistsWindowManager.removeWindow(wrapper.view)
+    }
+
+    /**
+     * 关闭浮窗。
+     * 传 uniqueId：按 id 精确关闭（允许关闭当前 JS 所在的浮窗）；id 不存在返回错误。
+     * 不传 uniqueId：关闭当前 JS 所在浮窗（原逻辑）。
+     */
     private suspend fun close(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val args = request.arguments
+        val uniqueId = args?.get("uniqueId")?.takeIf { !it.isJsonNull }?.asString
+        if (uniqueId != null) {
+            val wrapper = findWrapperByUniqueId(uniqueId)
+                ?: return request.createResponse(-1, message = "浮窗不存在: $uniqueId")
+            runMain { destroyWebFloatingWindow(wrapper) }
+            return request.createResponse(0, data = true)
+        }
         val result = runMain {
             findWrapperForWebView()?.let { wrapper ->
-                wrapper.view.findViewById<WebView>(R.id.web_view)?.let { wv ->
-                    FloatWindowOpener.destroyContentWebView(wv)
-                    AssistsCore.clearKeepScreenOn()
-                }
-                AssistsWindowManager.removeWindow(wrapper.view)
+                destroyWebFloatingWindow(wrapper)
                 true
             }
         }
@@ -202,6 +224,11 @@ class FloatJsInterface(val webView: WebView) {
     private suspend fun open(request: CallRequest<JsonObject>): CallResponse<Any?> {
         val args = request.arguments
         val useDp = isDpUnit(args?.get("unit")?.asString)
+        // 显式 uniqueId：已存在则拒绝打开，保持已有窗口不动
+        val uniqueId = args?.get("uniqueId")?.takeIf { !it.isJsonNull }?.asString
+        if (uniqueId != null && AssistsWindowManager.viewList.containsKey(uniqueId)) {
+            return request.createResponse(-1, message = "浮窗已存在: $uniqueId")
+        }
         val options = FloatWindowOpenOptions(
             url = args?.get("url")?.asString ?: "",
             initialWidth = sizeArg(args?.get("initialWidth"), useDp) ?: (ScreenUtils.getScreenWidth() * 0.8).toInt(),
@@ -220,6 +247,7 @@ class FloatJsInterface(val webView: WebView) {
             showTopOperationArea = args?.get("showTopOperationArea")?.asBoolean ?: true,
             showBottomOperationArea = args?.get("showBottomOperationArea")?.asBoolean ?: true,
             backgroundColor = FloatWindowOpener.parseBackgroundColor(args?.get("backgroundColor")),
+            uniqueId = uniqueId,
         )
         val added = runMain {
             FloatWindowOpener.open(options)?.also { wrapper ->
@@ -227,9 +255,13 @@ class FloatJsInterface(val webView: WebView) {
                 applyViewConfig(wrapper, args, applyWindowLayout = false)
             }
         }
+        // 打开失败（如 uniqueId 重复）返回错误码
+        if (added == null) {
+            return request.createResponse(-1, message = "打开浮窗失败")
+        }
         val data = JsonObject().apply {
             addProperty("success", true)
-            added?.let { addProperty("uniqueId", it.uniqueId) }
+            addProperty("uniqueId", added.uniqueId)
         }
         return request.createResponse(0, data = data)
     }
@@ -506,5 +538,12 @@ class FloatJsInterface(val webView: WebView) {
             AssistsWindowManager.contains(wrapper.view)
         }
         return request.createResponse(0, data = c)
+    }
+
+    /** 指定 uniqueId 浮窗是否已在管理器中（不存在返回 false） */
+    private fun containsByUniqueId(request: CallRequest<JsonObject>): CallResponse<Any?> {
+        val uniqueId = request.arguments?.get("uniqueId")?.takeIf { !it.isJsonNull }?.asString
+            ?: return request.createResponse(-1, message = "uniqueId 不能为空")
+        return request.createResponse(0, data = AssistsWindowManager.viewList.containsKey(uniqueId))
     }
 }

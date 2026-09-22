@@ -18,6 +18,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -142,6 +143,11 @@ object AssistsLogDiagnostics {
 
         return withContext(Dispatchers.IO) {
             runCatching {
+                // 日志文件在上传期间可能被并发写入（prepend 头部插入），直接引用文件会在
+                // OkHttp 计算 contentLength 与实际流式写出之间产生长度差，导致
+                // ProtocolException("expected X bytes but received Y")。
+                // 这里一次性读入内存快照，用稳定字节构造请求体，消除竞态。
+                val logSnapshot = logFile.readBytes()
                 val client = OkHttpClient.Builder()
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .readTimeout(60, TimeUnit.SECONDS)
@@ -152,7 +158,7 @@ object AssistsLogDiagnostics {
                     .addFormDataPart(
                         "log_file",
                         logFile.name,
-                        logFile.asRequestBody("text/plain".toMediaType())
+                        logSnapshot.toRequestBody("text/plain".toMediaType())
                     )
                     .addFormDataPart(
                         "screenshot_file",

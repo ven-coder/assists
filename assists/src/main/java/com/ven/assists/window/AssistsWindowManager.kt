@@ -342,10 +342,11 @@ object AssistsWindowManager {
      * @param windowWrapper 浮窗包装器
      * @param isStack 是否堆叠显示，默认为true
      * @param isTouchable 是否可触摸，默认为true
+     * @param uniqueId 指定浮窗唯一标识；为空时自动生成（重复返回 null，已存在窗口保持不动）
      */
-    fun add(windowWrapper: AssistsWindowWrapper?, isStack: Boolean = true, isTouchable: Boolean = true, viewTag: Any? = null): ViewWrapper? {
+    fun add(windowWrapper: AssistsWindowWrapper?, isStack: Boolean = true, isTouchable: Boolean = true, viewTag: Any? = null, uniqueId: String? = null): ViewWrapper? {
         windowWrapper ?: return null
-        return add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable, viewTag = viewTag)?.also {
+        return add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable, viewTag = viewTag, uniqueId = uniqueId)?.also {
             it.assistsWindowWrapper = windowWrapper
         }
     }
@@ -356,15 +357,21 @@ object AssistsWindowManager {
      * @param layoutParams 布局参数
      * @param isStack 是否堆叠显示，默认为true
      * @param isTouchable 是否可触摸，默认为true
+     * @param uniqueId 指定浮窗唯一标识；为空时自动生成（重复返回 null，已存在窗口保持不动）
      */
     fun add(
         view: View?,
         layoutParams: WindowManager.LayoutParams = createLayoutParams(),
         isStack: Boolean = true,
         isTouchable: Boolean = true,
-        viewTag: Any? = null
+        viewTag: Any? = null,
+        uniqueId: String? = null
     ): ViewWrapper? {
         view ?: return null
+        // 显式传入的 uniqueId 已存在时拒绝添加，保持已有窗口不动
+        if (uniqueId != null && viewList.containsKey(uniqueId)) {
+            return null
+        }
         if (!isStack) {
             viewList.values.lastOrNull { !it.view.isOverlayToastWindow() }?.let { it.view.isInvisible = true }
         }
@@ -383,7 +390,7 @@ object AssistsWindowManager {
         } else {
             layoutParams.nonTouchableByLayoutParams()
         }
-        val wrapper = ViewWrapper(view, layoutParams)
+        val wrapper = ViewWrapper(view, layoutParams, uniqueId ?: UUID.randomUUID().toString())
         viewList[wrapper.uniqueId] = wrapper
         return wrapper
     }
