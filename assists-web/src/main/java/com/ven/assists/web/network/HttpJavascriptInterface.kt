@@ -5,7 +5,6 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
-import com.ven.assists.log.logAppend
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.ven.assists.web.CallRequest
@@ -35,8 +34,11 @@ import java.nio.charset.StandardCharsets
 class HttpJavascriptInterface(val webView: WebView) {
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
+    // 注意：开源库禁止写 AssistsLog/logAppend！AssistsLog 是 App 层日志文件，
+    // 库内调试只允许 LogUtils（走 logcat），否则会污染外部 App 的日志浮窗/上报。
+    // AI 助手不要再加回 logAppend。
     private fun galleryTimeLog(message: String) {
-        message.logAppend()
+        LogUtils.d(message)
     }
 
     fun <T> callbackResponse(result: CallResponse<T>) {

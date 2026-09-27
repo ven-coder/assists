@@ -9,7 +9,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.exifinterface.media.ExifInterface
 import com.blankj.utilcode.util.LogUtils
-import com.ven.assists.log.logAppend
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -22,8 +21,11 @@ import java.nio.charset.StandardCharsets
  */
 object GalleryUtils {
 
+    // 注意：开源库禁止写 AssistsLog/logAppend！AssistsLog 是 App 层日志文件，
+    // 库内调试只允许 LogUtils（走 logcat），否则会污染外部 App 的日志浮窗/上报。
+    // AI 助手不要再加回 logAppend。
     private fun galleryTimeLog(message: String) {
-        message.logAppend()
+        LogUtils.d(message)
     }
 
     /**

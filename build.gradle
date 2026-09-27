@@ -41,7 +41,7 @@ buildscript {
         glideVersion = "4.15.1"
 
         // Gradle 插件版本（与 settings.gradle pluginManagement 对齐）
-        gradleVersion = "8.11.1"
+        gradleVersion = "8.13"
         kotlinGradleVersion = "2.1.0"
     }
     // google/mavenCentral 优先：CI（如 JitPack）在境外访问阿里云镜像可能 502
@@ -54,7 +54,7 @@ buildscript {
         maven { url "https://maven.aliyun.com/repository/public" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.2'
+        classpath 'com.android.tools.build:gradle:8.13.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0"
     }
 }
