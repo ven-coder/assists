@@ -1890,9 +1890,7 @@ object AssistsCore {
             true
         }.getOrDefault(false)
 
-        if (startSucceeded) {
-            return waitForForeground(packageName)
-        }
+        if (startSucceeded && waitForForeground(packageName)) return true
 
         // 部分机型/后台限制下直接启动失败，回退为透明 View + 屏幕中心手势点击触发
         val completableDeferred = CompletableDeferred<Boolean>()
@@ -1923,8 +1921,12 @@ object AssistsCore {
             delay(250)
             runMain { AssistsWindowManager.removeView(view) }
         }
-        // 手势成功与否不决定返回值，以目标是否进入前台为准
-        completableDeferred.await()
+        // 部分 ROM 会静默拦截后台 startActivity；前台轮询失败后再走无障碍手势回退。
+        val fallbackStarted = withTimeoutOrNull(2_000L) { completableDeferred.await() } ?: false
+        if (!fallbackStarted) {
+            runMain { AssistsWindowManager.removeView(view) }
+            return false
+        }
         return waitForForeground(packageName)
     }
 
