@@ -37,6 +37,12 @@ data class FloatWindowOpenOptions(
     /** 上下（垂直）居中；可与 initialCenterHorizontal 独立组合 */
     val initialCenterVertical: Boolean = false,
     val keepScreenOn: Boolean = false,
+    /** 锁屏时是否显示；为空时继承 AssistsWindowManager 全局策略 */
+    val showWhenLocked: Boolean? = null,
+    /** 锁屏隐藏后是否在解锁时恢复；为空时继承 AssistsWindowManager 全局策略 */
+    val restoreAfterUnlock: Boolean? = null,
+    /** 未恢复的浮窗是否在解锁时删除；为空时继承 AssistsWindowManager 全局策略 */
+    val removeAfterUnlock: Boolean? = null,
     val showTopOperationArea: Boolean = true,
     val showBottomOperationArea: Boolean = true,
     val backgroundColor: Int? = null,
@@ -137,6 +143,9 @@ object FloatWindowOpener {
                 initialCenterVertical = options.initialCenterVertical
                 initialX = options.initialX
                 initialY = options.initialY
+                showWhenLockedOverride = options.showWhenLocked
+                restoreAfterUnlockOverride = options.restoreAfterUnlock
+                removeAfterUnlockOverride = options.removeAfterUnlock
                 if (options.keepScreenOn) AssistsCore.keepScreenOn()
             },
             uniqueId = options.uniqueId,

@@ -94,6 +94,7 @@ open class AssistsService : AccessibilityService() {
      * @return 是否调用父类的onUnbind方法
      */
     override fun onUnbind(intent: Intent?): Boolean {
+        AssistsWindowManager.onServiceUnbound()
         serviceRef = null
         runCatching { listeners.forEach { it.onUnbind() } }
         return super.onUnbind(intent)

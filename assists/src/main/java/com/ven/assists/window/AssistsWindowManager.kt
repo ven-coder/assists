@@ -1,7 +1,11 @@
 package com.ven.assists.window
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.util.DisplayMetrics
@@ -10,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
@@ -59,14 +64,149 @@ object AssistsWindowManager {
      */
     private var temporaryHideTopRestoreId: String? = null
 
+    /** 锁屏时显示与解锁恢复策略的全局默认值 */
+    @Volatile
+    private var defaultShowWhenLocked = true
+    @Volatile
+    private var defaultRestoreAfterUnlock = true
+    @Volatile
+    private var defaultRemoveAfterUnlock = false
+
+    /** 当前设备锁屏状态及锁屏时被本策略隐藏的窗口 */
+    private var isDeviceLocked = false
+    private var lockScreenEventGeneration = 0
+    private val lockScreenHiddenWindows = linkedMapOf<String, LockScreenWindowDisposition>()
+    private var lockScreenReceiverContext: Context? = null
+    private val lockScreenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val generation = ++lockScreenEventGeneration
+            when (intent.action) {
+                Intent.ACTION_USER_PRESENT -> updateDeviceLockedState(false)
+                Intent.ACTION_SCREEN_OFF -> updateDeviceLockedState(true)
+                Intent.ACTION_SCREEN_ON -> {
+                    CoroutineWrapper.launch {
+                        delay(250)
+                        if (generation != lockScreenEventGeneration) return@launch
+                        val keyguard = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                        updateDeviceLockedState(keyguard?.isKeyguardLocked == true)
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 初始化窗口管理器
      * @param accessibilityService 无障碍服务实例
      */
     fun init(accessibilityService: AccessibilityService) {
+        lockScreenEventGeneration++
         windowManager = accessibilityService.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         mDisplayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(mDisplayMetrics)
+        lockScreenReceiverContext?.let { previous ->
+            runCatching { previous.unregisterReceiver(lockScreenReceiver) }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        ContextCompat.registerReceiver(
+            accessibilityService,
+            lockScreenReceiver,
+            filter,
+            ContextCompat.RECEIVER_EXPORTED,
+        )
+        lockScreenReceiverContext = accessibilityService
+        val keyguard = accessibilityService.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        updateDeviceLockedState(keyguard?.isKeyguardLocked == true)
+    }
+
+    internal fun onServiceUnbound() {
+        lockScreenEventGeneration++
+        lockScreenReceiverContext?.let { context ->
+            runCatching { context.unregisterReceiver(lockScreenReceiver) }
+        }
+        lockScreenReceiverContext = null
+    }
+
+    /**
+     * 设置全局锁屏浮窗策略。显式设置到单个 [AssistsWindowWrapper] 的值优先于此默认值。
+     * @param showWhenLocked 锁屏时是否显示浮窗，默认 true
+     * @param restoreAfterUnlock 锁屏隐藏的浮窗是否在解锁后恢复，默认 true
+     * @param removeAfterUnlock 未恢复的浮窗是否在解锁后删除，默认 false
+     */
+    suspend fun setLockScreenPolicy(
+        showWhenLocked: Boolean = true,
+        restoreAfterUnlock: Boolean = true,
+        removeAfterUnlock: Boolean = false,
+    ) {
+        defaultShowWhenLocked = showWhenLocked
+        defaultRestoreAfterUnlock = restoreAfterUnlock
+        defaultRemoveAfterUnlock = removeAfterUnlock
+        withContext(Dispatchers.Main) {
+            applyLockScreenState(isDeviceLocked)
+        }
+    }
+
+    private fun updateDeviceLockedState(locked: Boolean) {
+        CoroutineWrapper.launch(isMain = true) {
+            if (isDeviceLocked == locked) {
+                // 策略可能在同一锁屏会话内改变，重新应用到现有浮窗。
+                applyLockScreenState(locked)
+                return@launch
+            }
+            isDeviceLocked = locked
+            applyLockScreenState(locked)
+        }
+    }
+
+    private fun ViewWrapper.effectiveShowWhenLocked(): Boolean =
+        showWhenLockedOverride ?: defaultShowWhenLocked
+
+    private fun ViewWrapper.effectiveRestoreAfterUnlock(): Boolean =
+        restoreAfterUnlockOverride ?: defaultRestoreAfterUnlock
+
+    private fun ViewWrapper.effectiveRemoveAfterUnlock(): Boolean =
+        removeAfterUnlockOverride ?: defaultRemoveAfterUnlock
+
+    /** 在主线程按锁屏状态应用策略；只恢复由锁屏策略隐藏且原本可见的浮窗。 */
+    private fun applyLockScreenState(locked: Boolean) {
+        if (!locked) {
+            val hiddenWindows = lockScreenHiddenWindows.toMap()
+            lockScreenHiddenWindows.clear()
+            hiddenWindows.forEach { (id, disposition) ->
+                val wrapper = viewList[id] ?: return@forEach
+                when {
+                    disposition.restoreAfterUnlock -> wrapper.view.isVisible = true
+                    disposition.removeAfterUnlock -> wrapper.assistsWindowWrapper?.close()
+                        ?: removeWindow(wrapper.view)
+                }
+            }
+            return
+        }
+
+        lockScreenHiddenWindows.keys.retainAll(viewList.keys)
+        viewList.values.forEach { wrapper ->
+            if (wrapper.view.isOverlayToastWindow()) return@forEach
+            if (wrapper.effectiveShowWhenLocked()) {
+                if (lockScreenHiddenWindows.remove(wrapper.uniqueId) != null) {
+                    wrapper.view.isVisible = true
+                }
+            } else if (wrapper.view.isVisible) {
+                lockScreenHiddenWindows[wrapper.uniqueId] = LockScreenWindowDisposition(
+                    restoreAfterUnlock = wrapper.effectiveRestoreAfterUnlock(),
+                    removeAfterUnlock = wrapper.effectiveRemoveAfterUnlock(),
+                )
+                wrapper.view.isInvisible = true
+            } else if (lockScreenHiddenWindows.containsKey(wrapper.uniqueId)) {
+                lockScreenHiddenWindows[wrapper.uniqueId] = LockScreenWindowDisposition(
+                    restoreAfterUnlock = wrapper.effectiveRestoreAfterUnlock(),
+                    removeAfterUnlock = wrapper.effectiveRemoveAfterUnlock(),
+                )
+            }
+        }
     }
 
     /**
@@ -111,6 +251,7 @@ object AssistsWindowManager {
                 if (filterViews.contains(it.view) || it.view.isOverlayToastWindow()) {
                     return@forEach
                 }
+                lockScreenHiddenWindows.remove(it.uniqueId)
                 it.view.isInvisible = true
                 if (isTouchable) {
                     it.touchableByWrapper()
@@ -128,6 +269,7 @@ object AssistsWindowManager {
     suspend fun hideTop(isTouchable: Boolean = true) {
         withContext(Dispatchers.Main) {
             viewList.values.lastOrNull { !it.view.isOverlayToastWindow() }?.let {
+                lockScreenHiddenWindows.remove(it.uniqueId)
                 it.view.isInvisible = true
                 if (isTouchable) {
                     it.touchableByWrapper()
@@ -143,6 +285,7 @@ object AssistsWindowManager {
         withContext(Dispatchers.Main) {
             viewList.values.forEach {
                 if (view == it.view) {
+                    lockScreenHiddenWindows.remove(it.uniqueId)
                     it.view.isInvisible = true
                     if (isTouchable) {
                         it.touchableByWrapper()
@@ -168,6 +311,7 @@ object AssistsWindowManager {
                     it.nonTouchableByWrapper()
                 }
             }
+            if (isDeviceLocked) applyLockScreenState(true)
         }
     }
 
@@ -217,6 +361,7 @@ object AssistsWindowManager {
                     wrapper.nonTouchableByWrapper()
                 }
             }
+            if (isDeviceLocked) applyLockScreenState(true)
         }
     }
 
@@ -237,6 +382,7 @@ object AssistsWindowManager {
                     it.nonTouchableByWrapper()
                 }
             }
+            if (isDeviceLocked) applyLockScreenState(true)
         }
     }
 
@@ -334,6 +480,7 @@ object AssistsWindowManager {
                     }
                 }
             }
+            if (isDeviceLocked) applyLockScreenState(true)
         }
     }
 
@@ -348,6 +495,10 @@ object AssistsWindowManager {
         windowWrapper ?: return null
         return add(view = windowWrapper.getView(), layoutParams = windowWrapper.wmlp, isStack = isStack, isTouchable = isTouchable, viewTag = viewTag, uniqueId = uniqueId)?.also {
             it.assistsWindowWrapper = windowWrapper
+            it.showWhenLockedOverride = windowWrapper.showWhenLockedOverride
+            it.restoreAfterUnlockOverride = windowWrapper.restoreAfterUnlockOverride
+            it.removeAfterUnlockOverride = windowWrapper.removeAfterUnlockOverride
+            if (isDeviceLocked) applyLockScreenState(true)
         }
     }
 
@@ -381,6 +532,7 @@ object AssistsWindowManager {
             return@find view == it.view
         }?.let {
             it.view.isVisible = true
+            if (isDeviceLocked) applyLockScreenState(true)
             return it
         }
 
@@ -392,6 +544,7 @@ object AssistsWindowManager {
         }
         val wrapper = ViewWrapper(view, layoutParams, uniqueId ?: UUID.randomUUID().toString())
         viewList[wrapper.uniqueId] = wrapper
+        if (isDeviceLocked) applyLockScreenState(true)
         return wrapper
     }
 
@@ -502,6 +655,7 @@ object AssistsWindowManager {
                 return@find view == it.view
             }?.let {
                 viewList.remove(it.uniqueId)
+                lockScreenHiddenWindows.remove(it.uniqueId)
             }
 
             if (viewList.size == 1 && viewList.values.first().view == WindowMinimizeManager.viewBinding?.root) {
@@ -525,6 +679,7 @@ object AssistsWindowManager {
                 return@find view == it.view
             }?.let {
                 viewList.remove(it.uniqueId)
+                lockScreenHiddenWindows.remove(it.uniqueId)
             }
 
             if (viewList.size == 1 && viewList.values.first().view == WindowMinimizeManager.viewBinding?.root) {
@@ -543,6 +698,7 @@ object AssistsWindowManager {
             }?.let {
                 windowManager.removeView(it.view)
                 viewList.remove(it.uniqueId)
+                lockScreenHiddenWindows.remove(it.uniqueId)
             }
 
             if (viewList.size == 1 && viewList.values.first().view == WindowMinimizeManager.viewBinding?.root) {
@@ -561,6 +717,7 @@ object AssistsWindowManager {
                 windowManager.removeView(it.value.view)
             }
             viewList.clear()
+            lockScreenHiddenWindows.clear()
         } catch (e: Throwable) {
             LogUtils.e(e)
         }
@@ -714,5 +871,19 @@ object AssistsWindowManager {
         val layoutParams: WindowManager.LayoutParams,
         val uniqueId: String = UUID.randomUUID().toString(),
         var assistsWindowWrapper: AssistsWindowWrapper? = null,
+    ) {
+        /** 锁屏策略覆盖值；null 表示继承管理器全局默认值 */
+        var showWhenLockedOverride: Boolean? = null
+
+        /** 解锁恢复策略覆盖值；null 表示继承管理器全局默认值 */
+        var restoreAfterUnlockOverride: Boolean? = null
+
+        /** 解锁后删除策略覆盖值；null 表示继承管理器全局默认值 */
+        var removeAfterUnlockOverride: Boolean? = null
+    }
+
+    private data class LockScreenWindowDisposition(
+        val restoreAfterUnlock: Boolean,
+        val removeAfterUnlock: Boolean,
     )
 }

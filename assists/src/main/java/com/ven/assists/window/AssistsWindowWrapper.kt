@@ -29,6 +29,8 @@ class AssistsWindowWrapper(
     wmLayoutParams: WindowManager.LayoutParams? = null,
     onClose: ((parent: View) -> Unit)? = null,
 ) {
+    private val onCloseCallback = onClose
+
     /** 当前布局高度 */
     private var layoutHeight: Int = 0
 
@@ -100,6 +102,15 @@ class AssistsWindowWrapper(
 
     /** 是否显示背景 */
     var showBackground = true
+
+    /** 覆盖全局锁屏显示策略；null 表示继承 AssistsWindowManager 的默认值 */
+    var showWhenLockedOverride: Boolean? = null
+
+    /** 覆盖全局解锁恢复策略；null 表示继承 AssistsWindowManager 的默认值 */
+    var restoreAfterUnlockOverride: Boolean? = null
+
+    /** 覆盖全局解锁删除策略；null 表示继承 AssistsWindowManager 的默认值 */
+    var removeAfterUnlockOverride: Boolean? = null
 
     /** 窗口布局参数 */
     var wmlp: WindowManager.LayoutParams = wmLayoutParams ?: let { AssistsWindowManager.createLayoutParams() }
@@ -266,7 +277,7 @@ class AssistsWindowWrapper(
             // 设置移动、缩放和关闭按钮的事件监听
             ivMove.setOnTouchListener(onTouchMoveListener)
             ivScale.setOnTouchListener(onTouchScaleListener)
-            ivClose.setOnClickListener { onClose?.invoke(root) ?: AssistsWindowManager.removeView(root) }
+            ivClose.setOnClickListener { close() }
             // 根据配置显示或隐藏操作按钮和背景
             flHeader.isVisible = showOption
             ivScale.isVisible = showOption
@@ -336,6 +347,11 @@ class AssistsWindowWrapper(
      */
     fun getView(): View {
         return viewBinding.root
+    }
+
+    /** 执行窗口关闭回调并释放窗口内容；没有回调时直接从管理器移除。 */
+    internal fun close() {
+        onCloseCallback?.invoke(viewBinding.root) ?: AssistsWindowManager.removeView(viewBinding.root)
     }
 
     companion object {
