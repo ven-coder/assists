@@ -9,6 +9,12 @@ object AccessibilityCallMethod {
      */
     const val isA11yEnabled = "isA11yEnabled"
 
+    /** 获取随选朗读服务及快捷方式状态 */
+    const val getSelectToSpeakStatus = "getSelectToSpeakStatus"
+
+    /** 打开指定的系统设置页 */
+    const val openSystemSettings = "openSystemSettings"
+
     /**
      * 打开无障碍设置页面
      */

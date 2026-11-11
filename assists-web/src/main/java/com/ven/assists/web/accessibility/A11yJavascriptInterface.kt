@@ -6,6 +6,9 @@ import android.webkit.WebView
 import com.blankj.utilcode.util.GsonUtils
 import com.blankj.utilcode.util.LogUtils
 import com.google.gson.JsonObject
+import com.google.gson.JsonArray
+import com.google.gson.JsonNull
+import com.google.gson.GsonBuilder
 import com.ven.assists.AssistsCore
 import com.ven.assists.web.CallRequest
 import com.ven.assists.web.CallRequestParser
@@ -26,10 +29,10 @@ class A11yJavascriptInterface(val webView: WebView) {
     /**
      * 回调响应给 JavaScript
      */
-    fun <T> callbackResponse(result: CallResponse<T>) {
+    fun <T> callbackResponse(result: CallResponse<T>, includeNulls: Boolean = false) {
         coroutineScope.launch {
             runCatching {
-                val json = GsonUtils.toJson(result)
+                val json = if (includeNulls) GsonBuilder().serializeNulls().create().toJson(result) else GsonUtils.toJson(result)
                 callback(json)
             }.onFailure {
                 LogUtils.e(it)
@@ -69,6 +72,14 @@ class A11yJavascriptInterface(val webView: WebView) {
                     handleIsA11yEnabled(request)
                 }
 
+                AccessibilityCallMethod.getSelectToSpeakStatus -> {
+                    handleSelectToSpeakStatus(request)
+                }
+
+                AccessibilityCallMethod.openSystemSettings -> {
+                    handleOpenSystemSettings(request)
+                }
+
                 AccessibilityCallMethod.openAccessibilitySetting -> {
                     handleOpenAccessibilitySetting(request)
                 }
@@ -77,7 +88,7 @@ class A11yJavascriptInterface(val webView: WebView) {
                     request.createResponse(-1, message = "方法未支持: ${request.method}")
                 }
             }
-            callbackResponse(response)
+            callbackResponse(response, includeNulls = request.method == AccessibilityCallMethod.getSelectToSpeakStatus)
         }.onFailure {
             LogUtils.e(it)
             callbackResponse(request.createResponse(-1, message = "执行失败: ${it.message}", data = null))
@@ -97,6 +108,39 @@ class A11yJavascriptInterface(val webView: WebView) {
             data = result,
             message = if (enabled) "无障碍服务已开启" else "无障碍服务未开启"
         )
+    }
+
+    /** 返回完整快照，保留无法读取的设置项为 null。 */
+    private fun handleSelectToSpeakStatus(request: CallRequest<JsonObject>): CallResponse<JsonObject> {
+        val status = AssistsCore.getSelectToSpeakStatus(webView.context)
+        val settings = JsonObject().apply {
+            status.shortcutSettings.forEach { (key, value) ->
+                if (value == null) add(key, JsonNull.INSTANCE) else addProperty(key, value)
+            }
+        }
+        fun stringArray(values: List<String>) = JsonArray().apply { values.forEach { add(it) } }
+        val result = JsonObject().apply {
+            addProperty("googleServiceEnabled", status.googleServiceEnabled)
+            add("matchingServiceIds", stringArray(status.matchingServiceIds))
+            add("enabledServiceIds", stringArray(status.enabledServiceIds))
+            addProperty("accessibilityButton", status.accessibilityButton.name)
+            addProperty("volumeKeys", status.volumeKeys.name)
+            addProperty("quickSettings", status.quickSettings.name)
+            add("shortcutSettings", settings)
+        }
+        return request.createResponse(code = 0, data = result)
+    }
+
+    /** 启动指定设置页面，失败通过 success 返回。 */
+    private fun handleOpenSystemSettings(request: CallRequest<JsonObject>): CallResponse<JsonObject> {
+        val args = request.arguments
+        fun stringArg(name: String): String? = args?.get(name)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString
+        val action = stringArg("action")
+        if (action.isNullOrBlank()) return request.createResponse(-1, message = "Settings action is required")
+        val success = AssistsCore.openSystemSettings(
+            webView.context, action, stringArg("dataUri"), stringArg("accessibilityServiceComponent")
+        )
+        return request.createResponse(code = 0, data = JsonObject().apply { addProperty("success", success) })
     }
 
     /**

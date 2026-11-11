@@ -192,9 +192,9 @@ object AssistsCore {
         LogUtils.getConfig().globalTag = LOG_TAG
     }
 
-    private fun requireInitApplicationContext(): Context {
+    private fun requireInitApplicationContext(method: String = "isA11yEnabled"): Context {
         return initApplication?.applicationContext
-            ?: throw IllegalStateException("Call AssistsCore.init(application) before using default context in isA11yEnabled().")
+            ?: throw IllegalStateException("Call AssistsCore.init(application) before using default context in $method().")
     }
 
     /**
@@ -230,6 +230,72 @@ object AssistsCore {
                 roots
             }
         }
+    }
+
+    /**
+     * 获取 Google 随选朗读服务及快捷方式的状态快照。
+     * 服务判断匹配完整组件名；同名服务单独列出。快捷方式依赖系统内部设置，
+     * 未匹配、缺失或读取失败均为 UNKNOWN，不能推断为关闭，也不能覆盖厂商实现。
+     * 无参调用须先执行 [init]。结果不表示当前是否正在朗读。
+     */
+    @JvmOverloads
+    fun getSelectToSpeakStatus(context: Context = requireInitApplicationContext("getSelectToSpeakStatus")): SelectToSpeakStatus {
+        val targetClass = "com.google.android.accessibility.selecttospeak.SelectToSpeakService"
+        val target = ComponentName("com.google.android.marvin.talkback", targetClass)
+        val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val services = manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .map { it.id }.sorted()
+        val keys = listOf(
+            "accessibility_button_targets",
+            "accessibility_button_target_component",
+            "accessibility_shortcut_target_service",
+            "accessibility_qs_targets",
+        )
+        val settings = keys.associateWith { key ->
+            try {
+                Settings.Secure.getString(context.contentResolver, key)
+            } catch (_: SecurityException) {
+                null
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+        fun shortcut(vararg settingKeys: String): SelectToSpeakShortcutStatus {
+            val found = settingKeys.any { key ->
+                settings[key]?.split(':')?.any { ComponentName.unflattenFromString(it) == target } == true
+            }
+            return if (found) SelectToSpeakShortcutStatus.DETECTED else SelectToSpeakShortcutStatus.UNKNOWN
+        }
+        return SelectToSpeakStatus(
+            googleServiceEnabled = services.any { ComponentName.unflattenFromString(it) == target },
+            matchingServiceIds = services.filter { ComponentName.unflattenFromString(it)?.className == targetClass },
+            enabledServiceIds = services,
+            accessibilityButton = shortcut(keys[0], keys[1]),
+            volumeKeys = shortcut(keys[2]),
+            quickSettings = shortcut(keys[3]),
+            shortcutSettings = settings,
+        )
+    }
+
+    /** 发起指定设置页跳转；返回值仅表示 Activity 已成功启动，不表示设置已更改。 */
+    @JvmOverloads
+    fun openSystemSettings(
+        context: Context,
+        action: String,
+        dataUri: String? = null,
+        accessibilityServiceComponent: String? = null,
+    ): Boolean {
+        if (action.isBlank()) return false
+        val component = accessibilityServiceComponent?.let {
+            ComponentName.unflattenFromString(it) ?: return false
+        }
+        return runCatching {
+            val intent = Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (dataUri != null) intent.data = android.net.Uri.parse(dataUri)
+            if (component != null) intent.putExtra(Intent.EXTRA_COMPONENT_NAME, component)
+            context.startActivity(intent)
+            true
+        }.getOrDefault(false)
     }
 
     /**
