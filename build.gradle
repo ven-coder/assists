@@ -11,7 +11,7 @@ buildscript {
         // 应用版本
         versionCode = 42
         versionName = "3.5.14"
-        mavenVersion = "3.5.10"
+        mavenVersion = "3.5.11"
         mavenGroupId = "io.github.ven-coder"
 
         // 依赖库版本
