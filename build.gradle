@@ -20,7 +20,7 @@ buildscript {
         appcompatVersion = "1.6.1"
         kotlinBomVersion = "2.1.0"
         utilcodexVersion = "1.31.1"
-        opencvVersion = "4.9.0"
+        opencvVersion = "4.12.0"
 
         // Room
         roomVersion = "2.4.3"

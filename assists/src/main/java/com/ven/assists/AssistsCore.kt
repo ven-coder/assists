@@ -1956,7 +1956,11 @@ object AssistsCore {
             true
         }.getOrDefault(false)
 
-        if (startSucceeded && waitForForeground(packageName)) return true
+        // 返回宿主应用时无需等待冷启动；部分 ROM 会静默拦截后台启动，应尽早尝试手势回退。
+        val returningToHost = packageName == service.packageName
+        val initialWaitMs = if (returningToHost) 200L else 5_000L
+        if (startSucceeded && waitForForeground(packageName, initialWaitMs)) return true
+        LogUtils.d(LOG_TAG, "launchApp direct start did not reach foreground; trying gesture fallback: $packageName")
 
         // 部分机型/后台限制下直接启动失败，回退为透明 View + 屏幕中心手势点击触发
         val completableDeferred = CompletableDeferred<Boolean>()
@@ -1973,17 +1977,24 @@ object AssistsCore {
                 }
             }
         }
-        runMain {
-            runCatching { AssistsWindowManager.add(view) }.onFailure {
+        val overlayAdded = runMain {
+            runCatching { AssistsWindowManager.add(view) != null }.getOrElse {
                 LogUtils.e(it)
+                false
             }
         }
+        if (!overlayAdded) return false
         CoroutineWrapper.launch {
-            delay(250)
-            gestureClick(
-                ScreenUtils.getScreenWidth() / 2.toFloat(),
-                ScreenUtils.getScreenHeight() / 2.toFloat()
-            )
+            delay(if (returningToHost) 100L else 250L)
+            // 直接启动可能在创建浮层期间完成，避免再向前台界面注入点击。
+            if (returningToHost && getPackageName(NodeLookupScope.ActiveWindow) == packageName) {
+                completableDeferred.complete(true)
+            } else {
+                gestureClick(
+                    ScreenUtils.getScreenWidth() / 2.toFloat(),
+                    ScreenUtils.getScreenHeight() / 2.toFloat()
+                )
+            }
             delay(250)
             runMain { AssistsWindowManager.removeView(view) }
         }
