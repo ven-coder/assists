@@ -13,6 +13,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Build
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -44,6 +45,7 @@ import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.simple.MultiTouchDrawingActivity
 import com.ven.assists.simple.TestActivity
+import com.ven.assists.simple.R
 import com.ven.assists.simple.databinding.BasicOverlayBinding
 import com.ven.assists.utils.AudioPlayerUtil
 import com.ven.assists.utils.CoroutineWrapper
@@ -63,7 +65,7 @@ object OverlayBasic : AssistsServiceListener {
         private set
         get() {
             if (field == null) {
-                field = BasicOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
+                field = BasicOverlayBinding.inflate(LayoutInflater.from(ContextThemeWrapper(AssistsService.getOrNull(), R.style.AppTheme))).apply {
                     btnTest.visibility = if (AppUtils.isAppDebug()) View.VISIBLE else View.GONE
                     btnTest.setOnClickListener {
                         CoroutineWrapper.launch {

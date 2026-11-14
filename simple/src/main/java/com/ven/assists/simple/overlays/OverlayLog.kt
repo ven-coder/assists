@@ -2,6 +2,7 @@ package com.ven.assists.simple.overlays
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -14,6 +15,7 @@ import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.log.AssistsLog
 import com.ven.assists.log.AssistsLogDiagnostics
 import com.ven.assists.log.logAppend
+import com.ven.assists.simple.R
 import com.ven.assists.simple.databinding.LogOverlayBinding
 import com.ven.assists.stepper.StepManager
 import com.ven.assists.utils.CoroutineWrapper
@@ -52,7 +54,7 @@ object OverlayLog : AssistsServiceListener {
         @SuppressLint("ClickableViewAccessibility")
         get() {
             if (field == null) {
-                field = LogOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
+                field = LogOverlayBinding.inflate(LayoutInflater.from(ContextThemeWrapper(AssistsService.getOrNull(), R.style.AppTheme))).apply {
                     scrollView.setOnTouchListener(onScrollTouchListener)
                     btnClean.setOnClickListener {
                         CoroutineWrapper.launch { AssistsLog.clear() }

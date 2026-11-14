@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Build
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,7 @@ import com.ven.assists.simple.ImageGalleryActivity
 import com.ven.assists.simple.ScreenshotReviewActivity
 import com.ven.assists.log.AssistsLog
 import com.ven.assists.log.logAppend
+import com.ven.assists.simple.R
 import com.ven.assists.simple.databinding.ProOverlayBinding
 import com.ven.assists.text.TextRecognitionChineseLocator
 import com.ven.assists.utils.CoroutineWrapper
@@ -41,7 +43,7 @@ object OverlayPro : AssistsServiceListener {
         private set
         get() {
             if (field == null) {
-                field = ProOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
+                field = ProOverlayBinding.inflate(LayoutInflater.from(ContextThemeWrapper(AssistsService.getOrNull(), R.style.AppTheme))).apply {
                     btnListenerNotification.setOnClickListener {
                         if (!AssistsService.listeners.contains(notificationListener)) {
                             AssistsService.listeners.add(notificationListener)

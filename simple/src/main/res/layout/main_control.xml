@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#ffffff">
+    android:background="@color/colorBackground">
 
     <com.google.android.flexbox.FlexboxLayout
         android:id="@+id/fl_content"
@@ -11,48 +11,56 @@
         android:layout_height="match_parent"
         app:flexWrap="wrap">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="点击" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="手势点击" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="手势点击" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_screen_capture"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="请求屏幕录制" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_take_screenshot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="截取屏幕" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_disable_pull_notification"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="禁止下拉通知栏" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_listener_notification"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="通知监听（包括Toast）"
             android:textAllCaps="false" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_collect_energy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

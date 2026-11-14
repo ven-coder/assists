@@ -4,8 +4,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#23252A"
+    android:fitsSystemWindows="true"
     android:gravity="center"
     android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:layout_gravity="top"
+        android:background="#23252A"
+        app:title="Assists"
+        app:titleTextColor="@color/colorPrimary" />
     <com.google.android.flexbox.FlexboxLayout
         android:id="@+id/ll_option"
         android:layout_width="match_parent"
@@ -17,35 +27,40 @@
         app:flexDirection="row"
         app:flexWrap="wrap">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_basic"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="基础" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_pro"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="进阶" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_advanced"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="高级" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_web"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorAccent"
             android:text="web支持"
             android:textAllCaps="false" />
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_log"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -53,7 +68,8 @@
             android:text="日志"
             android:textAllCaps="false" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginHorizontal="4dp"
             android:id="@+id/btn_test"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -71,11 +87,11 @@
         android:orientation="vertical"
         android:paddingHorizontal="8dp">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_enable"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/colorAccent"
             android:text="开启服务" />
 
 

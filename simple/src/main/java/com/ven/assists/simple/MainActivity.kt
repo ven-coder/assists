@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity(), AssistsServiceListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        BarUtils.setStatusBarLightMode(this, true)
+        BarUtils.setStatusBarLightMode(this, false)
         setContentView(viewBind.root)
         AssistsService.listeners.add(this)
         checkPermission()

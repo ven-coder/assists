@@ -15,7 +15,8 @@
             android:layout_height="match_parent"
             app:flexWrap="wrap">
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_listener_notification"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -23,7 +24,8 @@
                 android:text="通知监听（包括Toast）"
                 android:textAllCaps="false" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_disable_pull_notification"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -31,7 +33,8 @@
                 android:text="禁止下拉通知栏" />
 
             <!--          TODO  未实现-->
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_notification_listener"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -40,7 +43,8 @@
                 android:visibility="visible"
                 tools:visisble="visible" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_screen_capture"
 
                 android:layout_width="wrap_content"
@@ -48,7 +52,8 @@
                 android:backgroundTint="@color/colorAccent"
                 android:text="请求屏幕录制权限（手动允许）" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_screen_capture_auto"
 
                 android:layout_width="wrap_content"
@@ -56,14 +61,16 @@
                 android:backgroundTint="@color/colorAccent"
                 android:text="请求屏幕录制权限（自动允许）" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_take_screenshot"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
                 android:text="截取当前屏幕（使用屏幕录制权限）" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_take_screenshot_acc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -72,14 +79,16 @@
                 android:visibility="visible"
                 tools:visibility="visible" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_take_screenshot_all_image"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
                 android:text="截取当前屏幕所有图片" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_screen_text_positions"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -87,7 +96,8 @@
                 android:text="识别当前屏幕文字位置"
                 android:textAllCaps="false" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_ocr_click_phrase_basic"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -95,7 +105,8 @@
                 android:text="识别并点击词组「web支持」"
                 android:textAllCaps="false" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_mp_screen_text_positions"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -103,7 +114,8 @@
                 android:text="MP录屏截图：识别文字位置"
                 android:textAllCaps="false" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
+                android:layout_marginHorizontal="4dp"
                 android:id="@+id/btn_mp_ocr_click_phrase_basic"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

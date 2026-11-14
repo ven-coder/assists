@@ -31,107 +31,107 @@
                     android:orientation="vertical">
 
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_setting_guide"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="无障碍服务开启引导示例"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_notification"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="通知监听（包括Toast）"
                         android:textAllCaps="false"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_1"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="禁止下拉通知栏"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_2"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="自动接听微信电话"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_open_social"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="自动打开微信朋友圈"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_publish_social"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="自动发表一条微信私密朋友圈"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_scroll_contacts"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="自动滚动微信通讯录"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_click_bottom_tab"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="手势点击微信主页底部Tab"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_scroll_social"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="手势滑动朋友圈列表"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="自动抢红包"
-                        android:textColor="@color/colorPrimary"
+                        android:textColor="@color/colorBackground"
                         android:visibility="gone" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_ant_forest_energy"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="@color/colorAccent"
                         android:text="蚂蚁森林能量自动收集"
-                        android:textColor="@color/colorPrimary" />
+                        android:textColor="@color/colorBackground" />
 
 
                 </LinearLayout>
             </androidx.core.widget.NestedScrollView>
 
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_log"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="#ccc000"
                 android:text="查看日志"
-                android:textColor="@color/colorPrimary" />
+                android:textColor="@color/colorBackground" />
         </LinearLayout>
 
         <LinearLayout
@@ -152,7 +152,7 @@
                     android:text="【日志】"
                     android:textColor="@color/_ffffff" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_stop_scroll_log"
                     android:layout_width="65dp"
                     android:layout_height="35dp"
@@ -183,7 +183,7 @@
                 </FrameLayout>
             </androidx.core.widget.NestedScrollView>
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_stop"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -191,7 +191,7 @@
                 android:text="停止"
                 android:textColor="@color/_ffffff" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_close_log"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

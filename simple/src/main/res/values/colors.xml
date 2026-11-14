@@ -1,7 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#ffffff</color>
-    <color name="colorPrimaryDark">#000000</color>
-    <color name="colorAccent">#00AAA1</color>
-    <color name="_ffffff">#ffffff</color>
+    <!-- 主要颜色 -->
+    <color name="colorPrimary">#3EDA83</color>
+    <color name="colorPrimaryDark">#3EDA83</color>
+    <color name="colorAccent">#3EDA83</color>
+
+    <!-- 背景色系 -->
+    <color name="colorBackground">#2E3137</color>
+    <color name="colorSurface">#1E1E1E</color>
+    <color name="colorBackgroundFloating">#2C2C2C</color>
+
+    <!-- 功能色 -->
+    <color name="colorSecondary">#3EDA83</color>
+    <color name="colorWarning">#FFAA00</color>
+    <color name="colorError">#FF4444</color>
+    <color name="colorSuccess">#3EDA83</color>
+
+    <!-- 文字颜色 -->
+    <color name="textColorPrimary">#FFFFFF</color>
+    <color name="textColorSecondary">#B3FFFFFF</color>
+    <color name="textColorHint">#80FFFFFF</color>
+
+    <!-- 分割线颜色 -->
+    <color name="dividerColor">#1FFFFFFF</color>
+
+    <!-- 涟漪效果颜色 -->
+    <color name="rippleColor">#33FFFFFF</color>
+
+    <!-- 卡片颜色 -->
+    <color name="cardBackground">#2C2C2C</color>
+    <color name="cardStroke">#3D3D3D</color>
+
+    <!-- 状态颜色 -->
+    <color name="statusActive">#3EDA83</color>
+    <color name="statusInactive">#808080</color>
+
+    <!-- 通用颜色 -->
+    <color name="_ffffff">#FFFFFF</color>
 </resources>

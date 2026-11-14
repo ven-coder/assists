@@ -1,6 +1,7 @@
 package com.ven.assists.simple.overlays
 
 import android.annotation.SuppressLint
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.accessibility.AccessibilityEvent
@@ -19,6 +20,7 @@ import com.ven.assists.window.AssistsWindowManager
 import com.ven.assists.window.AssistsWindowManager.overlayToast
 import com.ven.assists.window.AssistsWindowWrapper
 import com.ven.assists.log.logAppend
+import com.ven.assists.simple.R
 import com.ven.assists.simple.databinding.AdvancedOverlayBinding
 import com.ven.assists.simple.step.AntForestEnergy
 import com.ven.assists.simple.step.GestureBottomTab
@@ -40,7 +42,7 @@ object OverlayAdvanced : AssistsServiceListener {
         private set
         get() {
             if (field == null) {
-                field = AdvancedOverlayBinding.inflate(LayoutInflater.from(AssistsService.getOrNull())).apply {
+                field = AdvancedOverlayBinding.inflate(LayoutInflater.from(ContextThemeWrapper(AssistsService.getOrNull(), R.style.AppTheme))).apply {
                     btnAnswerWechatCall.setOnClickListener {
                         if (!AssistsService.listeners.contains(answerWechatCallListener)) {
                             AssistsService.listeners.add(answerWechatCallListener)

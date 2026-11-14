@@ -35,44 +35,53 @@
             </FrameLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <LinearLayout
-            android:layout_width="wrap_content"
+        <HorizontalScrollView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:scrollbars="none">
 
-            <Button
-                android:id="@+id/btn_stop"
-                android:layout_width="60dp"
-                android:layout_height="40dp"
-                android:text="停止"
-                android:textSize="10dp" />
-
-            <Button
-                android:id="@+id/btn_clean"
-                android:layout_width="60dp"
-                android:layout_height="40dp"
-                android:text="清除"
-                android:padding="0dp"
-                android:textSize="10dp" />
-
-            <Button
-                android:id="@+id/btn_report_log"
-                android:layout_width="60dp"
-                android:layout_height="40dp"
-                android:text="上报"
-                android:padding="0dp"
-                android:textSize="10dp" />
-
-            <TextView
-                android:id="@+id/tv_length"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="#ffffff"
-                android:textSize="12dp"
-                android:visibility="gone" />
+                android:orientation="horizontal">
 
-        </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:layout_marginHorizontal="4dp"
+                    android:id="@+id/btn_stop"
+                    android:layout_width="60dp"
+                    android:layout_height="40dp"
+                    android:text="停止"
+                    android:textSize="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:layout_marginHorizontal="4dp"
+                    android:id="@+id/btn_clean"
+                    android:layout_width="60dp"
+                    android:layout_height="40dp"
+                    android:text="清除"
+                    android:padding="0dp"
+                    android:textSize="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:layout_marginHorizontal="4dp"
+                    android:id="@+id/btn_report_log"
+                    android:layout_width="60dp"
+                    android:layout_height="40dp"
+                    android:text="上报"
+                    android:padding="0dp"
+                    android:textSize="10dp" />
+
+                <TextView
+                    android:id="@+id/tv_length"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#ffffff"
+                    android:textSize="12dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
 </LinearLayout>
